@@ -3,7 +3,8 @@ using RaceDay.Core;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -19,7 +20,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Race Day Nutrition Planner API v1");
+    });
 }
 
 app.UseHttpsRedirection();
@@ -31,8 +36,7 @@ app.MapGet("/api/products", async () =>
     var products = await ProductRepository.GetAllProductsAsync();
     return Results.Ok(products);
 })
-.WithName("GetAllProducts")
-.WithOpenApi();
+.WithName("GetAllProducts");
 
 app.MapGet("/api/products/{id}", async (string id) =>
 {
@@ -41,16 +45,14 @@ app.MapGet("/api/products/{id}", async (string id) =>
         return Results.NotFound();
     return Results.Ok(product);
 })
-.WithName("GetProductById")
-.WithOpenApi();
+.WithName("GetProductById");
 
 app.MapGet("/api/products/type/{type}", async (string type) =>
 {
     var products = await ProductRepository.GetProductsByTypeAsync(type);
     return Results.Ok(products);
 })
-.WithName("GetProductsByType")
-.WithOpenApi();
+.WithName("GetProductsByType");
 
 app.MapGet("/api/products/search", async (string query) =>
 {
@@ -60,7 +62,6 @@ app.MapGet("/api/products/search", async (string query) =>
     var products = await ProductRepository.SearchProductsAsync(query);
     return Results.Ok(products);
 })
-.WithName("SearchProducts")
-.WithOpenApi();
+.WithName("SearchProducts");
 
 app.Run();
