@@ -1,0 +1,68 @@
+@using RaceDay.Core
+
+<div class="form-card">
+    <h2>🏁 Race Details</h2>
+    
+    <div class="form-group">
+        <label for="sport">Sport Type</label>
+        <select id="sport" @bind="SportType" class="form-control">
+            <option value="@Core.SportType.Run">🏃 Running</option>
+            <option value="@Core.SportType.Bike">🚴 Cycling</option>
+            <option value="@Core.SportType.Triathlon">🏊 Triathlon</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="duration">Duration</label>
+        <div class="input-group">
+            <input type="number" id="duration" @bind="Duration" class="form-control" 
+                   min="0.5" max="24" step="0.5" placeholder="e.g. 2" />
+            <span class="input-unit">hours</span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="temperature">Temperature</label>
+        <div class="input-group">
+            <input type="number" id="temperature" @bind="Temperature" class="form-control" 
+                   min="-10" max="40" step="1" placeholder="e.g. 20" />
+            <span class="input-unit">°C</span>
+        </div>
+        <small class="form-text">Affects fluid and sodium requirements.</small>
+    </div>
+
+    <div class="form-group">
+        <label for="intensity">Intensity Level</label>
+        <select id="intensity" @bind="RaceIntensity" class="form-control">
+            <option value="@IntensityLevel.Easy">Easy</option>
+            <option value="@IntensityLevel.Moderate">Moderate</option>
+            <option value="@IntensityLevel.Hard">Hard</option>
+        </select>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Core.SportType SportType { get; set; } = Core.SportType.Triathlon;
+
+    [Parameter]
+    public EventCallback<Core.SportType> SportTypeChanged { get; set; }
+
+    [Parameter]
+    public double Duration { get; set; } = 2;
+
+    [Parameter]
+    public EventCallback<double> DurationChanged { get; set; }
+
+    [Parameter]
+    public double Temperature { get; set; } = 20;
+
+    [Parameter]
+    public EventCallback<double> TemperatureChanged { get; set; }
+
+    [Parameter]
+    public IntensityLevel RaceIntensity { get; set; } = IntensityLevel.Moderate;
+
+    [Parameter]
+    public EventCallback<IntensityLevel> RaceIntensityChanged { get; set; }
+}

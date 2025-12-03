@@ -1,0 +1,104 @@
+@using RaceDay.Core
+
+@if (Plan != null)
+{
+    <div class="results-section">
+        <div class="summary-card results-card">
+            <h2>📊 Nutrition Summary</h2>
+            <div class="targets-grid">
+                <div class="target-item">
+                    <div class="target-label">Carbs/Hour</div>
+                    <div class="target-value">@Plan.Targets.CarbsGPerHour.ToString("F0")</div>
+                    <div class="target-unit">g</div>
+                </div>
+                <div class="target-item">
+                    <div class="target-label">Fluids/Hour</div>
+                    <div class="target-value">@Plan.Targets.FluidsMlPerHour.ToString("F0")</div>
+                    <div class="target-unit">ml</div>
+                </div>
+                <div class="target-item">
+                    <div class="target-label">Sodium/Hour</div>
+                    <div class="target-value">@Plan.Targets.SodiumMgPerHour.ToString("F0")</div>
+                    <div class="target-unit">mg</div>
+                </div>
+            </div>
+
+            <div class="totals-grid" style="margin-top: 20px;">
+                <div class="total-item">
+                    <div class="total-label">Total Carbs</div>
+                    <div class="total-value">@Plan.TotalCarbsG.ToString("F0") g</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-label">Total Fluids</div>
+                    <div class="total-value">@Plan.TotalFluidsMl.ToString("F0") ml</div>
+                </div>
+                <div class="total-item">
+                    <div class="total-label">Total Sodium</div>
+                    <div class="total-value">@Plan.TotalSodiumMg.ToString("F0") mg</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-card">
+            <div class="results-header">
+                <h2>⏱️ Intake Schedule (20-min intervals)</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="CopyToClipboard" title="Copy schedule as text">
+                        📋 Copy
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="PrintSchedule" title="Print schedule">
+                        🖨️ Print
+                    </button>
+                </div>
+            </div>
+
+            <div class="schedule-table">
+                <div class="schedule-header">
+                    <div class="col-time">Time</div>
+                    <div class="col-product">Product</div>
+                    <div class="col-amount">Amount</div>
+                </div>
+                @foreach (var (index, item) in Plan.Schedule.Select((p, i) => (i, p)))
+                {
+                    <div class="schedule-row @(index % 2 == 0 ? "even" : "odd")">
+                        <div class="col-time">@item.TimeMin:@(item.TimeMin % 60).ToString("D2") min</div>
+                        <div class="col-product">@item.ProductName</div>
+                        <div class="col-amount">@item.AmountPortions.ToString("F1") portion@(item.AmountPortions != 1 ? "s" : "")</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RaceNutritionPlan? Plan { get; set; }
+
+    private async Task CopyToClipboard()
+    {
+        if (Plan == null) return;
+
+        var text = new System.Text.StringBuilder();
+        text.AppendLine("=== Race Day Nutrition Plan ===\n");
+        text.AppendLine("HOURLY TARGETS:");
+        text.AppendLine($"Carbs: {Plan.Targets.CarbsGPerHour:F0} g/hour");
+        text.AppendLine($"Fluids: {Plan.Targets.FluidsMlPerHour:F0} ml/hour");
+        text.AppendLine($"Sodium: {Plan.Targets.SodiumMgPerHour:F0} mg/hour\n");
+        text.AppendLine("INTAKE SCHEDULE:");
+
+        foreach (var item in Plan.Schedule)
+        {
+            text.AppendLine($"{item.TimeMin:D3} min → {item.AmountPortions:F1}x {item.ProductName}");
+        }
+
+        // In a real app, use IJSRuntime to copy to clipboard
+        await Task.CompletedTask;
+    }
+
+    private async Task PrintSchedule()
+    {
+        // In a real app, use IJSRuntime to trigger print dialog
+        await Task.CompletedTask;
+    }
+}

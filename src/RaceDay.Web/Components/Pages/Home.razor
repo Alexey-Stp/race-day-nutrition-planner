@@ -3,7 +3,7 @@
 
 <PageTitle>Race Day Nutrition Planner</PageTitle>
 
-<div class="container">
+<div class="planner-container">
     <div class="header">
         <h1>🏁 Race Day Nutrition Planner</h1>
         <p class="subtitle">Calculate your personalized nutrition strategy for race day</p>
@@ -11,207 +11,39 @@
 
     <div class="content">
         <div class="form-section">
-            <div class="form-card">
-                <h2>Athlete Profile</h2>
-                <div class="form-group">
-                    <label for="weight">Body Weight (kg)</label>
-                    <input type="number" id="weight" @bind="athleteWeight" class="form-control" min="40" max="150" step="0.5" />
-                </div>
-            </div>
-
-            <div class="form-card">
-                <h2>Race Details</h2>
-                <div class="form-group">
-                    <label for="sport">Sport Type</label>
-                    <select id="sport" @bind="selectedSport" class="form-control">
-                        <option value="@SportType.Run">🏃 Running</option>
-                        <option value="@SportType.Bike">🚴 Cycling</option>
-                        <option value="@SportType.Triathlon">🏊 Triathlon</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="duration">Duration (hours)</label>
-                    <input type="number" id="duration" @bind="raceDuration" class="form-control" min="0.5" max="24" step="0.5" />
-                </div>
-
-                <div class="form-group">
-                    <label for="temperature">Temperature (°C)</label>
-                    <input type="number" id="temperature" @bind="temperature" class="form-control" min="-10" max="40" step="1" />
-                </div>
-
-                <div class="form-group">
-                    <label for="intensity">Intensity Level</label>
-                    <select id="intensity" @bind="selectedIntensity" class="form-control">
-                        <option value="@IntensityLevel.Easy">Easy</option>
-                        <option value="@IntensityLevel.Moderate">Moderate</option>
-                        <option value="@IntensityLevel.Hard">Hard</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-card">
-                <h2>Available Products</h2>
-                
-                <div class="product-section">
-                    <h3>Gels</h3>
-                    @if (gels.Count == 0)
-                    {
-                        <p class="empty-message">No gels added yet</p>
-                    }
-                    else
-                    {
-                        @foreach (var (index, product) in gels.Select((p, i) => (i, p)))
-                        {
-                            <div class="product-item">
-                                <input type="text" @bind="product.Name" placeholder="Product name" class="form-control" />
-                                <input type="number" @bind="product.CarbsG" placeholder="Carbs (g)" class="form-control" min="0" step="0.1" />
-                                <input type="number" @bind="product.SodiumMg" placeholder="Sodium (mg)" class="form-control" min="0" step="1" />
-                                <button @onclick="@(() => RemoveGel(index))" class="btn btn-danger">Remove</button>
-                            </div>
-                        }
-                    }
-                    <button @onclick="AddGel" class="btn btn-secondary">+ Add Gel</button>
-                </div>
-
-                <div class="product-section">
-                    <h3>Drinks</h3>
-                    @if (drinks.Count == 0)
-                    {
-                        <p class="empty-message">No drinks added yet</p>
-                    }
-                    else
-                    {
-                        @foreach (var (index, product) in drinks.Select((p, i) => (i, p)))
-                        {
-                            <div class="product-item">
-                                <input type="text" @bind="product.Name" placeholder="Product name" class="form-control" />
-                                <input type="number" @bind="product.CarbsG" placeholder="Carbs (g)" class="form-control" min="0" step="0.1" />
-                                <input type="number" @bind="product.SodiumMg" placeholder="Sodium (mg)" class="form-control" min="0" step="1" />
-                                <input type="number" @bind="product.VolumeMl" placeholder="Volume (ml)" class="form-control" min="50" step="50" />
-                                <button @onclick="@(() => RemoveDrink(index))" class="btn btn-danger">Remove</button>
-                            </div>
-                        }
-                    }
-                    <button @onclick="AddDrink" class="btn btn-secondary">+ Add Drink</button>
-                </div>
-            </div>
-
-            <button @onclick="CalculatePlan" class="btn btn-primary btn-lg btn-calculate">Calculate Nutrition Plan</button>
+            <AthleteProfileForm @bind-AthleteWeight="athleteWeight" />
+            <RaceDetailsForm @bind-SportType="selectedSport" @bind-Duration="raceDuration" 
+                           @bind-Temperature="temperature" @bind-RaceIntensity="selectedIntensity" />
+            <ProductsEditor @bind-Gels="gels" @bind-Drinks="drinks" />
+            
+            <button @onclick="CalculatePlan" class="btn btn-primary btn-lg btn-calculate">
+                📊 Calculate Nutrition Plan
+            </button>
         </div>
 
-        @if (plan != null)
-        {
-            <div class="results-section">
-                <div class="results-card">
-                    <h2>Nutrition Targets</h2>
-                    <div class="targets-grid">
-                        <div class="target-item">
-                            <div class="target-label">Carbohydrates per Hour</div>
-                            <div class="target-value">@plan.Targets.CarbsGPerHour.ToString("F0")</div>
-                            <div class="target-unit">g/hour</div>
-                        </div>
-                        <div class="target-item">
-                            <div class="target-label">Fluids per Hour</div>
-                            <div class="target-value">@plan.Targets.FluidsMlPerHour.ToString("F0")</div>
-                            <div class="target-unit">ml/hour</div>
-                        </div>
-                        <div class="target-item">
-                            <div class="target-label">Sodium per Hour</div>
-                            <div class="target-value">@plan.Targets.SodiumMgPerHour.ToString("F0")</div>
-                            <div class="target-unit">mg/hour</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="results-card">
-                    <h2>Total Intake Over Race</h2>
-                    <div class="totals-grid">
-                        <div class="total-item">
-                            <div class="total-label">Total Carbs</div>
-                            <div class="total-value">@plan.TotalCarbsG.ToString("F0") g</div>
-                        </div>
-                        <div class="total-item">
-                            <div class="total-label">Total Fluids</div>
-                            <div class="total-value">@plan.TotalFluidsMl.ToString("F0") ml</div>
-                        </div>
-                        <div class="total-item">
-                            <div class="total-label">Total Sodium</div>
-                            <div class="total-value">@plan.TotalSodiumMg.ToString("F0") mg</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="results-card">
-                    <h2>Intake Schedule (20-minute intervals)</h2>
-                    <div class="schedule-table">
-                        <div class="schedule-header">
-                            <div class="col-time">Time</div>
-                            <div class="col-product">Product</div>
-                            <div class="col-amount">Amount</div>
-                        </div>
-                        @foreach (var item in plan.Schedule)
-                        {
-                            <div class="schedule-row">
-                                <div class="col-time">@item.TimeMin min</div>
-                                <div class="col-product">@item.ProductName</div>
-                                <div class="col-amount">@item.AmountPortions.ToString("F1") portion@(item.AmountPortions != 1 ? "s" : "")</div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-        }
+        <PlanResults Plan="plan" />
     </div>
 </div>
 
 @code {
-    private class ProductEditor
-    {
-        public string Name { get; set; } = "";
-        public double CarbsG { get; set; }
-        public double SodiumMg { get; set; }
-        public double VolumeMl { get; set; }
-    }
-
     private double athleteWeight = 75;
     private SportType selectedSport = SportType.Triathlon;
     private double raceDuration = 2;
     private double temperature = 20;
     private IntensityLevel selectedIntensity = IntensityLevel.Moderate;
     
-    private List<ProductEditor> gels = new();
-    private List<ProductEditor> drinks = new();
+    private List<ProductsEditor.ProductEditor> gels = new();
+    private List<ProductsEditor.ProductEditor> drinks = new();
     private RaceNutritionPlan? plan;
 
     protected override void OnInitialized()
     {
         // Initialize with default products
-        gels.Add(new ProductEditor { Name = "Maurten Gel 100", CarbsG = 25, SodiumMg = 100 });
-        gels.Add(new ProductEditor { Name = "Gu Energy Gel", CarbsG = 22, SodiumMg = 50 });
+        gels.Add(new ProductsEditor.ProductEditor { Name = "Maurten Gel 100", CarbsG = 25, SodiumMg = 100 });
+        gels.Add(new ProductsEditor.ProductEditor { Name = "Gu Energy Gel", CarbsG = 22, SodiumMg = 50 });
         
-        drinks.Add(new ProductEditor { Name = "Maurten Drink 500ml", CarbsG = 30, SodiumMg = 300, VolumeMl = 500 });
-        drinks.Add(new ProductEditor { Name = "Isotonic Drink 500ml", CarbsG = 25, SodiumMg = 200, VolumeMl = 500 });
-    }
-
-    private void AddGel()
-    {
-        gels.Add(new ProductEditor());
-    }
-
-    private void RemoveGel(int index)
-    {
-        gels.RemoveAt(index);
-    }
-
-    private void AddDrink()
-    {
-        drinks.Add(new ProductEditor { VolumeMl = 500 });
-    }
-
-    private void RemoveDrink(int index)
-    {
-        drinks.RemoveAt(index);
+        drinks.Add(new ProductsEditor.ProductEditor { Name = "Maurten Drink 500ml", CarbsG = 30, SodiumMg = 300, VolumeMl = 500 });
+        drinks.Add(new ProductsEditor.ProductEditor { Name = "Isotonic Drink 500ml", CarbsG = 25, SodiumMg = 200, VolumeMl = 500 });
     }
 
     private void CalculatePlan()
