@@ -1,0 +1,57 @@
+[
+  {
+    "id": "sis-go-isotonic-gel-60",
+    "brand": "SiS",
+    "name": "SiS GO Isotonic Energy Gel",
+    "productType": "gel",
+    "carbsG": 22,
+    "sodiumMg": 10,
+    "caloriesKcal": 87,
+    "volumeMl": 60,
+    "imageUrl": "/images/products/sis-go-isotonic-gel-60.png"
+  },
+  {
+    "id": "sis-go-energy-caffeine-gel-60",
+    "brand": "SiS",
+    "name": "SiS GO Energy + Caffeine Gel",
+    "productType": "gel",
+    "carbsG": 22,
+    "sodiumMg": 10,
+    "caloriesKcal": 87,
+    "volumeMl": 60,
+    "imageUrl": "/images/products/sis-go-energy-caffeine-gel-60.png"
+  },
+  {
+    "id": "sis-beta-fuel-gel-60",
+    "brand": "SiS",
+    "name": "SiS Beta Fuel Gel",
+    "productType": "gel",
+    "carbsG": 40,
+    "sodiumMg": 200,
+    "caloriesKcal": 158,
+    "volumeMl": 60,
+    "imageUrl": "/images/products/sis-beta-fuel-gel-60.png"
+  },
+  {
+    "id": "sis-go-electrolyte-drink-500",
+    "brand": "SiS",
+    "name": "SiS GO Electrolyte Drink (500 ml)",
+    "productType": "drink",
+    "carbsG": 36,
+    "sodiumMg": 300,
+    "caloriesKcal": 144,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-go-electrolyte-drink-500.png"
+  },
+  {
+    "id": "sis-go-hydro-tablet-500",
+    "brand": "SiS",
+    "name": "SiS GO Hydro Tablet (500 ml)",
+    "productType": "drink",
+    "carbsG": 0,
+    "sodiumMg": 350,
+    "caloriesKcal": 15,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-go-hydro-tablet-500.png"
+  }
+]
