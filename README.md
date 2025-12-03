@@ -47,7 +47,7 @@ RaceDayNutritionPlanner/
 
 ## Building the Project
 
-```bash
+```shell
 # Restore dependencies
 dotnet restore
 
@@ -61,7 +61,7 @@ dotnet build
 
 The web application provides an interactive UI for creating nutrition plans:
 
-```bash
+```shell
 # Run the web application
 dotnet run --project src/RaceDay.Web/RaceDay.Web.csproj
 ```
@@ -79,7 +79,7 @@ Then navigate to `https://localhost:5001` (or the URL shown in the console) to a
 
 For programmatic use or integration into scripts:
 
-```bash
+```shell
 # Run the CLI application
 dotnet run --project src/RaceDay.CLI/RaceDay.CLI.csproj
 ```
