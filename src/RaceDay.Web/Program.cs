@@ -9,6 +9,7 @@ builder.Services.AddRazorComponents()
 
 // Register application services
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<INutritionPlanService, NutritionPlanService>();
 
 var app = builder.Build();
 
