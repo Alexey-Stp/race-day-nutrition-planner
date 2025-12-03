@@ -1123,3 +1123,356 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Product Selector Component */
+.product-selector {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.product-selector h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+.filter-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.filter-group select,
+.filter-group input {
+    padding: 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.product-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 10px;
+    padding: 18px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary);
+}
+
+.product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.product-header h4 {
+    margin: 0;
+    color: #333;
+    font-size: 1.1rem;
+    flex: 1;
+}
+
+.brand-badge {
+    background: var(--primary);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-left: 8px;
+}
+
+.product-type {
+    display: inline-block;
+    background: #f0f0f0;
+    color: #666;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-bottom: 12px;
+}
+
+.product-info {
+    flex: 1;
+    margin-bottom: 14px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.info-row .label {
+    font-weight: 600;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.info-row .value {
+    color: #333;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.add-btn {
+    background: var(--success);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.add-btn:hover {
+    background: #218838;
+    transform: scale(1.02);
+}
+
+.add-btn:active {
+    transform: scale(0.98);
+}
+
+.loading,
+.no-products {
+    text-align: center;
+    padding: 24px;
+    color: #666;
+    font-size: 1rem;
+}
+
+/* Product Schedule Section */
+.product-schedule-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.product-schedule-section h2 {
+    color: #333;
+    margin-bottom: 12px;
+    font-size: 1.5rem;
+}
+
+.schedule-info {
+    background: #f0f8ff;
+    color: #004085;
+    padding: 12px 16px;
+    border-left: 4px solid var(--primary);
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.schedule-table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 24px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.schedule-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.schedule-table th {
+    padding: 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.schedule-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.schedule-table tbody tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.schedule-table tbody tr:hover {
+    background: #f0f0f0;
+}
+
+.schedule-table tfoot tr {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.schedule-table tfoot td {
+    border-top: 2px solid #ddd;
+    border-bottom: 2px solid #ddd;
+}
+
+.time-col {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.product-col {
+    font-weight: 500;
+}
+
+.brand-col {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.type-col {
+    text-transform: capitalize;
+    font-size: 0.85rem;
+}
+
+.number-col {
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+}
+
+.total-label {
+    text-align: right;
+    font-weight: 700;
+    color: #333;
+}
+
+.total {
+    background: linear-gradient(135deg, #fff9e6 0%, #ffe6cc 100%);
+    color: #cc6600;
+    font-weight: 700;
+}
+
+.product-browser-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-browser-section h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .schedule-table {
+        font-size: 0.9rem;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    .filter-section {
+        grid-template-columns: 1fr;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .product-selector {
+        padding: 16px;
+    }
+
+    .schedule-table-wrapper {
+        font-size: 0.8rem;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 8px;
+    }
+
+    .schedule-info {
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-card {
+        padding: 12px;
+    }
+
+    .schedule-table {
+        font-size: 0.75rem;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        padding: 6px;
+    }
+
+    .number-col {
+        font-size: 0.75rem;
+    }
+}
