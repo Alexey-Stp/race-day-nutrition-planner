@@ -1,35 +1,80 @@
 ﻿namespace RaceDay.Core;
 
+/// <summary>
+/// Calculates nutrition targets based on athlete and race profiles
+/// </summary>
 public static class NutritionCalculator
 {
+    /// <summary>
+    /// Calculates carbohydrate, fluid, and sodium targets for the given race and athlete
+    /// </summary>
+    /// <param name="race">Race profile including sport type, duration, temperature, and intensity</param>
+    /// <param name="athlete">Athlete profile including weight</param>
+    /// <returns>Nutrition targets with hourly recommendations</returns>
     public static NutritionTargets CalculateTargets(RaceProfile race, AthleteProfile athlete)
+    {
+        double carbs = CalculateCarbohydrates(race);
+        double fluids = CalculateFluids(race, athlete);
+        double sodium = CalculateSodium(race, athlete);
+
+        return new NutritionTargets(carbs, fluids, sodium);
+    }
+
+    private static double CalculateCarbohydrates(RaceProfile race)
     {
         double carbs = race.Intensity switch
         {
-            IntensityLevel.Easy => 50,
-            IntensityLevel.Moderate => 70,
-            IntensityLevel.Hard => 90,
-            _ => 60
+            IntensityLevel.Easy => NutritionConstants.Carbohydrates.EasyIntensity,
+            IntensityLevel.Moderate => NutritionConstants.Carbohydrates.ModerateIntensity,
+            IntensityLevel.Hard => NutritionConstants.Carbohydrates.HardIntensity,
+            _ => NutritionConstants.Carbohydrates.ModerateIntensity
         };
 
-        if (race.DurationHours > 5 && race.Intensity != IntensityLevel.Easy)
-            carbs += 10;
+        // Add bonus carbs for long races (non-easy intensity)
+        if (race.DurationHours > NutritionConstants.Carbohydrates.LongRaceDurationThreshold 
+            && race.Intensity != IntensityLevel.Easy)
+        {
+            carbs += NutritionConstants.Carbohydrates.LongRaceBonus;
+        }
 
-        double fluids = 500;
-        if (race.TemperatureC >= 25) fluids += 200;
-        if (race.TemperatureC <= 5) fluids -= 100;
+        return carbs;
+    }
 
-        if (athlete.WeightKg > 80) fluids += 50;
-        if (athlete.WeightKg < 60) fluids -= 50;
+    private static double CalculateFluids(RaceProfile race, AthleteProfile athlete)
+    {
+        double fluids = NutritionConstants.Fluids.BaseIntake;
 
-        fluids = Math.Clamp(fluids, 300, 900);
+        // Temperature adjustments
+        if (race.TemperatureC >= NutritionConstants.Temperature.HotThreshold)
+            fluids += NutritionConstants.Fluids.HotWeatherBonus;
+        
+        if (race.TemperatureC <= NutritionConstants.Temperature.ColdThreshold)
+            fluids -= NutritionConstants.Fluids.ColdWeatherPenalty;
 
-        double sodium = 400;
-        if (race.TemperatureC >= 25) sodium += 200;
-        if (athlete.WeightKg > 80) sodium += 100;
+        // Weight adjustments
+        if (athlete.WeightKg > NutritionConstants.Weight.HeavyAthleteThreshold)
+            fluids += NutritionConstants.Fluids.HeavyAthleteBonus;
+        
+        if (athlete.WeightKg < NutritionConstants.Weight.LightAthleteThreshold)
+            fluids -= NutritionConstants.Fluids.LightAthletePenalty;
 
-        sodium = Math.Clamp(sodium, 300, 1000);
+        // Clamp to safe ranges
+        return Math.Clamp(fluids, NutritionConstants.Fluids.MinIntake, NutritionConstants.Fluids.MaxIntake);
+    }
 
-        return new NutritionTargets(carbs, fluids, sodium);
+    private static double CalculateSodium(RaceProfile race, AthleteProfile athlete)
+    {
+        double sodium = NutritionConstants.Sodium.BaseIntake;
+
+        // Temperature adjustment
+        if (race.TemperatureC >= NutritionConstants.Temperature.HotThreshold)
+            sodium += NutritionConstants.Sodium.HotWeatherBonus;
+
+        // Weight adjustment
+        if (athlete.WeightKg > NutritionConstants.Weight.HeavyAthleteThreshold)
+            sodium += NutritionConstants.Sodium.HeavyAthleteBonus;
+
+        // Clamp to safe ranges
+        return Math.Clamp(sodium, NutritionConstants.Sodium.MinIntake, NutritionConstants.Sodium.MaxIntake);
     }
 }

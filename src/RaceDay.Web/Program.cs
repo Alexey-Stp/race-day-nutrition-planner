@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Register application services
+builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -25,33 +28,61 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 
 // API Endpoints
-app.MapGet("/api/products", async () =>
+app.MapGet("/api/products", async (IProductRepository repository) =>
 {
-    var products = await ProductRepository.GetAllProductsAsync();
-    return Results.Ok(products);
+    try
+    {
+        var products = await repository.GetAllProductsAsync();
+        return Results.Ok(products);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error loading products: {ex.Message}");
+    }
 });
 
-app.MapGet("/api/products/{id}", async (string id) =>
+app.MapGet("/api/products/{id}", async (string id, IProductRepository repository) =>
 {
-    var product = await ProductRepository.GetProductByIdAsync(id);
-    if (product == null)
-        return Results.NotFound();
-    return Results.Ok(product);
+    try
+    {
+        var product = await repository.GetProductByIdAsync(id);
+        if (product == null)
+            return Results.NotFound();
+        return Results.Ok(product);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error loading product: {ex.Message}");
+    }
 });
 
-app.MapGet("/api/products/type/{type}", async (string type) =>
+app.MapGet("/api/products/type/{type}", async (string type, IProductRepository repository) =>
 {
-    var products = await ProductRepository.GetProductsByTypeAsync(type);
-    return Results.Ok(products);
+    try
+    {
+        var products = await repository.GetProductsByTypeAsync(type);
+        return Results.Ok(products);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error loading products: {ex.Message}");
+    }
 });
 
-app.MapGet("/api/products/search", async (string query) =>
+app.MapGet("/api/products/search", async (string query, IProductRepository repository) =>
 {
     if (string.IsNullOrWhiteSpace(query))
         return Results.BadRequest("Search query is required");
     
-    var products = await ProductRepository.SearchProductsAsync(query);
-    return Results.Ok(products);
+    try
+    {
+        var products = await repository.SearchProductsAsync(query);
+        return Results.Ok(products);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error searching products: {ex.Message}");
+    }
 });
 
 app.MapRazorComponents<App>()
