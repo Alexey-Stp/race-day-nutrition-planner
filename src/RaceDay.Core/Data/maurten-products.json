@@ -1,0 +1,79 @@
+[
+  {
+    "id": "maurten-gel-100",
+    "brand": "Maurten",
+    "name": "Maurten GEL 100",
+    "productType": "gel",
+    "carbsG": 25,
+    "sodiumMg": 85,
+    "caloriesKcal": 100,
+    "volumeMl": 40,
+    "imageUrl": "/images/products/maurten-gel-100.png"
+  },
+  {
+    "id": "maurten-gel-100-caf-100",
+    "brand": "Maurten",
+    "name": "Maurten GEL 100 CAF 100",
+    "productType": "gel",
+    "carbsG": 25,
+    "sodiumMg": 85,
+    "caloriesKcal": 100,
+    "volumeMl": 40,
+    "imageUrl": "/images/products/maurten-gel-100-caf-100.png"
+  },
+  {
+    "id": "maurten-gel-160",
+    "brand": "Maurten",
+    "name": "Maurten GEL 160",
+    "productType": "gel",
+    "carbsG": 40,
+    "sodiumMg": 120,
+    "caloriesKcal": 160,
+    "volumeMl": 65,
+    "imageUrl": "/images/products/maurten-gel-160.png"
+  },
+  {
+    "id": "maurten-drinkmix-160-500",
+    "brand": "Maurten",
+    "name": "Maurten Drink Mix 160 (500 ml)",
+    "productType": "drink",
+    "carbsG": 40,
+    "sodiumMg": 400,
+    "caloriesKcal": 160,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/maurten-drinkmix-160.png"
+  },
+  {
+    "id": "maurten-drinkmix-320-500",
+    "brand": "Maurten",
+    "name": "Maurten Drink Mix 320 (500 ml)",
+    "productType": "drink",
+    "carbsG": 80,
+    "sodiumMg": 500,
+    "caloriesKcal": 320,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/maurten-drinkmix-320.png"
+  },
+  {
+    "id": "maurten-solids-160-bar",
+    "brand": "Maurten",
+    "name": "Maurten Solid 160 Bar",
+    "productType": "bar",
+    "carbsG": 32,
+    "sodiumMg": 200,
+    "caloriesKcal": 160,
+    "volumeMl": 0,
+    "imageUrl": "/images/products/maurten-solid-160.png"
+  },
+  {
+    "id": "maurten-solids-225-bar",
+    "brand": "Maurten",
+    "name": "Maurten Solid 225 Bar",
+    "productType": "bar",
+    "carbsG": 44,
+    "sodiumMg": 300,
+    "caloriesKcal": 225,
+    "volumeMl": 0,
+    "imageUrl": "/images/products/maurten-solid-225.png"
+  }
+]

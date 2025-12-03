@@ -18,7 +18,7 @@ public class ProductRepository
             if (_products != null)
                 return _products;
 
-            _products = LoadProductsFromJson();
+            _products = LoadProductsFromJsonFiles();
         }
 
         return await Task.FromResult(_products);
@@ -49,26 +49,39 @@ public class ProductRepository
             .ToList();
     }
 
-    private static List<ProductInfo> LoadProductsFromJson()
+    private static List<ProductInfo> LoadProductsFromJsonFiles()
     {
         try
         {
             var assembly = typeof(ProductRepository).Assembly;
-            var resourceName = "RaceDay.Core.Data.products.json";
+            var products = new List<ProductInfo>();
             
-            using (var stream = assembly.GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                    return new List<ProductInfo>();
+            // Get all embedded resource names that match the pattern
+            var resourceNames = assembly.GetManifestResourceNames()
+                .Where(name => name.StartsWith("RaceDay.Core.Data.") && name.EndsWith("-products.json"))
+                .OrderBy(name => name)
+                .ToList();
 
-                using (var reader = new StreamReader(stream))
+            foreach (var resourceName in resourceNames)
+            {
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
                 {
-                    var json = reader.ReadToEnd();
-                    var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    var products = JsonSerializer.Deserialize<List<ProductInfo>>(json, options);
-                    return products ?? new List<ProductInfo>();
+                    if (stream == null)
+                        continue;
+
+                    using (var reader = new StreamReader(stream))
+                    {
+                        var json = reader.ReadToEnd();
+                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        var brandProducts = JsonSerializer.Deserialize<List<ProductInfo>>(json, options);
+                        
+                        if (brandProducts != null)
+                            products.AddRange(brandProducts);
+                    }
                 }
             }
+
+            return products;
         }
         catch
         {

@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Data\products.json" />
+    <EmbeddedResource Include="Data\maurten-products.json" />
   </ItemGroup>
 
 </Project>
