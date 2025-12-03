@@ -1,6 +1,6 @@
 # Race Day Nutrition Planner
 
-A modern .NET application suite that generates personalized nutrition plans for endurance athletes during races and training sessions. Available as both a web application (Blazor) and CLI tool.
+A modern .NET application suite that generates personalized nutrition plans for endurance athletes during races and training sessions. Available as both a web application (Blazor) with an interactive UI, a REST API, and a console application for programmatic use.
 
 ## Overview
 
@@ -13,6 +13,7 @@ The application generates a time-based schedule showing when and how much of eac
 
 ## Features
 
+- **Interactive Web UI**: User-friendly Blazor web interface for creating nutrition plans
 - **Personalized Calculations**: Adjusts nutrition targets based on athlete weight, race intensity, duration, and temperature
 - **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars)
 - **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan
@@ -20,6 +21,7 @@ The application generates a time-based schedule showing when and how much of eac
   - Increases carb intake for harder efforts and longer durations (5+ hours)
   - Adjusts fluid needs based on temperature and athlete weight
   - Optimizes sodium intake for hot conditions and heavier athletes
+- **Programmatic API**: Core library can be integrated into other applications
 
 ## Architecture
 
@@ -42,9 +44,12 @@ RaceDayNutritionPlanner/
 │   │   └── Data/                  # Embedded product catalogs (JSON)
 │   ├── RaceDay.CLI/               # Console application
 │   │   └── Program.cs             # CLI entry point
-│   └── RaceDay.Web/               # Blazor Server web application
-│       ├── Program.cs             # Web API and startup
-│       └── Components/            # Blazor components
+│   ├── RaceDay.Web/               # Blazor Server web application
+│   │   ├── Program.cs             # Web API and startup
+│   │   ├── Components/            # Blazor components
+│   │   └── wwwroot/               # Static web assets
+│   └── RaceDay.API/               # REST API
+│       └── Program.cs             # API entry point
 ├── tests/
 │   └── RaceDay.Core.Tests/        # Unit tests for core logic
 └── RaceDayNutritionPlanner.sln
@@ -97,16 +102,61 @@ dotnet build
 
 # Run tests
 dotnet test
-
-# Run the CLI application
-dotnet run --project src/RaceDay.CLI/RaceDay.CLI.csproj
-
-# Run the web application
-dotnet run --project src/RaceDay.Web/RaceDay.Web.csproj
-# Then navigate to https://localhost:5001
 ```
 
-## Usage Example
+## Running the Application
+
+### Web Application (Recommended)
+
+The web application provides an interactive UI for creating nutrition plans:
+
+```shell
+# Run the web application
+dotnet run --project src/RaceDay.Web/RaceDay.Web.csproj
+```
+
+Then navigate to `https://localhost:5001` (or the URL shown in the console) to access the web interface.
+
+#### Web Features:
+- Interactive form for athlete profile (body weight)
+- Race configuration (sport type, duration, temperature, intensity)
+- Dynamic product management (add/remove gels and drinks)
+- Real-time nutrition plan calculation
+- Visual display of targets and intake schedule
+
+### CLI Application
+
+For programmatic use or integration into scripts:
+
+```shell
+# Run the CLI application
+dotnet run --project src/RaceDay.CLI/RaceDay.CLI.csproj
+```
+
+## Usage
+
+### Web Application Usage
+
+1. Open the web application in your browser
+2. Enter your **Athlete Profile**:
+   - Body weight in kilograms
+3. Configure **Race Details**:
+   - Sport type (Running, Cycling, or Triathlon)
+   - Duration in hours
+   - Temperature in Celsius
+   - Intensity level (Easy, Moderate, or Hard)
+4. Manage **Available Products**:
+   - Add or remove gels and drinks
+   - Configure carbohydrates, sodium, and volume for each product
+5. Click **Calculate Nutrition Plan** to generate your personalized plan
+6. Review the results:
+   - Hourly nutrition targets
+   - Total intake over the race
+   - Detailed 20-minute interval schedule
+
+### Programmatic Usage Example
+
+For integrating the core library into your own applications:
 
 ```csharp
 using RaceDay.Core;

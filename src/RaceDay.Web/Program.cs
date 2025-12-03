@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Services.AddHttpClient();
+
 // Register application services
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<INutritionPlanService, NutritionPlanService>();
@@ -22,7 +24,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 
 app.UseAntiforgery();
 

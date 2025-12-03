@@ -1,0 +1,153 @@
+@using RaceDay.Core
+@inject HttpClient Http
+@rendermode InteractiveServer
+
+<div class="product-selector">
+    <h3>Select Products for Your Race</h3>
+    
+    <div class="filter-section">
+        <div class="filter-group">
+            <label>Product Type:</label>
+            <select @bind="selectedType" @bind:after="FilterProducts">
+                <option value="">All Types</option>
+                <option value="gel">Gels</option>
+                <option value="drink">Drinks</option>
+                <option value="bar">Bars</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Brand:</label>
+            <select @bind="selectedBrand" @bind:after="FilterProducts">
+                <option value="">All Brands</option>
+                <option value="SiS">SiS</option>
+                <option value="Maurten">Maurten</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>Search:</label>
+            <input type="text" 
+                   placeholder="Search products..." 
+                   @bind="searchQuery" 
+                   @bind:after="FilterProducts" />
+        </div>
+    </div>
+
+    @if (products == null)
+    {
+        <p class="loading">Loading products...</p>
+    }
+    else if (products.Count == 0)
+    {
+        <p class="no-products">No products found</p>
+    }
+    else
+    {
+        <div class="products-grid">
+            @foreach (var product in products)
+            {
+                <div class="product-card">
+                    <div class="product-header">
+                        <h4>@product.Name</h4>
+                        <span class="brand-badge">@product.Brand</span>
+                    </div>
+                    <div class="product-type">@product.ProductType</div>
+                    <div class="product-info">
+                        <div class="info-row">
+                            <span class="label">Calories:</span>
+                            <span class="value">@product.CaloriesKcal kcal</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Carbs:</span>
+                            <span class="value">@product.CarbsG g</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Sodium:</span>
+                            <span class="value">@product.SodiumMg mg</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Volume:</span>
+                            <span class="value">@product.VolumeMl ml</span>
+                        </div>
+                    </div>
+                    <button class="add-btn" @onclick="() => OnProductSelected(product)">
+                        Add to Plan
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ProductInfo>? products;
+    private string selectedType = "";
+    private string selectedBrand = "";
+    private string searchQuery = "";
+
+    [Parameter]
+    public EventCallback<ProductInfo> OnProductAdded { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        try
+        {
+            products = await Http.GetFromJsonAsync<List<ProductInfo>>("/api/products") ?? new List<ProductInfo>();
+            await FilterProducts();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading products: {ex.Message}");
+            products = new List<ProductInfo>();
+        }
+    }
+
+    private async Task FilterProducts()
+    {
+        try
+        {
+            var url = "/api/products";
+            var queryParams = new List<string>();
+
+            if (!string.IsNullOrEmpty(selectedType))
+            {
+                queryParams.Add($"type={selectedType}");
+            }
+
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                queryParams.Add($"search={Uri.EscapeDataString(searchQuery)}");
+            }
+
+            if (queryParams.Count > 0)
+            {
+                url += "?" + string.Join("&", queryParams);
+            }
+
+            var allProducts = await Http.GetFromJsonAsync<List<ProductInfo>>(url) ?? new List<ProductInfo>();
+
+            // Filter by brand if selected
+            if (!string.IsNullOrEmpty(selectedBrand))
+            {
+                allProducts = allProducts.Where(p => p.Brand == selectedBrand).ToList();
+            }
+
+            products = allProducts;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error filtering products: {ex.Message}");
+        }
+    }
+
+    private async Task OnProductSelected(ProductInfo product)
+    {
+        await OnProductAdded.InvokeAsync(product);
+    }
+}
