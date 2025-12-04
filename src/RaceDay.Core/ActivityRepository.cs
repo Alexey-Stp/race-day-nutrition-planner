@@ -30,7 +30,7 @@ public class ActivityRepository
     {
         try
         {
-            var assembly = Assembly.GetExecutingAssembly();
+            var assembly = typeof(ActivityRepository).Assembly;
             var resourceName = "RaceDay.Core.Data.activities.json";
 
             using var stream = assembly.GetManifestResourceStream(resourceName);
