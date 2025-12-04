@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/RaceDay.API/Dockerfile
+    container_name: raceday-api
+    ports:
+      - "5208:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_RUNNING_IN_CONTAINER=true
+    networks:
+      - raceday-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/api/products || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: src/RaceDay.Web.React
+      dockerfile: Dockerfile
+    container_name: raceday-web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    networks:
+      - raceday-network
+    environment:
+      - NODE_ENV=production
+
+networks:
+  raceday-network:
+    driver: bridge

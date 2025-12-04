@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.vs
+*.swp
+*.swo
+*~
+
+# Build artifacts
+**/bin/
+**/obj/
+**/dist/
+**/build/
+**/out/
+
+# Node
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+**/coverage/
+**/.nyc_output/
+**/TestResults/
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
