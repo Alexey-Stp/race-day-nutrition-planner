@@ -8,8 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Data\products.json" />
+    <EmbeddedResource Include="Data\sis-products.json" />
     <EmbeddedResource Include="Data\maurten-products.json" />
+    <EmbeddedResource Include="Data\activities.json" />
   </ItemGroup>
 
 </Project>
