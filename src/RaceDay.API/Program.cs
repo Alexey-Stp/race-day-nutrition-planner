@@ -95,4 +95,70 @@ app.MapGet("/api/products/search", async (string query, IProductRepository repos
 })
 .WithName("SearchProducts");
 
+// API Endpoints for Activities
+app.MapGet("/api/activities", async () =>
+{
+    try
+    {
+        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        return Results.Ok(activities);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error loading activities: {ex.Message}");
+    }
+})
+.WithName("GetAllActivities");
+
+app.MapGet("/api/activities/{id}", async (string id) =>
+{
+    try
+    {
+        var activity = await ActivityRepository.GetActivityByIdAsync(id);
+        if (activity == null)
+            return Results.NotFound();
+        return Results.Ok(activity);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error loading activity: {ex.Message}");
+    }
+})
+.WithName("GetActivityById");
+
+app.MapGet("/api/activities/type/{sportType}", async (string sportType) =>
+{
+    try
+    {
+        // Parse the sport type
+        if (!Enum.TryParse<SportType>(sportType, ignoreCase: true, out var parsedSportType))
+            return Results.BadRequest($"Invalid sport type. Valid values: Run, Bike, Triathlon");
+
+        var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(parsedSportType);
+        return Results.Ok(activities);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error loading activities: {ex.Message}");
+    }
+})
+.WithName("GetActivitiesByType");
+
+app.MapGet("/api/activities/search", async (string query) =>
+{
+    if (string.IsNullOrWhiteSpace(query))
+        return Results.BadRequest("Search query is required");
+    
+    try
+    {
+        var activities = await ActivityRepository.SearchActivitiesAsync(query);
+        return Results.Ok(activities);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem($"Error searching activities: {ex.Message}");
+    }
+})
+.WithName("SearchActivities");
+
 app.Run();
