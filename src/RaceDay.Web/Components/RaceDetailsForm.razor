@@ -1,18 +1,34 @@
 @using RaceDay.Core
+@inject HttpClient Http
 
 <div class="form-card">
     <h2>🏁 Race Details</h2>
     
     <div class="form-group">
         <div class="label-with-tooltip">
-            <label for="sport">Sport Type</label>
-            <span class="tooltip-icon" title="Select the primary sport type for your race">ℹ️</span>
+            <label for="activity">Select Activity</label>
+            <span class="tooltip-icon" title="Choose a predefined activity or customize your own">ℹ️</span>
         </div>
-        <select id="sport" @bind="SportType" class="form-control">
-            <option value="@Core.SportType.Run">🏃 Running</option>
-            <option value="@Core.SportType.Bike">🚴 Cycling</option>
-            <option value="@Core.SportType.Triathlon">🏊 Triathlon</option>
-        </select>
+        @if (activities == null)
+        {
+            <p class="loading">Loading activities...</p>
+        }
+        else
+        {
+            <select id="activity" @onchange="OnActivityChanged" class="form-control">
+                <option value="">-- Choose an activity --</option>
+                @foreach (var activity in activities)
+                {
+                    <option value="@activity.Id">@GetActivityEmoji(activity.SportType) @activity.Name</option>
+                }
+            </select>
+            
+            @if (selectedActivity != null)
+            {
+                <small class="form-text">@selectedActivity.Description</small>
+                <small class="form-text"><strong>Best time:</strong> @selectedActivity.BestTimeFormatted</small>
+            }
+        }
     </div>
 
     <div class="form-group">
@@ -25,12 +41,16 @@
         </div>
         <div class="slider-group">
             <input type="range" id="duration" @bind="Duration" @bind:after="OnDurationChanged" 
-                   class="form-slider" min="0.5" max="24" step="0.25" />
+                   class="form-slider" min="@minDuration" max="@maxDuration" step="0.25" />
             <div class="slider-labels">
-                <span>0.5h</span>
-                <span>24h</span>
+                <span>@FormatDuration(minDuration)</span>
+                <span>@FormatDuration(maxDuration)</span>
             </div>
         </div>
+        @if (durationValidationError != null)
+        {
+            <small class="form-text validation-error">⚠️ @durationValidationError</small>
+        }
     </div>
 
     <div class="form-group">
@@ -84,6 +104,67 @@
     [Parameter]
     public EventCallback<IntensityLevel> RaceIntensityChanged { get; set; }
 
+    private List<ActivityInfo>? activities;
+    private ActivityInfo? selectedActivity;
+    private double minDuration = 0.5;
+    private double maxDuration = 24;
+    private string? durationValidationError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadActivities();
+    }
+
+    private async Task LoadActivities()
+    {
+        try
+        {
+            activities = await Http.GetFromJsonAsync<List<ActivityInfo>>("http://localhost:5294/api/activities");
+            
+            // Set default activity to Triathlon (closest match to original default)
+            var defaultActivity = activities?.FirstOrDefault(a => a.Name.Contains("Olympic"));
+            if (defaultActivity != null)
+            {
+                selectedActivity = defaultActivity;
+                SportType = defaultActivity.SportType;
+                minDuration = defaultActivity.MinDurationHours;
+                maxDuration = defaultActivity.MaxDurationHours;
+                Duration = defaultActivity.BestTimeHours;
+                await SportTypeChanged.InvokeAsync(SportType);
+                await DurationChanged.InvokeAsync(Duration);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading activities: {ex.Message}");
+            activities = new List<ActivityInfo>();
+        }
+    }
+
+    private async Task OnActivityChanged(ChangeEventArgs e)
+    {
+        var activityId = e.Value?.ToString();
+        if (string.IsNullOrEmpty(activityId))
+        {
+            selectedActivity = null;
+            durationValidationError = null;
+            return;
+        }
+
+        selectedActivity = activities?.FirstOrDefault(a => a.Id == activityId);
+        if (selectedActivity != null)
+        {
+            minDuration = selectedActivity.MinDurationHours;
+            maxDuration = selectedActivity.MaxDurationHours;
+            Duration = selectedActivity.BestTimeHours;
+            SportType = selectedActivity.SportType;
+            durationValidationError = null;
+
+            await SportTypeChanged.InvokeAsync(SportType);
+            await DurationChanged.InvokeAsync(Duration);
+        }
+    }
+
     private string FormatDuration(double hours)
     {
         var wholeHours = (int)hours;
@@ -105,6 +186,31 @@
 
     private async Task OnDurationChanged()
     {
+        // Validate duration is within activity limits if activity is selected
+        if (selectedActivity != null)
+        {
+            if (Duration < selectedActivity.MinDurationHours)
+            {
+                durationValidationError = $"Duration must be at least {FormatDuration(selectedActivity.MinDurationHours)}";
+            }
+            else if (Duration > selectedActivity.MaxDurationHours)
+            {
+                durationValidationError = $"Duration must not exceed {FormatDuration(selectedActivity.MaxDurationHours)}";
+            }
+            else
+            {
+                durationValidationError = null;
+            }
+        }
+
         await DurationChanged.InvokeAsync(Duration);
     }
+
+    private string GetActivityEmoji(Core.SportType sportType) => sportType switch
+    {
+        Core.SportType.Run => "🏃",
+        Core.SportType.Bike => "🚴",
+        Core.SportType.Triathlon => "🏊",
+        _ => "🏁"
+    };
 }

@@ -1113,7 +1113,6 @@ h1:focus {
 .schedule-table::-webkit-scrollbar-thumb:hover {
     background: #0056b3;
 }
-}
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
     color: var(--bs-secondary-color);
@@ -1609,4 +1608,19 @@ h1:focus {
         font-size: 0.9rem;
         padding: 10px 12px;
     }
+}
+
+/* Loading and validation states */
+.loading {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 10px 0;
+}
+
+.validation-error {
+    color: #d9534f;
+    display: block;
+    margin-top: 5px;
+    font-weight: 500;
 }
