@@ -23,31 +23,7 @@
         "showReuseMessage": true,
         "clear": false
       },
-      "isBackground": true,
-      "runOptions": {
-        "runOn": "folderOpen"
-      }
-    },
-    {
-      "label": "Open Swagger UI",
-      "type": "shell",
-      "command": "start",
-      "args": [
-        "http://localhost:5208/swagger/ui"
-      ],
-      "windows": {
-        "command": "start"
-      },
-      "osx": {
-        "command": "open"
-      },
-      "linux": {
-        "command": "xdg-open"
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
+      "isBackground": true
     },
     {
       "label": "Start Web UI",
@@ -74,27 +50,6 @@
       "isBackground": true
     },
     {
-      "label": "Open Web UI",
-      "type": "shell",
-      "command": "start",
-      "args": [
-        "http://localhost:5001"
-      ],
-      "windows": {
-        "command": "start"
-      },
-      "osx": {
-        "command": "open"
-      },
-      "linux": {
-        "command": "xdg-open"
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
-    },
-    {
       "label": "Start API & Web (Parallel)",
       "dependsOn": [
         "Start API (Swagger)",
@@ -105,24 +60,6 @@
         "kind": "build",
         "isDefault": true
       },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
-    },
-    {
-      "label": "Start API & Web + Open Browsers",
-      "dependsOn": [
-        "Start API (Swagger)",
-        "Start Web UI",
-        "Open Swagger UI",
-        "Open Web UI"
-      ],
-      "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
