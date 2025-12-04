@@ -30,8 +30,17 @@ EXPOSE 8081
 # Install curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-# Copy published files
-COPY --from=publish /app/publish .
+# Create a non-root user to run the application
+RUN useradd -m -u 1000 -s /bin/bash appuser && \
+    chown -R appuser:appuser /app
+
+# Copy published files with correct ownership
+COPY --chown=appuser:appuser --from=publish /app/publish .
+
+# Remove write permissions to prevent tampering
+RUN chmod -R a-w /app
+
+USER appuser
 
 # Set environment variables for Azure
 ENV ASPNETCORE_URLS=http://+:8080
