@@ -2,31 +2,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start API (Swagger)",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "src/RaceDay.API/RaceDay.API.csproj"
-      ],
-      "problemMatcher": "$msCompile",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "isBackground": true
-    },
-    {
-      "label": "Start Web UI",
+      "label": "Start Web",
       "type": "shell",
       "command": "dotnet",
       "args": [
@@ -52,124 +28,25 @@
     {
       "label": "Open Web Browser",
       "type": "shell",
-      "command": "cmd",
-      "windows": {
-        "command": "cmd",
-        "args": [
-          "/c",
-          "start http://localhost:5001"
-        ]
-      },
-      "osx": {
-        "command": "open",
-        "args": [
-          "http://localhost:5001"
-        ]
-      },
-      "linux": {
-        "command": "xdg-open",
-        "args": [
-          "http://localhost:5001"
-        ]
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Open Swagger Browser",
-      "type": "shell",
-      "command": "cmd",
-      "windows": {
-        "command": "cmd",
-        "args": [
-          "/c",
-          "start http://localhost:5208/swagger/ui"
-        ]
-      },
-      "osx": {
-        "command": "open",
-        "args": [
-          "http://localhost:5208/swagger/ui"
-        ]
-      },
-      "linux": {
-        "command": "xdg-open",
-        "args": [
-          "http://localhost:5208/swagger/ui"
-        ]
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Start API & Web (Parallel)",
-      "dependsOn": [
-        "Start API (Swagger)",
-        "Start Web UI"
-      ],
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
-    },
-    {
-      "label": "Start API & Web with Browsers",
-      "dependsOn": [
-        "Start API (Swagger)",
-        "Start Web UI",
-        "Delay then Open Browsers"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
-    },
-    {
-      "label": "Delay then Open Browsers",
-      "type": "shell",
-      "command": "powershell",
       "windows": {
         "command": "powershell",
         "args": [
           "-Command",
-          "Start-Sleep -Seconds 5; Start-Process 'http://localhost:5001'; Start-Process 'http://localhost:5208/swagger/ui'"
+          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5001'"
         ]
       },
       "osx": {
-        "command": "sleep",
+        "command": "sh",
         "args": [
-          "5",
-          "&&",
-          "open",
-          "http://localhost:5001",
-          "&&",
-          "open",
-          "http://localhost:5208/swagger/ui"
+          "-c",
+          "sleep 3 && open http://localhost:5001"
         ]
       },
       "linux": {
         "command": "sh",
         "args": [
           "-c",
-          "sleep 5 && xdg-open http://localhost:5001 & xdg-open http://localhost:5208/swagger/ui"
+          "sleep 3 && xdg-open http://localhost:5001"
         ]
       },
       "presentation": {
@@ -178,13 +55,12 @@
       "problemMatcher": []
     },
     {
-      "label": "Build",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "build"
+      "label": "Web + Open Browser",
+      "dependsOn": [
+        "Start Web",
+        "Open Web Browser"
       ],
-      "problemMatcher": "$msCompile",
+      "problemMatcher": [],
       "group": {
         "kind": "build",
         "isDefault": false
@@ -199,37 +75,90 @@
       }
     },
     {
-      "label": "Run Tests",
+      "label": "Start Swagger",
       "type": "shell",
       "command": "dotnet",
       "args": [
-        "test"
+        "run",
+        "--project",
+        "src/RaceDay.API/RaceDay.API.csproj"
       ],
       "problemMatcher": "$msCompile",
       "group": {
-        "kind": "test",
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Open Swagger Browser",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5208/swagger/ui'"
+        ]
+      },
+      "osx": {
+        "command": "sh",
+        "args": [
+          "-c",
+          "sleep 3 && open http://localhost:5208/swagger/ui"
+        ]
+      },
+      "linux": {
+        "command": "sh",
+        "args": [
+          "-c",
+          "sleep 3 && xdg-open http://localhost:5208/swagger/ui"
+        ]
+      },
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Swagger + Open Browser",
+      "dependsOn": [
+        "Start Swagger",
+        "Open Swagger Browser"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
+    {
+      "label": "Web + Swagger + Open Browsers",
+      "dependsOn": [
+        "Start Web",
+        "Start Swagger",
+        "Open Web Browser",
+        "Open Swagger Browser"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
         "isDefault": true
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
-    },
-    {
-      "label": "Clean",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "clean"
-      ],
-      "problemMatcher": "$msCompile",
-      "group": {
-        "kind": "build",
-        "isDefault": false
       },
       "presentation": {
         "echo": true,
