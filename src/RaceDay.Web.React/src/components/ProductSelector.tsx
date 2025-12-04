@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { ProductInfo } from '../types';
 import { api } from '../api';
 
@@ -16,15 +16,13 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
   const [showBars, setShowBars] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProducts();
+  const extractBrands = useCallback((products: ProductInfo[]) => {
+    const brands = Array.from(new Set(products.map(p => p.brand)))
+      .sort();
+    setAvailableBrands(brands);
   }, []);
 
-  useEffect(() => {
-    filterProducts();
-  }, [selectedBrand, showGels, showDrinks, showBars, allProducts]);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const data = await api.getProducts();
       setAllProducts(data);
@@ -34,15 +32,9 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
     } finally {
       setLoading(false);
     }
-  };
+  }, [extractBrands]);
 
-  const extractBrands = (products: ProductInfo[]) => {
-    const brands = Array.from(new Set(products.map(p => p.brand)))
-      .sort();
-    setAvailableBrands(brands);
-  };
-
-  const filterProducts = () => {
+  const filterProducts = useCallback(() => {
     let filtered = allProducts;
 
     // Filter by brand
@@ -61,7 +53,15 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
     }
 
     setProducts(filtered);
-  };
+  }, [allProducts, selectedBrand, showGels, showDrinks, showBars]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  useEffect(() => {
+    filterProducts();
+  }, [filterProducts]);
 
   return (
     <div className="product-selector">

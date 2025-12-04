@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { SportType, IntensityLevel, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../nutritionCalculator';
@@ -31,15 +31,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   const [currentDisplayDuration, setCurrentDisplayDuration] = useState(duration);
   const [durationValidationError, setDurationValidationError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadActivities();
-  }, []);
-
-  useEffect(() => {
-    setCurrentDisplayDuration(duration);
-  }, [duration]);
-
-  const loadActivities = async () => {
+  const loadActivities = useCallback(async () => {
     try {
       const data = await api.getActivities();
       setActivities(data);
@@ -59,7 +51,15 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onSportTypeChange, onDurationChange]);
+
+  useEffect(() => {
+    loadActivities();
+  }, [loadActivities]);
+
+  useEffect(() => {
+    setCurrentDisplayDuration(duration);
+  }, [duration]);
 
   const handleActivityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const activityId = e.target.value;
