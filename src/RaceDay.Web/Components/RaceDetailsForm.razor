@@ -37,10 +37,10 @@
             <span class="tooltip-icon" title="Use the slider to set your race duration">ℹ️</span>
         </div>
         <div class="duration-display">
-            <strong>@FormatDuration(Duration)</strong>
+            <strong>@FormatDuration(currentDisplayDuration)</strong>
         </div>
         <div class="slider-group">
-            <input type="range" id="duration" @bind="Duration" @bind:after="OnDurationChanged" 
+            <input type="range" id="duration" @bind="currentDisplayDuration" @oninput="OnDurationInput" @bind:after="OnDurationChanged" 
                    class="form-slider" min="@minDuration" max="@maxDuration" step="0.25" />
             <div class="slider-labels">
                 <span>@FormatDuration(minDuration)</span>
@@ -108,6 +108,7 @@
     private ActivityInfo? selectedActivity;
     private double minDuration = 0.5;
     private double maxDuration = 24;
+    private double currentDisplayDuration = 2;
     private string? durationValidationError;
 
     protected override async Task OnInitializedAsync()
@@ -119,10 +120,17 @@
     {
         try
         {
-            activities = await Http.GetFromJsonAsync<List<ActivityInfo>>("http://localhost:5294/api/activities");
+            activities = await Http.GetFromJsonAsync<List<ActivityInfo>>("/api/activities");
             
-            // Set default activity to Triathlon (closest match to original default)
-            var defaultActivity = activities?.FirstOrDefault(a => a.Name.Contains("Olympic"));
+            if (activities == null || activities.Count == 0)
+            {
+                Console.WriteLine("No activities loaded from API");
+                activities = new List<ActivityInfo>();
+                return;
+            }
+            
+            // Set default activity to Olympic Triathlon
+            var defaultActivity = activities.FirstOrDefault(a => a.Id == "olympic-triathlon");
             if (defaultActivity != null)
             {
                 selectedActivity = defaultActivity;
@@ -130,6 +138,7 @@
                 minDuration = defaultActivity.MinDurationHours;
                 maxDuration = defaultActivity.MaxDurationHours;
                 Duration = defaultActivity.BestTimeHours;
+                currentDisplayDuration = Duration;
                 await SportTypeChanged.InvokeAsync(SportType);
                 await DurationChanged.InvokeAsync(Duration);
             }
@@ -157,6 +166,7 @@
             minDuration = selectedActivity.MinDurationHours;
             maxDuration = selectedActivity.MaxDurationHours;
             Duration = selectedActivity.BestTimeHours;
+            currentDisplayDuration = Duration;
             SportType = selectedActivity.SportType;
             durationValidationError = null;
 
@@ -184,8 +194,20 @@
         }
     }
 
+    private void OnDurationInput(ChangeEventArgs e)
+    {
+        // Real-time update of displayed duration as slider moves
+        if (double.TryParse(e.Value?.ToString(), out var newDuration))
+        {
+            currentDisplayDuration = newDuration;
+        }
+    }
+
     private async Task OnDurationChanged()
     {
+        // Sync the actual Duration value with display
+        Duration = currentDisplayDuration;
+        
         // Validate duration is within activity limits if activity is selected
         if (selectedActivity != null)
         {

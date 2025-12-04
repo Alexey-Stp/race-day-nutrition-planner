@@ -37,14 +37,6 @@
                 </label>
             </div>
         </div>
-        
-        <div class="filter-group">
-            <label>Search:</label>
-            <input type="text" 
-                   placeholder="Search products..." 
-                   @bind="searchQuery" 
-                   @bind:after="FilterProducts" />
-        </div>
     </div>
 
     @if (products == null)
@@ -102,7 +94,6 @@
     private bool showGels = true;
     private bool showDrinks = true;
     private bool showBars = true;
-    private string searchQuery = "";
 
     [Parameter]
     public EventCallback<ProductInfo> OnProductAdded { get; set; }
@@ -159,17 +150,6 @@
         if (typeFilter.Count > 0)
         {
             filtered = filtered.Where(p => typeFilter.Contains(p.ProductType));
-        }
-
-        // Filter by search query
-        if (!string.IsNullOrEmpty(searchQuery))
-        {
-            var query = searchQuery.ToLower();
-            filtered = filtered.Where(p =>
-                p.Name.ToLower().Contains(query) ||
-                p.Brand.ToLower().Contains(query) ||
-                p.ProductType.ToLower().Contains(query)
-            );
         }
 
         products = filtered.ToList();
