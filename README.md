@@ -102,6 +102,11 @@ Validates input data to ensure:
 
 ## Requirements
 
+### For Docker Deployment (Recommended)
+- Docker Desktop or Docker Engine
+- Docker Compose
+
+### For Local Development
 - .NET 9.0 SDK or later
 - Node.js 20.x or later (for React web application)
 - npm 10.x or later (for React web application)
@@ -120,6 +125,122 @@ dotnet build
 # Run tests
 dotnet test
 ```
+
+## Docker Deployment
+
+### Running with Docker (Recommended for Production)
+
+The application can be easily deployed using Docker containers, which is ideal for Azure Linux Container deployments and local testing.
+
+#### Prerequisites
+- Docker Desktop or Docker Engine installed
+- Docker Compose (included with Docker Desktop)
+
+#### Quick Start with Docker Compose
+
+```bash
+# Build and start all services (API + Web)
+docker compose up --build
+
+# Or run in detached mode
+docker compose up --build -d
+```
+
+> **Note**: If using Docker Compose v1, use `docker-compose` instead of `docker compose`
+
+The application will be available at:
+- **Web Application**: http://localhost:8080
+- **API**: http://localhost:5208
+- **Swagger Documentation**: http://localhost:5208/swagger/ui
+
+To stop the containers:
+
+```bash
+docker compose down
+```
+
+#### Building Individual Docker Images
+
+**Build API Image:**
+```bash
+docker build -t raceday-api -f src/RaceDay.API/Dockerfile .
+docker run -p 5208:8080 raceday-api
+```
+
+**Build Web Image:**
+```bash
+cd src/RaceDay.Web.React
+docker build -t raceday-web .
+docker run -p 8080:80 raceday-web
+```
+
+#### Azure Container Instances Deployment
+
+The Docker images are optimized for deployment to Azure Container Instances or Azure App Service (Linux containers).
+
+**Deploy to Azure:**
+
+1. **Build and tag images for Azure Container Registry:**
+   ```bash
+   # Login to Azure
+   az login
+   
+   # Create Azure Container Registry (if needed)
+   az acr create --resource-group <resource-group> --name <registry-name> --sku Basic
+   
+   # Login to ACR
+   az acr login --name <registry-name>
+   
+   # Build and push API image
+   docker build -t <registry-name>.azurecr.io/raceday-api:latest -f src/RaceDay.API/Dockerfile .
+   docker push <registry-name>.azurecr.io/raceday-api:latest
+   
+   # Build and push Web image
+   cd src/RaceDay.Web.React
+   docker build -t <registry-name>.azurecr.io/raceday-web:latest .
+   docker push <registry-name>.azurecr.io/raceday-web:latest
+   ```
+
+2. **Deploy to Azure Container Instances:**
+   ```bash
+   # Create container group with both services
+   az container create \
+     --resource-group <resource-group> \
+     --name raceday-nutrition-planner \
+     --image <registry-name>.azurecr.io/raceday-api:latest \
+     --registry-login-server <registry-name>.azurecr.io \
+     --registry-username <acr-username> \
+     --registry-password <acr-password> \
+     --dns-name-label raceday-api \
+     --ports 8080
+   ```
+
+**Alternatively, deploy to Azure App Service:**
+
+```bash
+# Create App Service Plan (Linux)
+az appservice plan create --name raceday-plan --resource-group <resource-group> --is-linux --sku B1
+
+# Create Web App for Containers
+az webapp create --resource-group <resource-group> --plan raceday-plan --name raceday-api --deployment-container-image-name <registry-name>.azurecr.io/raceday-api:latest
+
+# Configure container registry credentials
+az webapp config container set --name raceday-api --resource-group <resource-group> \
+  --docker-custom-image-name <registry-name>.azurecr.io/raceday-api:latest \
+  --docker-registry-server-url https://<registry-name>.azurecr.io \
+  --docker-registry-server-user <acr-username> \
+  --docker-registry-server-password <acr-password>
+```
+
+#### VS Code Tasks
+
+For convenience, Docker tasks are available in VS Code:
+- **Docker: Build & Start** - Build and start all containers
+- **Docker: Stop** - Stop all containers
+- **Docker: View Logs** - View container logs
+- **Docker: Build, Start & Open Browser** - Complete workflow with browser launch
+
+Access these via `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac) → "Tasks: Run Task"
 
 ## Running the Application
 
