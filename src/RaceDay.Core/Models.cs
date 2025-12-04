@@ -87,6 +87,16 @@ public record IntakeItem(
 );
 
 /// <summary>
+/// Product summary for shopping list
+/// </summary>
+/// <param name="ProductName">Name of the product</param>
+/// <param name="TotalPortions">Total number of portions needed for the race</param>
+public record ProductSummary(
+    string ProductName,
+    double TotalPortions
+);
+
+/// <summary>
 /// Complete race nutrition plan
 /// </summary>
 /// <param name="Race">Race profile used for calculation</param>
@@ -95,13 +105,15 @@ public record IntakeItem(
 /// <param name="TotalCarbsG">Total carbohydrates in grams</param>
 /// <param name="TotalFluidsMl">Total fluids in milliliters</param>
 /// <param name="TotalSodiumMg">Total sodium in milligrams</param>
+/// <param name="ProductSummaries">Shopping list with total quantities needed per product</param>
 public record RaceNutritionPlan(
     RaceProfile Race,
     NutritionTargets Targets,
     List<IntakeItem> Schedule,
     double TotalCarbsG,
     double TotalFluidsMl,
-    double TotalSodiumMg
+    double TotalSodiumMg,
+    List<ProductSummary> ProductSummaries
 );
 
 /// <summary>

@@ -327,6 +327,11 @@ Navigate to `https://localhost:[port]/swagger/ui` to access the interactive Swag
 - **GET /api/activities/type/{sportType}** - Filter activities by sport type (Run, Bike, Triathlon)
 - **GET /api/activities/search?query={query}** - Search activities by name
 
+**Nutrition Plan Generation**
+- **POST /api/plan/generate** - Generate a personalized nutrition plan with shopping list
+  - Returns nutrition targets, time-based schedule, totals, and aggregated product summaries
+  - Shopping list shows total quantities needed per product for easy race day preparation
+
 #### Example API Calls
 
 ```bash
@@ -347,6 +352,31 @@ curl https://localhost:7001/api/activities/type/Run
 
 # Search activities
 curl https://localhost:7001/api/activities/search?query=Marathon
+
+# Generate nutrition plan with shopping list
+curl -X POST https://localhost:7001/api/plan/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "athleteWeightKg": 75,
+    "sportType": 0,
+    "durationHours": 4,
+    "temperatureC": 25,
+    "intensity": 2,
+    "products": [
+      {"name": "Energy Gel", "productType": "gel", "carbsG": 25, "sodiumMg": 100, "volumeMl": 0},
+      {"name": "Sports Drink", "productType": "drink", "carbsG": 30, "sodiumMg": 300, "volumeMl": 500}
+    ]
+  }'
+```
+
+The response includes a `productSummaries` array with the shopping list:
+```json
+{
+  "productSummaries": [
+    {"productName": "Energy Gel", "totalPortions": 12},
+    {"productName": "Sports Drink", "totalPortions": 6}
+  ]
+}
 ```
 
 ## Usage
@@ -445,6 +475,7 @@ The application generates a detailed nutrition plan showing:
 - Time-based schedule (default: 20-minute intervals)
 - Product quantities and portions
 - Total intake throughout the race
+- **Shopping list**: Aggregated product summaries showing total quantities needed per product
 
 ## Testing
 
