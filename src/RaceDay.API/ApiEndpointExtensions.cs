@@ -1,0 +1,174 @@
+using RaceDay.Core;
+
+namespace RaceDay.API;
+
+/// <summary>
+/// Extension methods for mapping API endpoints
+/// </summary>
+public static class ApiEndpointExtensions
+{
+    /// <summary>
+    /// Map product-related API endpoints
+    /// </summary>
+    public static void MapProductEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/products")
+            .WithTags("Products");
+
+        group.MapGet("/", GetAllProducts)
+            .WithName("GetAllProducts")
+            .WithDescription("Retrieve all available products");
+
+        group.MapGet("/{id}", GetProductById)
+            .WithName("GetProductById")
+            .WithDescription("Get a specific product by ID");
+
+        group.MapGet("/type/{type}", GetProductsByType)
+            .WithName("GetProductsByType")
+            .WithDescription("Filter products by type (gel, drink, bar)");
+
+        group.MapGet("/search", SearchProducts)
+            .WithName("SearchProducts")
+            .WithDescription("Search products by name or brand");
+    }
+
+    /// <summary>
+    /// Map activity-related API endpoints
+    /// </summary>
+    public static void MapActivityEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/activities")
+            .WithTags("Activities");
+
+        group.MapGet("/", GetAllActivities)
+            .WithName("GetAllActivities")
+            .WithDescription("Retrieve all predefined activities");
+
+        group.MapGet("/{id}", GetActivityById)
+            .WithName("GetActivityById")
+            .WithDescription("Get a specific activity by ID");
+
+        group.MapGet("/type/{sportType}", GetActivitiesByType)
+            .WithName("GetActivitiesByType")
+            .WithDescription("Filter activities by sport type (Run, Bike, Triathlon)");
+
+        group.MapGet("/search", SearchActivities)
+            .WithName("SearchActivities")
+            .WithDescription("Search activities by name or description");
+    }
+
+    // Product Handlers
+    private static async Task<IResult> GetAllProducts(IProductRepository repository)
+    {
+        try
+        {
+            var products = await repository.GetAllProductsAsync();
+            return Results.Ok(products);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading products: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetProductById(string id, IProductRepository repository)
+    {
+        try
+        {
+            var product = await repository.GetProductByIdAsync(id);
+            return product == null ? Results.NotFound() : Results.Ok(product);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading product: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetProductsByType(string type, IProductRepository repository)
+    {
+        try
+        {
+            var products = await repository.GetProductsByTypeAsync(type);
+            return Results.Ok(products);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading products: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> SearchProducts(string query, IProductRepository repository)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return Results.BadRequest("Search query is required");
+
+        try
+        {
+            var products = await repository.SearchProductsAsync(query);
+            return Results.Ok(products);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error searching products: {ex.Message}");
+        }
+    }
+
+    // Activity Handlers
+    private static async Task<IResult> GetAllActivities()
+    {
+        try
+        {
+            var activities = await ActivityRepository.GetAllActivitiesAsync();
+            return Results.Ok(activities);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading activities: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetActivityById(string id)
+    {
+        try
+        {
+            var activity = await ActivityRepository.GetActivityByIdAsync(id);
+            return activity == null ? Results.NotFound() : Results.Ok(activity);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading activity: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> GetActivitiesByType(string sportType)
+    {
+        try
+        {
+            if (!Enum.TryParse<SportType>(sportType, ignoreCase: true, out var parsedSportType))
+                return Results.BadRequest("Invalid sport type. Valid values: Run, Bike, Triathlon");
+
+            var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(parsedSportType);
+            return Results.Ok(activities);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading activities: {ex.Message}");
+        }
+    }
+
+    private static async Task<IResult> SearchActivities(string query)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+            return Results.BadRequest("Search query is required");
+
+        try
+        {
+            var activities = await ActivityRepository.SearchActivitiesAsync(query);
+            return Results.Ok(activities);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error searching activities: {ex.Message}");
+        }
+    }
+}
