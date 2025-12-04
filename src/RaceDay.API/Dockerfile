@@ -37,6 +37,9 @@ RUN useradd -m -u 1000 -s /bin/bash appuser && \
 # Copy published files with correct ownership
 COPY --chown=appuser:appuser --from=publish /app/publish .
 
+# Remove write permissions to prevent tampering
+RUN chmod -R a-w /app
+
 USER appuser
 
 # Set environment variables for Azure
