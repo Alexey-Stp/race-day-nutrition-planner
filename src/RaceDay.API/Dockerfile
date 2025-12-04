@@ -34,11 +34,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 RUN useradd -m -u 1000 -s /bin/bash appuser && \
     chown -R appuser:appuser /app
 
-# Copy published files
-COPY --from=publish /app/publish .
-
-# Set ownership of the application files
-RUN chown -R appuser:appuser /app
+# Copy published files with correct ownership
+COPY --chown=appuser:appuser --from=publish /app/publish .
 
 USER appuser
 

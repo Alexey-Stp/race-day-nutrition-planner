@@ -33,8 +33,8 @@ COPY --from=build /app/dist .
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Create a non-root user to run nginx
-RUN addgroup -g 101 -S nginx-group && \
-    adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx-group -g nginx-group nginx-user && \
+RUN addgroup -g 1001 -S nginx-group && \
+    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx-group -g nginx-group nginx-user && \
     chown -R nginx-user:nginx-group /usr/share/nginx/html && \
     chown -R nginx-user:nginx-group /var/cache/nginx && \
     chown -R nginx-user:nginx-group /var/log/nginx && \
