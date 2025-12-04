@@ -48,21 +48,21 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
 
   return (
     <div className="form-card">
-      <h2>🥤 Available Products</h2>
+      <h2>Products</h2>
       
       <div className="products-section">
         <h3>Gels</h3>
         {gels.length === 0 ? (
-          <p className="empty-message">No gels added yet</p>
+          <p className="empty-message">No gels</p>
         ) : (
           <div className="table-responsive">
             <table className="products-table">
               <thead>
                 <tr>
-                  <th>Product Name</th>
-                  <th className="text-right">Carbs (g)</th>
-                  <th className="text-right">Sodium (mg)</th>
-                  <th className="text-center" style={{ width: '50px' }}></th>
+                  <th>Name</th>
+                  <th className="text-right">Carbs</th>
+                  <th className="text-right">Sodium</th>
+                  <th className="text-center" style={{ width: '40px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -73,7 +73,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                         type="text"
                         value={gel.name}
                         onChange={(e) => updateGel(index, 'name', e.target.value)}
-                        placeholder="Product name"
+                        placeholder="Name"
                         className="form-control form-control-sm"
                       />
                     </td>
@@ -103,10 +103,10 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <button
                         onClick={() => removeGel(index)}
                         className="btn btn-sm btn-icon"
-                        title="Remove product"
+                        title="Remove"
                         disabled={gels.length <= 1}
                       >
-                        🗑️
+                        ×
                       </button>
                     </td>
                   </tr>
@@ -115,23 +115,23 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
             </table>
           </div>
         )}
-        <button onClick={addGel} className="btn btn-sm btn-secondary">+ Add Gel</button>
+        <button onClick={addGel} className="btn btn-sm btn-secondary">+ Gel</button>
       </div>
 
       <div className="products-section">
         <h3>Drinks</h3>
         {drinks.length === 0 ? (
-          <p className="empty-message">No drinks added yet</p>
+          <p className="empty-message">No drinks</p>
         ) : (
           <div className="table-responsive">
             <table className="products-table">
               <thead>
                 <tr>
-                  <th>Product Name</th>
-                  <th className="text-right">Carbs (g)</th>
-                  <th className="text-right">Sodium (mg)</th>
-                  <th className="text-right">Volume (ml)</th>
-                  <th className="text-center" style={{ width: '50px' }}></th>
+                  <th>Name</th>
+                  <th className="text-right">Carbs</th>
+                  <th className="text-right">Sodium</th>
+                  <th className="text-right">Vol</th>
+                  <th className="text-center" style={{ width: '40px' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -142,7 +142,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                         type="text"
                         value={drink.name}
                         onChange={(e) => updateDrink(index, 'name', e.target.value)}
-                        placeholder="Product name"
+                        placeholder="Name"
                         className="form-control form-control-sm"
                       />
                     </td>
@@ -183,10 +183,10 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <button
                         onClick={() => removeDrink(index)}
                         className="btn btn-sm btn-icon"
-                        title="Remove product"
+                        title="Remove"
                         disabled={drinks.length <= 1}
                       >
-                        🗑️
+                        ×
                       </button>
                     </td>
                   </tr>
@@ -195,7 +195,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
             </table>
           </div>
         )}
-        <button onClick={addDrink} className="btn btn-sm btn-secondary">+ Add Drink</button>
+        <button onClick={addDrink} className="btn btn-sm btn-secondary">+ Drink</button>
       </div>
     </div>
   );

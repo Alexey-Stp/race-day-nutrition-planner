@@ -24,12 +24,10 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   onIntensityChange
 }) => {
   const [activities, setActivities] = useState<ActivityInfo[]>([]);
-  const [selectedActivity, setSelectedActivity] = useState<ActivityInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [minDuration, setMinDuration] = useState(0.5);
   const [maxDuration, setMaxDuration] = useState(24);
   const [currentDisplayDuration, setCurrentDisplayDuration] = useState(duration);
-  const [durationValidationError, setDurationValidationError] = useState<string | null>(null);
 
   const loadActivities = useCallback(async () => {
     try {
@@ -39,7 +37,6 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
       // Set default activity to Olympic Triathlon
       const defaultActivity = data.find(a => a.id === 'olympic-triathlon');
       if (defaultActivity) {
-        setSelectedActivity(defaultActivity);
         onSportTypeChange(defaultActivity.sportType);
         setMinDuration(defaultActivity.minDurationHours);
         setMaxDuration(defaultActivity.maxDurationHours);
@@ -64,20 +61,16 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   const handleActivityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const activityId = e.target.value;
     if (!activityId) {
-      setSelectedActivity(null);
-      setDurationValidationError(null);
       return;
     }
 
     const activity = activities.find(a => a.id === activityId);
     if (activity) {
-      setSelectedActivity(activity);
       setMinDuration(activity.minDurationHours);
       setMaxDuration(activity.maxDurationHours);
       onDurationChange(activity.bestTimeHours);
       setCurrentDisplayDuration(activity.bestTimeHours);
       onSportTypeChange(activity.sportType);
-      setDurationValidationError(null);
     }
   };
 
@@ -88,72 +81,32 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
 
   const handleDurationChange = () => {
     onDurationChange(currentDisplayDuration);
-    
-    // Validate duration
-    if (selectedActivity) {
-      if (currentDisplayDuration < selectedActivity.minDurationHours) {
-        setDurationValidationError(`Duration must be at least ${formatDuration(selectedActivity.minDurationHours)}`);
-      } else if (currentDisplayDuration > selectedActivity.maxDurationHours) {
-        setDurationValidationError(`Duration must not exceed ${formatDuration(selectedActivity.maxDurationHours)}`);
-      } else {
-        setDurationValidationError(null);
-      }
-    }
-  };
-
-  const getActivityEmoji = (sportType: SportType): string => {
-    switch (sportType) {
-      case SportType.Run:
-        return '🏃';
-      case SportType.Bike:
-        return '🚴';
-      case SportType.Triathlon:
-        return '🏊';
-      default:
-        return '🏁';
-    }
   };
 
   return (
     <div className="form-card">
-      <h2>🏁 Race Details</h2>
+      <h2>Race Details</h2>
       
       <div className="form-group">
-        <div className="label-with-tooltip">
-          <label htmlFor="activity">Select Activity</label>
-          <span className="tooltip-icon" title="Choose a predefined activity or customize your own">ℹ️</span>
-        </div>
+        <label htmlFor="activity">Activity</label>
         {loading ? (
-          <p className="loading">Loading activities...</p>
+          <p className="loading">Loading...</p>
         ) : (
           <>
             <select id="activity" onChange={handleActivityChange} className="form-control" defaultValue="">
-              <option value="">-- Choose an activity --</option>
+              <option value="">Choose activity</option>
               {activities.map(activity => (
                 <option key={activity.id} value={activity.id}>
-                  {getActivityEmoji(activity.sportType)} {activity.name}
+                  {activity.name}
                 </option>
               ))}
             </select>
-            
-            {selectedActivity && (
-              <>
-                <small className="form-text">{selectedActivity.description}</small>
-                <small className="form-text"><strong>Best time:</strong> {selectedActivity.bestTimeFormatted}</small>
-              </>
-            )}
           </>
         )}
       </div>
 
       <div className="form-group">
-        <div className="label-with-tooltip">
-          <label htmlFor="duration">Duration</label>
-          <span className="tooltip-icon" title="Use the slider to set your race duration">ℹ️</span>
-        </div>
-        <div className="duration-display">
-          <strong>{formatDuration(currentDisplayDuration)}</strong>
-        </div>
+        <label htmlFor="duration">Duration: {formatDuration(currentDisplayDuration)}</label>
         <div className="slider-group">
           <input
             type="range"
@@ -171,16 +124,10 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             <span>{formatDuration(maxDuration)}</span>
           </div>
         </div>
-        {durationValidationError && (
-          <small className="form-text validation-error">⚠️ {durationValidationError}</small>
-        )}
       </div>
 
       <div className="form-group">
-        <div className="label-with-tooltip">
-          <label htmlFor="temperature">Temperature</label>
-          <span className="tooltip-icon" title="Affects fluid and sodium requirements. Higher temperatures increase needs.">ℹ️</span>
-        </div>
+        <label htmlFor="temperature">Temperature</label>
         <div className="input-group">
           <input
             type="number"
@@ -191,28 +138,23 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             min="-10"
             max="40"
             step="1"
-            placeholder="e.g. 20"
           />
           <span className="input-unit">°C</span>
         </div>
       </div>
 
       <div className="form-group">
-        <div className="label-with-tooltip">
-          <label htmlFor="intensity">Intensity Level</label>
-          <span className="tooltip-icon" title="Easy: Recovery pace, 60-70% max HR | Moderate: Steady pace, 70-85% max HR | Hard: Threshold/race pace, 85%+ max HR">ℹ️</span>
-        </div>
+        <label htmlFor="intensity">Intensity</label>
         <select
           id="intensity"
           value={intensity}
           onChange={(e) => onIntensityChange(e.target.value as IntensityLevel)}
           className="form-control"
         >
-          <option value={IntensityLevel.Easy}>Easy - Recovery/endurance pace</option>
-          <option value={IntensityLevel.Moderate}>Moderate - Steady/comfortable pace</option>
-          <option value={IntensityLevel.Hard}>Hard - Threshold/race pace</option>
+          <option value={IntensityLevel.Easy}>Easy</option>
+          <option value={IntensityLevel.Moderate}>Moderate</option>
+          <option value={IntensityLevel.Hard}>Hard</option>
         </select>
-        <small className="form-text">Higher intensity increases carbohydrate consumption.</small>
       </div>
     </div>
   );
