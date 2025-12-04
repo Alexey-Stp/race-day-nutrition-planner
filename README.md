@@ -124,6 +124,45 @@ Then navigate to `https://localhost:5001` (or the URL shown in the console) to a
 - Real-time nutrition plan calculation
 - Visual display of targets and intake schedule
 
+### REST API (Swagger/OpenAPI)
+
+The application provides a separate REST API service with interactive documentation:
+
+```shell
+# Run the API server
+dotnet run --project src/RaceDay.API/RaceDay.API.csproj
+```
+
+The API will be available at `https://localhost:5001` (or another port shown in console).
+
+#### Access Swagger UI
+
+Navigate to `https://localhost:[port]/swagger/ui` to access the interactive Swagger documentation where you can:
+- View all available endpoints
+- See request/response schemas
+- Test endpoints directly from the browser
+- Download OpenAPI specification
+
+#### API Endpoints
+
+- **GET /api/products** - Retrieve all products
+- **GET /api/products/{id}** - Get a specific product by ID
+- **GET /api/products/type/{type}** - Filter products by type (gel, drink, bar)
+- **GET /api/products/search?query={query}** - Search products by name, brand, or type
+
+#### Example API Call
+
+```bash
+# Get all products
+curl https://localhost:7001/api/products
+
+# Get products by type
+curl https://localhost:7001/api/products/type/gel
+
+# Search products
+curl https://localhost:7001/api/products/search?query=maurten
+```
+
 ### CLI Application
 
 For programmatic use or integration into scripts:
@@ -252,14 +291,42 @@ Current test coverage includes:
 - Input validation
 - Exception handling
 
-## API Endpoints (Web Application)
+## Architecture Details
 
-The web application exposes REST API endpoints:
+### Three-Tier Architecture
 
-- `GET /api/products` - Get all products
-- `GET /api/products/{id}` - Get product by ID
-- `GET /api/products/type/{type}` - Get products by type (gel/drink/bar)
-- `GET /api/products/search?query={query}` - Search products
+The application follows a **separation of concerns** pattern:
+
+1. **RaceDay.Web** (Presentation Layer)
+   - Blazor Server web application
+   - Interactive UI with real-time calculations
+   - Communicates with API via HttpClient
+   - Located at: `src/RaceDay.Web`
+
+2. **RaceDay.API** (Application/API Layer)
+   - ASP.NET Core REST API with Swagger documentation
+   - Product query endpoints with CORS support
+   - Located at: `src/RaceDay.API`
+   - Access Swagger UI at: `/swagger/ui`
+
+3. **RaceDay.Core** (Business Logic Layer)
+   - Pure business logic and calculations
+   - Data access through repositories
+   - Immutable domain models
+   - Located at: `src/RaceDay.Core`
+
+### Deployment Strategy
+
+**Development Setup**:
+- Run Web and API on different ports
+- Web calls API via configured HttpClient
+- Independent development of each layer
+
+**Production Setup**:
+- Deploy Web and API as separate services
+- Can scale each independently
+- Use reverse proxy or load balancer
+- Easy maintenance and updates
 
 ## Error Handling
 
