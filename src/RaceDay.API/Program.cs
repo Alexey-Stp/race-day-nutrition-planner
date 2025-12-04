@@ -6,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// Configure CORS to allow access from any origin
+// This is intentional for a public API designed to be consumed by any client
+// The API does not handle sensitive data or authentication
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
