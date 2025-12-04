@@ -8,6 +8,9 @@ import { ProductSelector } from './components/ProductSelector';
 import { PlanResults } from './components/PlanResults';
 import './App.css';
 
+// Constants
+const CALORIES_PER_KG_ESTIMATE = 30; // Rough daily calorie estimate per kg of body weight
+
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
   const [sportType, setSportType] = useState<SportType>(SportType.Triathlon);
@@ -170,7 +173,7 @@ function App() {
             <h2>Your Product Schedule</h2>
             <p className="schedule-info">
               Weight: {athleteWeight} kg | Duration: {duration} hours | 
-              Estimated daily calories: {(athleteWeight * 30).toFixed(0)} kcal (used for calculation)
+              Estimated daily calories: {(athleteWeight * CALORIES_PER_KG_ESTIMATE).toFixed(0)} kcal (used for calculation)
             </p>
             
             <div className="schedule-table-wrapper">
