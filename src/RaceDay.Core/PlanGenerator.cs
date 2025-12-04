@@ -64,13 +64,24 @@ public static class PlanGenerator
             }
         }
 
+        // Calculate product summaries for shopping list
+        var productSummaries = schedule
+            .GroupBy(item => item.ProductName)
+            .Select(group => new ProductSummary(
+                ProductName: group.Key,
+                TotalPortions: group.Sum(item => item.AmountPortions)
+            ))
+            .OrderBy(summary => summary.ProductName)
+            .ToList();
+
         return new RaceNutritionPlan(
             race,
             targets,
             schedule,
             totalCarbs,
             totalFluids,
-            totalSodium
+            totalSodium,
+            productSummaries
         );
     }
 }
