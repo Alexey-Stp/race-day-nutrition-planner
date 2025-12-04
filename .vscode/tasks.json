@@ -32,21 +32,21 @@
         "command": "powershell",
         "args": [
           "-Command",
-          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5001'"
+          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5182'"
         ]
       },
       "osx": {
         "command": "sh",
         "args": [
           "-c",
-          "sleep 3 && open http://localhost:5001"
+          "sleep 3 && open http://localhost:5182"
         ]
       },
       "linux": {
         "command": "sh",
         "args": [
           "-c",
-          "sleep 3 && xdg-open http://localhost:5001"
+          "sleep 3 && xdg-open http://localhost:5182"
         ]
       },
       "presentation": {
