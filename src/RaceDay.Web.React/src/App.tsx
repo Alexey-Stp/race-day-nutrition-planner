@@ -1,15 +1,12 @@
 import { useState } from 'react';
 import { SportType, IntensityLevel, type ProductEditor, type ProductInfo, type RaceNutritionPlan, type ScheduleDisplayItem } from './types';
-import { generatePlan } from './nutritionCalculator';
+import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { ProductsEditor } from './components/ProductsEditor';
 import { ProductSelector } from './components/ProductSelector';
 import { PlanResults } from './components/PlanResults';
 import './App.css';
-
-// Constants
-const CALORIES_PER_KG_ESTIMATE = 30; // Rough daily calorie estimate per kg of body weight
 
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
@@ -34,7 +31,7 @@ function App() {
   const [scheduleTotalCarbs, setScheduleTotalCarbs] = useState(0);
   const [scheduleTotalSodium, setScheduleTotalSodium] = useState(0);
 
-  const calculatePlan = () => {
+  const calculatePlan = async () => {
     const athlete = { weightKg: athleteWeight };
     const race = {
       sportType,
@@ -53,7 +50,7 @@ function App() {
     }
 
     try {
-      const newPlan = generatePlan(race, athlete, allProducts);
+      const newPlan = await api.generatePlan(athlete, race, allProducts);
       setPlan(newPlan);
       buildSchedule(newPlan);
     } catch (error) {
@@ -172,8 +169,7 @@ function App() {
           <div className="product-schedule-section">
             <h2>Your Product Schedule</h2>
             <p className="schedule-info">
-              Weight: {athleteWeight} kg | Duration: {duration} hours | 
-              Estimated daily calories: {(athleteWeight * CALORIES_PER_KG_ESTIMATE).toFixed(0)} kcal (used for calculation)
+              Weight: {athleteWeight} kg | Duration: {duration} hours
             </p>
             
             <div className="schedule-table-wrapper">
@@ -191,7 +187,7 @@ function App() {
                 </thead>
                 <tbody>
                   {schedule.map((item, index) => (
-                    <tr key={index}>
+                    <tr key={`${item.timeMin}-${item.productName}-${index}`}>
                       <td className="time-col">{item.timeMin}</td>
                       <td className="product-col">{item.productName}</td>
                       <td className="brand-col">{item.brand}</td>

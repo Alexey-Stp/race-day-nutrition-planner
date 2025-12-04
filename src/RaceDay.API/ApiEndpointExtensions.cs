@@ -57,6 +57,19 @@ public static class ApiEndpointExtensions
             .WithDescription("Search activities by name or description");
     }
 
+    /// <summary>
+    /// Map nutrition plan generation API endpoints
+    /// </summary>
+    public static void MapPlanEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/plan")
+            .WithTags("Nutrition Plan");
+
+        group.MapPost("/generate", GeneratePlan)
+            .WithName("GeneratePlan")
+            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products");
+    }
+
     // Product Handlers
     private static async Task<IResult> GetAllProducts(IProductRepository repository, CancellationToken cancellationToken)
     {
@@ -171,4 +184,71 @@ public static class ApiEndpointExtensions
             return Results.Problem($"Error searching activities: {ex.Message}");
         }
     }
+
+    // Plan Generation Handlers
+    private static IResult GeneratePlan(PlanGenerationRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Validate request
+            if (request == null)
+                return Results.BadRequest("Request body is required");
+
+            if (request.Products == null || request.Products.Count == 0)
+                return Results.BadRequest("At least one product is required");
+
+            // Create profiles
+            var athlete = new AthleteProfile(request.AthleteWeightKg);
+            var race = new RaceProfile(
+                request.SportType,
+                request.DurationHours,
+                request.TemperatureC,
+                request.Intensity
+            );
+
+            // Convert products
+            var products = request.Products.Select(p => new Product(
+                p.Name,
+                p.ProductType,
+                p.CarbsG,
+                p.SodiumMg,
+                p.VolumeMl
+            )).ToList();
+
+            // Generate plan
+            var plan = PlanGenerator.Generate(race, athlete, products);
+
+            return Results.Ok(plan);
+        }
+        catch (ValidationException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (MissingProductException ex)
+        {
+            return Results.BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error generating plan: {ex.Message}");
+        }
+    }
 }
+
+// Request model for plan generation
+public record PlanGenerationRequest(
+    double AthleteWeightKg,
+    SportType SportType,
+    double DurationHours,
+    double TemperatureC,
+    IntensityLevel Intensity,
+    List<ProductRequest> Products
+);
+
+public record ProductRequest(
+    string Name,
+    string ProductType,
+    double CarbsG,
+    double SodiumMg,
+    double VolumeMl
+);

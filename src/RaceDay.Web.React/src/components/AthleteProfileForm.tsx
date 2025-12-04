@@ -19,7 +19,7 @@ export const AthleteProfileForm: React.FC<AthleteProfileFormProps> = ({
             type="number"
             id="weight"
             value={athleteWeight}
-            onChange={(e) => onAthleteWeightChange(parseFloat(e.target.value) || 0)}
+            onChange={(e) => onAthleteWeightChange(Number.parseFloat(e.target.value) || 0)}
             className="form-control"
             min="40"
             max="150"

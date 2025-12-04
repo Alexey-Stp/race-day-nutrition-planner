@@ -81,7 +81,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <input
                         type="number"
                         value={gel.carbsG}
-                        onChange={(e) => updateGel(index, 'carbsG', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateGel(index, 'carbsG', Number.parseFloat(e.target.value) || 0)}
                         className="form-control form-control-sm"
                         min="0"
                         step="0.1"
@@ -92,7 +92,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <input
                         type="number"
                         value={gel.sodiumMg}
-                        onChange={(e) => updateGel(index, 'sodiumMg', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateGel(index, 'sodiumMg', Number.parseFloat(e.target.value) || 0)}
                         className="form-control form-control-sm"
                         min="0"
                         step="1"
@@ -150,7 +150,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <input
                         type="number"
                         value={drink.carbsG}
-                        onChange={(e) => updateDrink(index, 'carbsG', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateDrink(index, 'carbsG', Number.parseFloat(e.target.value) || 0)}
                         className="form-control form-control-sm"
                         min="0"
                         step="0.1"
@@ -161,7 +161,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <input
                         type="number"
                         value={drink.sodiumMg}
-                        onChange={(e) => updateDrink(index, 'sodiumMg', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateDrink(index, 'sodiumMg', Number.parseFloat(e.target.value) || 0)}
                         className="form-control form-control-sm"
                         min="0"
                         step="1"
@@ -172,7 +172,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
                       <input
                         type="number"
                         value={drink.volumeMl}
-                        onChange={(e) => updateDrink(index, 'volumeMl', parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateDrink(index, 'volumeMl', Number.parseFloat(e.target.value) || 0)}
                         className="form-control form-control-sm"
                         min="50"
                         step="50"

@@ -18,7 +18,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
 
   const extractBrands = useCallback((products: ProductInfo[]) => {
     const brands = Array.from(new Set(products.map(p => p.brand)))
-      .sort();
+      .sort((a, b) => a.localeCompare(b));
     setAvailableBrands(brands);
   }, []);
 

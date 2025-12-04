@@ -37,5 +37,6 @@ app.UseCors("AllowAll");
 // Map API endpoints
 app.MapProductEndpoints();
 app.MapActivityEndpoints();
+app.MapPlanEndpoints();
 
 app.Run();

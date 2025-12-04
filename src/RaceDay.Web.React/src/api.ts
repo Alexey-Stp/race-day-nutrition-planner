@@ -1,4 +1,4 @@
-import type { ProductInfo, ActivityInfo } from './types';
+import type { ProductInfo, ActivityInfo, RaceNutritionPlan, AthleteProfile, RaceProfile, ProductEditor } from './types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5208';
 
@@ -50,6 +50,43 @@ export const api = {
     if (!response.ok) {
       throw new Error('Failed to search activities');
     }
+    return response.json();
+  },
+
+  // Plan Generation
+  async generatePlan(
+    athlete: AthleteProfile,
+    race: RaceProfile,
+    products: ProductEditor[]
+  ): Promise<RaceNutritionPlan> {
+    const request = {
+      athleteWeightKg: athlete.weightKg,
+      sportType: race.sportType,
+      durationHours: race.durationHours,
+      temperatureC: race.temperatureC,
+      intensity: race.intensity,
+      products: products.map(p => ({
+        name: p.name,
+        productType: p.volumeMl && p.volumeMl > 0 ? 'drink' : 'gel',
+        carbsG: p.carbsG,
+        sodiumMg: p.sodiumMg,
+        volumeMl: p.volumeMl || 0
+      }))
+    };
+
+    const response = await fetch(`${API_BASE_URL}/api/plan/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to generate nutrition plan');
+    }
+
     return response.json();
   },
 };

@@ -82,7 +82,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   };
 
   const handleDurationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newDuration = parseFloat(e.target.value);
+    const newDuration = Number.parseFloat(e.target.value);
     setCurrentDisplayDuration(newDuration);
   };
 
@@ -186,7 +186,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             type="number"
             id="temperature"
             value={temperature}
-            onChange={(e) => onTemperatureChange(parseFloat(e.target.value) || 0)}
+            onChange={(e) => onTemperatureChange(Number.parseFloat(e.target.value) || 0)}
             className="form-control"
             min="-10"
             max="40"
