@@ -58,7 +58,7 @@ html, body {
 
 .content {
     display: grid;
-    grid-template-columns: 380px 1fr;
+    grid-template-columns: minmax(350px, 380px) 1fr;
     gap: 16px;
     align-items: start;
 }
