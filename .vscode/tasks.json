@@ -2,7 +2,107 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start Web",
+      "label": "Start React Web",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/src/RaceDay.Web.React"
+      },
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Open React Browser",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5173'"
+        ]
+      },
+      "osx": {
+        "command": "sh",
+        "args": [
+          "-c",
+          "sleep 3 && open http://localhost:5173"
+        ]
+      },
+      "linux": {
+        "command": "sh",
+        "args": [
+          "-c",
+          "sleep 3 && xdg-open http://localhost:5173"
+        ]
+      },
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Start API",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "src/RaceDay.API/RaceDay.API.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true
+    },
+    {
+      "label": "React + API + Open Browser",
+      "dependsOn": [
+        "Start API",
+        "Start React Web",
+        "Open React Browser"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
+    {
+      "label": "Start Blazor Web (Legacy)",
       "type": "shell",
       "command": "dotnet",
       "args": [
@@ -26,7 +126,7 @@
       "isBackground": true
     },
     {
-      "label": "Open Web Browser",
+      "label": "Open Blazor Browser",
       "type": "shell",
       "windows": {
         "command": "powershell",
@@ -55,10 +155,10 @@
       "problemMatcher": []
     },
     {
-      "label": "Web + Open Browser",
+      "label": "Blazor + Open Browser",
       "dependsOn": [
-        "Start Web",
-        "Open Web Browser"
+        "Start Blazor Web (Legacy)",
+        "Open Blazor Browser"
       ],
       "problemMatcher": [],
       "group": {
@@ -73,30 +173,6 @@
         "showReuseMessage": true,
         "clear": false
       }
-    },
-    {
-      "label": "Start Swagger",
-      "type": "shell",
-      "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "src/RaceDay.API/RaceDay.API.csproj"
-      ],
-      "problemMatcher": "$msCompile",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "isBackground": true
     },
     {
       "label": "Open Swagger Browser",
@@ -128,9 +204,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Swagger + Open Browser",
+      "label": "API + Swagger Browser",
       "dependsOn": [
-        "Start Swagger",
+        "Start API",
         "Open Swagger Browser"
       ],
       "problemMatcher": [],
@@ -148,25 +224,20 @@
       }
     },
     {
-      "label": "Web + Swagger + Open Browsers",
-      "dependsOn": [
-        "Start Web",
-        "Start Swagger",
-        "Open Web Browser",
-        "Open Swagger Browser"
+      "label": "Build React",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "build"
       ],
+      "options": {
+        "cwd": "${workspaceFolder}/src/RaceDay.Web.React"
+      },
       "problemMatcher": [],
       "group": {
         "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
+        "isDefault": false
       }
     }
   ]
