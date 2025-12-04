@@ -49,17 +49,18 @@ RaceDayNutritionPlanner/
 │   │   │   ├── components/        # React components
 │   │   │   ├── types.ts           # TypeScript type definitions
 │   │   │   ├── api.ts             # API client
-│   │   │   ├── nutritionCalculator.ts # Calculation logic
+│   │   │   ├── utils.ts           # Utility functions (formatDuration, etc.)
 │   │   │   ├── App.tsx            # Main application component
 │   │   │   └── App.css            # Application styles
 │   │   ├── package.json           # NPM dependencies
 │   │   └── vite.config.ts         # Vite configuration
-│   ├── RaceDay.Web/               # Legacy Blazor Server web application
-│   │   ├── Program.cs             # Web startup and configuration
-│   │   ├── Components/            # Blazor razor components
-│   │   └── wwwroot/               # Static web assets (CSS, JS)
 │   └── RaceDay.API/               # REST API
-│       └── Program.cs             # API startup and endpoints
+│       ├── Program.cs             # API startup and endpoints
+│       ├── ApiEndpointExtensions.cs # API endpoint definitions
+│       └── Endpoints:
+│           ├── /api/products      # Product catalog endpoints
+│           ├── /api/activities    # Activity presets endpoints
+│           └── /api/plan/generate # Nutrition plan generation (POST)
 ├── tests/
 │   └── RaceDay.Core.Tests/        # Unit tests (59 tests, 100% coverage)
 │       ├── NutritionCalculatorTests.cs
@@ -167,21 +168,10 @@ npm run preview
 - Interactive form for athlete profile (body weight)
 - Race configuration (sport type, duration, temperature, intensity)
 - Dynamic product management (add/remove gels and drinks)
-- Real-time nutrition plan calculation
+- Server-side nutrition plan calculation via API
 - Visual display of targets and intake schedule
 - Product browser with filtering capabilities
 - Responsive design with modern UI
-
-### Legacy Blazor Web Application
-
-The original Blazor Server web application is still available:
-
-```shell
-# Run the Blazor web application
-dotnet run --project src/RaceDay.Web/RaceDay.Web.csproj
-```
-
-Then navigate to the URL shown in the console to access the Blazor interface.
 
 ### REST API (Swagger/OpenAPI)
 
@@ -373,7 +363,7 @@ The application follows a **separation of concerns** pattern:
 1. **RaceDay.Web.React** (Presentation Layer - React)
    - Modern React web application with TypeScript
    - Built with Vite for fast development and optimized builds
-   - Interactive UI with real-time calculations
+   - Interactive UI with server-side calculations
    - Communicates with API via REST
    - Located at: `src/RaceDay.Web.React`
    - **Components**:
@@ -383,20 +373,18 @@ The application follows a **separation of concerns** pattern:
      - `ProductSelector`: Browse and add products from catalog
      - `PlanResults`: Display nutrition targets and schedule
 
-2. **RaceDay.Web** (Presentation Layer - Legacy Blazor)
-   - Legacy Blazor Server web application
-   - Interactive UI with real-time calculations
-   - Communicates with API via HttpClient
-   - Located at: `src/RaceDay.Web`
-
-3. **RaceDay.API** (Application/API Layer)
+2. **RaceDay.API** (Application/API Layer)
    - ASP.NET Core REST API with Swagger documentation
-   - Product query endpoints with CORS support
+   - Product and activity query endpoints
+   - Nutrition plan generation endpoint (POST /api/plan/generate)
+   - CORS support for frontend integration
    - Located at: `src/RaceDay.API`
    - Access Swagger UI at: `/swagger/ui`
 
-4. **RaceDay.Core** (Business Logic Layer)
+3. **RaceDay.Core** (Business Logic Layer)
    - Pure business logic and calculations
+   - `NutritionCalculator`: Calculate hourly nutrition targets
+   - `PlanGenerator`: Generate time-based intake schedules
    - Data access through repositories
    - Immutable domain models
    - Located at: `src/RaceDay.Core`

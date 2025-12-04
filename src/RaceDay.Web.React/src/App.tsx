@@ -15,15 +15,8 @@ function App() {
   const [temperature, setTemperature] = useState(20);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
 
-  const [gels, setGels] = useState<ProductEditor[]>([
-    { name: 'Maurten Gel 100', carbsG: 25, sodiumMg: 100, volumeMl: 0, brand: 'Maurten' },
-    { name: 'Gu Energy Gel', carbsG: 22, sodiumMg: 50, volumeMl: 0, brand: 'GU' }
-  ]);
-
-  const [drinks, setDrinks] = useState<ProductEditor[]>([
-    { name: 'Maurten Drink 500ml', carbsG: 30, sodiumMg: 300, volumeMl: 500, brand: 'Maurten' },
-    { name: 'Isotonic Drink 500ml', carbsG: 25, sodiumMg: 200, volumeMl: 500, brand: 'Generic' }
-  ]);
+  const [gels, setGels] = useState<ProductEditor[]>([]);
+  const [drinks, setDrinks] = useState<ProductEditor[]>([]);
 
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [schedule, setSchedule] = useState<ScheduleDisplayItem[]>([]);

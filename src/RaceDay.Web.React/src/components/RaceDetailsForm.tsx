@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { SportType, IntensityLevel, type ActivityInfo } from '../types';
 import { api } from '../api';
-import { formatDuration } from '../nutritionCalculator';
+import { formatDuration } from '../utils';
 
 interface RaceDetailsFormProps {
   sportType: SportType;

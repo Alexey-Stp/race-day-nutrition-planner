@@ -186,7 +186,7 @@ public static class ApiEndpointExtensions
     }
 
     // Plan Generation Handlers
-    private static IResult GeneratePlan(PlanGenerationRequest request, CancellationToken cancellationToken)
+    private static IResult GeneratePlan(PlanGenerationRequest request)
     {
         try
         {
