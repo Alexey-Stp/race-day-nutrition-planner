@@ -1,17 +1,35 @@
 ﻿namespace RaceDay.Core;
 
+/// <summary>
+/// Generates race nutrition plans with time-based schedules
+/// </summary>
 public static class PlanGenerator
 {
+    /// <summary>
+    /// Generates a complete nutrition plan for the race
+    /// </summary>
+    /// <param name="race">Race profile</param>
+    /// <param name="athlete">Athlete profile</param>
+    /// <param name="products">Available nutrition products</param>
+    /// <param name="intervalMin">Time interval between intakes in minutes (default: 20)</param>
+    /// <returns>Complete race nutrition plan with schedule</returns>
+    /// <exception cref="MissingProductException">Thrown when required product types are missing</exception>
+    /// <exception cref="ValidationException">Thrown when input validation fails</exception>
     public static RaceNutritionPlan Generate(
         RaceProfile race,
         AthleteProfile athlete,
         List<Product> products,
         int intervalMin = 20)
     {
+        // Validate inputs
+        Validation.ValidateRaceProfile(race);
+        Validation.ValidateAthleteProfile(athlete);
+        Validation.ValidateInterval(intervalMin);
+
         var gel = products.FirstOrDefault(p => p.ProductType == "gel")
-            ?? throw new Exception("Gel product not found.");
+            ?? throw new MissingProductException("gel");
         var drink = products.FirstOrDefault(p => p.ProductType == "drink")
-            ?? throw new Exception("Drink product not found.");
+            ?? throw new MissingProductException("drink");
 
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 

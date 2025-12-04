@@ -3,41 +3,49 @@ using System.Text.Json;
 
 namespace RaceDay.Core;
 
-public class ProductRepository
+/// <summary>
+/// Repository for loading and accessing nutrition product information from embedded JSON files
+/// </summary>
+public class ProductRepository : IProductRepository
 {
     private static List<ProductInfo>? _products;
-    private static readonly object _lock = new object();
+    private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-    public static async Task<List<ProductInfo>> GetAllProductsAsync()
+    public async Task<List<ProductInfo>> GetAllProductsAsync()
     {
         if (_products != null)
             return _products;
 
-        lock (_lock)
+        await _semaphore.WaitAsync();
+        try
         {
             if (_products != null)
                 return _products;
 
-            _products = LoadProductsFromJsonFiles();
+            _products = await Task.Run(() => LoadProductsFromJsonFiles());
+        }
+        finally
+        {
+            _semaphore.Release();
         }
 
-        return await Task.FromResult(_products);
+        return _products;
     }
 
-    public static async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType)
+    public async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType)
     {
         var all = await GetAllProductsAsync();
         return all.Where(p => p.ProductType.Equals(productType, StringComparison.OrdinalIgnoreCase))
                   .ToList();
     }
 
-    public static async Task<ProductInfo?> GetProductByIdAsync(string id)
+    public async Task<ProductInfo?> GetProductByIdAsync(string id)
     {
         var all = await GetAllProductsAsync();
         return all.FirstOrDefault(p => p.Id == id);
     }
 
-    public static async Task<List<ProductInfo>> SearchProductsAsync(string query)
+    public async Task<List<ProductInfo>> SearchProductsAsync(string query)
     {
         var all = await GetAllProductsAsync();
         var lowerQuery = query.ToLower();
