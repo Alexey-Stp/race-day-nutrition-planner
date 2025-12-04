@@ -132,8 +132,8 @@ function App() {
   return (
     <div className="planner-container">
       <div className="header">
-        <h1>🏁 Race Day Nutrition Planner</h1>
-        <p className="subtitle">Calculate your personalized nutrition strategy for race day</p>
+        <h1>Race Day Nutrition Planner</h1>
+        <p className="subtitle">Personalized nutrition strategy</p>
       </div>
 
       <div className="content">
@@ -153,70 +153,68 @@ function App() {
             onIntensityChange={setIntensity}
           />
           
+          <ProductsEditor
+            gels={gels}
+            drinks={drinks}
+            onGelsChange={setGels}
+            onDrinksChange={setDrinks}
+          />
+
+          <div className="product-browser-section">
+            <h2>Add Products</h2>
+            <ProductSelector onProductAdded={addProductToEditor} />
+          </div>
+          
           <button onClick={calculatePlan} className="btn btn-primary btn-lg btn-calculate">
-            📊 Calculate Nutrition Plan
+            Calculate Plan
           </button>
         </div>
 
-        {plan && (
-          <div className="product-schedule-section">
-            <h2>Your Product Schedule</h2>
-            <p className="schedule-info">
-              Weight: {athleteWeight} kg | Duration: {duration} hours
-            </p>
-            
-            <div className="schedule-table-wrapper">
-              <table className="schedule-table">
-                <thead>
-                  <tr>
-                    <th>Time (min)</th>
-                    <th>Product</th>
-                    <th>Brand</th>
-                    <th>Type</th>
-                    <th>Calories (kcal)</th>
-                    <th>Carbs (g)</th>
-                    <th>Sodium (mg)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {schedule.map((item, index) => (
-                    <tr key={`${item.timeMin}-${item.productName}-${index}`}>
-                      <td className="time-col">{item.timeMin}</td>
-                      <td className="product-col">{item.productName}</td>
-                      <td className="brand-col">{item.brand}</td>
-                      <td className="type-col">{item.type}</td>
-                      <td className="number-col">{item.caloriesKcal.toFixed(0)}</td>
-                      <td className="number-col">{item.carbsG.toFixed(1)}</td>
-                      <td className="number-col">{item.sodiumMg.toFixed(0)}</td>
+        <div className="results-container">
+          {plan && (
+            <div className="product-schedule-section">
+              <h2>Nutrition Schedule</h2>
+              <p className="schedule-info">
+                {athleteWeight} kg • {duration}h
+              </p>
+              
+              <div className="schedule-table-wrapper">
+                <table className="schedule-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Product</th>
+                      <th>Calories</th>
+                      <th>Carbs</th>
+                      <th>Sodium</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={4} className="total-label">TOTAL</td>
-                    <td className="number-col total"><strong>{scheduleTotalCalories.toFixed(0)}</strong></td>
-                    <td className="number-col total"><strong>{scheduleTotalCarbs.toFixed(1)}</strong></td>
-                    <td className="number-col total"><strong>{scheduleTotalSodium.toFixed(0)}</strong></td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {schedule.map((item, index) => (
+                      <tr key={`${item.timeMin}-${item.productName}-${index}`}>
+                        <td className="time-col">{item.timeMin}min</td>
+                        <td className="product-col">{item.productName}</td>
+                        <td className="number-col">{item.caloriesKcal.toFixed(0)}</td>
+                        <td className="number-col">{item.carbsG.toFixed(1)}g</td>
+                        <td className="number-col">{item.sodiumMg.toFixed(0)}mg</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={2} className="total-label">TOTAL</td>
+                      <td className="number-col total"><strong>{scheduleTotalCalories.toFixed(0)}</strong></td>
+                      <td className="number-col total"><strong>{scheduleTotalCarbs.toFixed(1)}g</strong></td>
+                      <td className="number-col total"><strong>{scheduleTotalSodium.toFixed(0)}mg</strong></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
             </div>
+          )}
 
-            <ProductsEditor
-              gels={gels}
-              drinks={drinks}
-              onGelsChange={setGels}
-              onDrinksChange={setDrinks}
-            />
-          </div>
-        )}
-
-        <div className="product-browser-section">
-          <h2>Browse Products</h2>
-          <ProductSelector onProductAdded={addProductToEditor} />
+          <PlanResults plan={plan} />
         </div>
-
-        <PlanResults plan={plan} />
       </div>
     </div>
   );
