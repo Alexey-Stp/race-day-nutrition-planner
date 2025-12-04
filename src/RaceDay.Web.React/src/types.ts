@@ -69,12 +69,18 @@ export interface ScheduleItem {
   amountPortions: number;
 }
 
+export interface ProductSummary {
+  productName: string;
+  totalPortions: number;
+}
+
 export interface RaceNutritionPlan {
   targets: NutritionTargets;
   totalCarbsG: number;
   totalFluidsMl: number;
   totalSodiumMg: number;
   schedule: ScheduleItem[];
+  productSummaries: ProductSummary[];
 }
 
 export interface ScheduleDisplayItem {
