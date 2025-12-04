@@ -151,7 +151,7 @@ docker compose up --build -d
 The application will be available at:
 - **Web Application**: http://localhost:8080
 - **API**: http://localhost:5208
-- **Swagger Documentation**: http://localhost:5208/swagger/ui
+- **Swagger Documentation** (Development only): http://localhost:5208/swagger/ui
 
 To stop the containers:
 

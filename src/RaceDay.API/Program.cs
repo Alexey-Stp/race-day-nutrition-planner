@@ -22,12 +22,14 @@ builder.Services.AddSingleton<IProductRepository, ProductRepository>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-// Enable Swagger in all environments for API documentation
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+if (app.Environment.IsDevelopment())
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Race Day Nutrition Planner API v1");
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Race Day Nutrition Planner API v1");
+    });
+}
 
 // Only redirect to HTTPS when not in a container (Azure handles SSL termination at the gateway)
 if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") != "true")
