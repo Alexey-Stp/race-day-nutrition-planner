@@ -1,6 +1,6 @@
 # Race Day Nutrition Planner
 
-A modern .NET application suite that generates personalized nutrition plans for endurance athletes during races and training sessions. Available as both a web application (Blazor) with an interactive UI, a REST API, and a console application for programmatic use.
+A modern .NET application that generates personalized nutrition plans for endurance athletes during races and training sessions. Available as both a web application (Blazor) with an interactive UI and a REST API for programmatic access.
 
 ## Overview
 
@@ -14,14 +14,15 @@ The application generates a time-based schedule showing when and how much of eac
 ## Features
 
 - **Interactive Web UI**: User-friendly Blazor web interface for creating nutrition plans
+- **Activity Presets**: 9 predefined endurance activities (Sprint Tri, Olympic Tri, Half/Full Ironman, Marathon, etc.)
 - **Personalized Calculations**: Adjusts nutrition targets based on athlete weight, race intensity, duration, and temperature
-- **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars)
-- **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan
+- **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars) from multiple brands
+- **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan with 20-minute intervals
 - **Smart Recommendations**: 
   - Increases carb intake for harder efforts and longer durations (5+ hours)
   - Adjusts fluid needs based on temperature and athlete weight
   - Optimizes sodium intake for hot conditions and heavier athletes
-- **Programmatic API**: Core library can be integrated into other applications
+- **REST API**: Full programmatic access via REST endpoints with Swagger documentation
 
 ## Architecture
 
@@ -39,19 +40,21 @@ RaceDayNutritionPlanner/
 │   │   ├── NutritionConstants.cs  # Configuration constants
 │   │   ├── Validation.cs          # Input validation
 │   │   ├── Exceptions.cs          # Custom exceptions
+│   │   ├── ActivityRepository.cs  # Predefined activities
 │   │   ├── IProductRepository.cs  # Repository interface
 │   │   ├── ProductRepository.cs   # Product data access
 │   │   └── Data/                  # Embedded product catalogs (JSON)
-│   ├── RaceDay.CLI/               # Console application
-│   │   └── Program.cs             # CLI entry point
 │   ├── RaceDay.Web/               # Blazor Server web application
-│   │   ├── Program.cs             # Web API and startup
-│   │   ├── Components/            # Blazor components
-│   │   └── wwwroot/               # Static web assets
+│   │   ├── Program.cs             # Web startup and configuration
+│   │   ├── Components/            # Blazor razor components
+│   │   └── wwwroot/               # Static web assets (CSS, JS)
 │   └── RaceDay.API/               # REST API
-│       └── Program.cs             # API entry point
+│       └── Program.cs             # API startup and endpoints
 ├── tests/
-│   └── RaceDay.Core.Tests/        # Unit tests for core logic
+│   └── RaceDay.Core.Tests/        # Unit tests (42 tests, 100% coverage)
+│       ├── NutritionCalculatorTests.cs
+│       ├── PlanGeneratorTests.cs
+│       └── ValidationTests.cs
 └── RaceDayNutritionPlanner.sln
 ```
 
@@ -145,31 +148,38 @@ Navigate to `https://localhost:[port]/swagger/ui` to access the interactive Swag
 
 #### API Endpoints
 
-- **GET /api/products** - Retrieve all products
+**Products**
+- **GET /api/products** - Retrieve all products with full details
 - **GET /api/products/{id}** - Get a specific product by ID
 - **GET /api/products/type/{type}** - Filter products by type (gel, drink, bar)
-- **GET /api/products/search?query={query}** - Search products by name, brand, or type
+- **GET /api/products/search?query={query}** - Search products by name or brand
 
-#### Example API Call
+**Activities**
+- **GET /api/activities** - Retrieve all predefined activities
+- **GET /api/activities/{id}** - Get a specific activity by ID
+- **GET /api/activities/type/{sportType}** - Filter activities by sport type (Run, Bike, Triathlon)
+- **GET /api/activities/search?query={query}** - Search activities by name
+
+#### Example API Calls
 
 ```bash
 # Get all products
 curl https://localhost:7001/api/products
 
-# Get products by type
+# Get gel products
 curl https://localhost:7001/api/products/type/gel
 
-# Search products
+# Search products by brand
 curl https://localhost:7001/api/products/search?query=maurten
-```
 
-### CLI Application
+# Get all predefined activities
+curl https://localhost:7001/api/activities
 
-For programmatic use or integration into scripts:
+# Get running activities
+curl https://localhost:7001/api/activities/type/Run
 
-```shell
-# Run the CLI application
-dotnet run --project src/RaceDay.CLI/RaceDay.CLI.csproj
+# Search activities
+curl https://localhost:7001/api/activities/search?query=Marathon
 ```
 
 ## Usage
@@ -195,15 +205,23 @@ dotnet run --project src/RaceDay.CLI/RaceDay.CLI.csproj
 
 ### Programmatic Usage Example
 
-For integrating the core library into your own applications:
+For integrating the REST API into your own applications:
 
 ```csharp
+using HttpClient httpClient = new();
+
+// Get available products from API
+var productsResponse = await httpClient.GetAsync("https://localhost:7001/api/products");
+var products = await productsResponse.Content.ReadAsAsync<List<ProductInfo>>();
+
+// Get available activities from API
+var activitiesResponse = await httpClient.GetAsync("https://localhost:7001/api/activities");
+var activities = await activitiesResponse.Content.ReadAsAsync<List<ActivityInfo>>();
+
+// Use core library for calculations
 using RaceDay.Core;
 
-// Define athlete profile
 var athlete = new AthleteProfile(WeightKg: 89);
-
-// Define race profile
 var race = new RaceProfile(
     SportType.Triathlon,
     DurationHours: 4.5,
@@ -211,17 +229,9 @@ var race = new RaceProfile(
     Intensity: IntensityLevel.Moderate
 );
 
-// Define available products
-var products = new List<Product>
-{
-    new Product("Maurten Gel", "gel", CarbsG: 25, SodiumMg: 100),
-    new Product("Isotonic Drink 500ml", "drink", CarbsG: 30, SodiumMg: 300, VolumeMl: 500)
-};
+var selectedProducts = products.Take(2).ToList();
+var plan = PlanGenerator.Generate(race, athlete, selectedProducts);
 
-// Generate nutrition plan
-var plan = PlanGenerator.Generate(race, athlete, products);
-
-// Display results
 Console.WriteLine($"Carbs/h:  {plan.Targets.CarbsGPerHour} g");
 Console.WriteLine($"Fluids/h: {plan.Targets.FluidsMlPerHour} ml");
 Console.WriteLine($"Sodium/h: {plan.Targets.SodiumMgPerHour} mg");
@@ -285,11 +295,18 @@ dotnet test tests/RaceDay.Core.Tests/RaceDay.Core.Tests.csproj
 ```
 
 Current test coverage includes:
-- Nutrition calculation logic for all intensity levels
-- Temperature and weight adjustments
-- Long race bonuses
-- Input validation
-- Exception handling
+- **NutritionCalculator**: 100% coverage (14 tests)
+  - Nutrition calculations for all intensity levels
+  - Temperature and weight adjustments
+  - Long race bonuses
+- **PlanGenerator**: Full coverage (6 tests)
+  - Schedule generation with custom intervals
+  - Product validation and exception handling
+- **Validation**: Full coverage (22 tests)
+  - Race profile, athlete profile, product, and interval validation
+  - Boundary conditions and error messages
+
+**Total: 42 tests, all passing**
 
 ## Architecture Details
 
