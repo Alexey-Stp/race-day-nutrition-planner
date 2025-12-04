@@ -7,22 +7,35 @@
     
     <div class="filter-section">
         <div class="filter-group">
-            <label>Product Type:</label>
-            <select @bind="selectedType" @bind:after="FilterProducts">
-                <option value="">All Types</option>
-                <option value="gel">Gels</option>
-                <option value="drink">Drinks</option>
-                <option value="bar">Bars</option>
+            <label>Brand:</label>
+            <select @bind="selectedBrand" @bind:after="FilterProducts">
+                <option value="">All Brands</option>
+                @if (availableBrands != null)
+                {
+                    @foreach (var brand in availableBrands)
+                    {
+                        <option value="@brand">@brand</option>
+                    }
+                }
             </select>
         </div>
         
         <div class="filter-group">
-            <label>Brand:</label>
-            <select @bind="selectedBrand" @bind:after="FilterProducts">
-                <option value="">All Brands</option>
-                <option value="SiS">SiS</option>
-                <option value="Maurten">Maurten</option>
-            </select>
+            <label>Product Types:</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="showGels" @bind:after="FilterProducts" />
+                    <span>Gels</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="showDrinks" @bind:after="FilterProducts" />
+                    <span>Drinks</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" @bind="showBars" @bind:after="FilterProducts" />
+                    <span>Bars</span>
+                </label>
+            </div>
         </div>
         
         <div class="filter-group">
@@ -82,8 +95,13 @@
 
 @code {
     private List<ProductInfo>? products;
-    private string selectedType = "";
+    private List<ProductInfo>? allProducts;
+    private List<string>? availableBrands;
+    
     private string selectedBrand = "";
+    private bool showGels = true;
+    private bool showDrinks = true;
+    private bool showBars = true;
     private string searchQuery = "";
 
     [Parameter]
@@ -98,52 +116,63 @@
     {
         try
         {
-            products = await Http.GetFromJsonAsync<List<ProductInfo>>("/api/products") ?? new List<ProductInfo>();
-            await FilterProducts();
+            allProducts = await Http.GetFromJsonAsync<List<ProductInfo>>("/api/products") ?? new List<ProductInfo>();
+            ExtractBrands();
+            FilterProducts();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading products: {ex.Message}");
-            products = new List<ProductInfo>();
+            allProducts = new List<ProductInfo>();
         }
     }
 
-    private async Task FilterProducts()
+    private void ExtractBrands()
     {
-        try
+        if (allProducts == null) return;
+        
+        availableBrands = allProducts
+            .Select(p => p.Brand)
+            .Distinct()
+            .OrderBy(b => b)
+            .ToList();
+    }
+
+    private void FilterProducts()
+    {
+        if (allProducts == null) return;
+
+        var filtered = allProducts.AsEnumerable();
+
+        // Filter by brand
+        if (!string.IsNullOrEmpty(selectedBrand))
         {
-            var url = "/api/products";
-            var queryParams = new List<string>();
-
-            if (!string.IsNullOrEmpty(selectedType))
-            {
-                queryParams.Add($"type={selectedType}");
-            }
-
-            if (!string.IsNullOrEmpty(searchQuery))
-            {
-                queryParams.Add($"search={Uri.EscapeDataString(searchQuery)}");
-            }
-
-            if (queryParams.Count > 0)
-            {
-                url += "?" + string.Join("&", queryParams);
-            }
-
-            var allProducts = await Http.GetFromJsonAsync<List<ProductInfo>>(url) ?? new List<ProductInfo>();
-
-            // Filter by brand if selected
-            if (!string.IsNullOrEmpty(selectedBrand))
-            {
-                allProducts = allProducts.Where(p => p.Brand == selectedBrand).ToList();
-            }
-
-            products = allProducts;
+            filtered = filtered.Where(p => p.Brand == selectedBrand);
         }
-        catch (Exception ex)
+
+        // Filter by product types (checkboxes)
+        var typeFilter = new List<string>();
+        if (showGels) typeFilter.Add("gel");
+        if (showDrinks) typeFilter.Add("drink");
+        if (showBars) typeFilter.Add("bar");
+
+        if (typeFilter.Count > 0)
         {
-            Console.WriteLine($"Error filtering products: {ex.Message}");
+            filtered = filtered.Where(p => typeFilter.Contains(p.ProductType));
         }
+
+        // Filter by search query
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            var query = searchQuery.ToLower();
+            filtered = filtered.Where(p =>
+                p.Name.ToLower().Contains(query) ||
+                p.Brand.ToLower().Contains(query) ||
+                p.ProductType.ToLower().Contains(query)
+            );
+        }
+
+        products = filtered.ToList();
     }
 
     private async Task OnProductSelected(ProductInfo product)

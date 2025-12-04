@@ -4,7 +4,10 @@
     <h2>🏁 Race Details</h2>
     
     <div class="form-group">
-        <label for="sport">Sport Type</label>
+        <div class="label-with-tooltip">
+            <label for="sport">Sport Type</label>
+            <span class="tooltip-icon" title="Select the primary sport type for your race">ℹ️</span>
+        </div>
         <select id="sport" @bind="SportType" class="form-control">
             <option value="@Core.SportType.Run">🏃 Running</option>
             <option value="@Core.SportType.Bike">🚴 Cycling</option>
@@ -13,31 +16,46 @@
     </div>
 
     <div class="form-group">
-        <label for="duration">Duration</label>
-        <div class="input-group">
-            <input type="number" id="duration" @bind="Duration" class="form-control" 
-                   min="0.5" max="24" step="0.5" placeholder="e.g. 2" />
-            <span class="input-unit">hours</span>
+        <div class="label-with-tooltip">
+            <label for="duration">Duration</label>
+            <span class="tooltip-icon" title="Use the slider to set your race duration">ℹ️</span>
+        </div>
+        <div class="duration-display">
+            <strong>@FormatDuration(Duration)</strong>
+        </div>
+        <div class="slider-group">
+            <input type="range" id="duration" @bind="Duration" @bind:after="OnDurationChanged" 
+                   class="form-slider" min="0.5" max="24" step="0.25" />
+            <div class="slider-labels">
+                <span>0.5h</span>
+                <span>24h</span>
+            </div>
         </div>
     </div>
 
     <div class="form-group">
-        <label for="temperature">Temperature</label>
+        <div class="label-with-tooltip">
+            <label for="temperature">Temperature</label>
+            <span class="tooltip-icon" title="Affects fluid and sodium requirements. Higher temperatures increase needs.">ℹ️</span>
+        </div>
         <div class="input-group">
             <input type="number" id="temperature" @bind="Temperature" class="form-control" 
                    min="-10" max="40" step="1" placeholder="e.g. 20" />
             <span class="input-unit">°C</span>
         </div>
-        <small class="form-text">Affects fluid and sodium requirements.</small>
     </div>
 
     <div class="form-group">
-        <label for="intensity">Intensity Level</label>
+        <div class="label-with-tooltip">
+            <label for="intensity">Intensity Level</label>
+            <span class="tooltip-icon" title="Easy: Recovery pace, 60-70% max HR | Moderate: Steady pace, 70-85% max HR | Hard: Threshold/race pace, 85%+ max HR">ℹ️</span>
+        </div>
         <select id="intensity" @bind="RaceIntensity" class="form-control">
-            <option value="@IntensityLevel.Easy">Easy</option>
-            <option value="@IntensityLevel.Moderate">Moderate</option>
-            <option value="@IntensityLevel.Hard">Hard</option>
+            <option value="@IntensityLevel.Easy">Easy - Recovery/endurance pace</option>
+            <option value="@IntensityLevel.Moderate">Moderate - Steady/comfortable pace</option>
+            <option value="@IntensityLevel.Hard">Hard - Threshold/race pace</option>
         </select>
+        <small class="form-text">Higher intensity increases carbohydrate consumption.</small>
     </div>
 </div>
 
@@ -65,4 +83,28 @@
 
     [Parameter]
     public EventCallback<IntensityLevel> RaceIntensityChanged { get; set; }
+
+    private string FormatDuration(double hours)
+    {
+        var wholeHours = (int)hours;
+        var minutes = (int)((hours - wholeHours) * 60);
+        
+        if (wholeHours == 0)
+        {
+            return $"{minutes} minutes";
+        }
+        else if (minutes == 0)
+        {
+            return $"{wholeHours} hour{(wholeHours > 1 ? "s" : "")}";
+        }
+        else
+        {
+            return $"{wholeHours} hour{(wholeHours > 1 ? "s" : "")} {minutes} minutes";
+        }
+    }
+
+    private async Task OnDurationChanged()
+    {
+        await DurationChanged.InvokeAsync(Duration);
+    }
 }
