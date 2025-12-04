@@ -50,6 +50,62 @@
       "isBackground": true
     },
     {
+      "label": "Open Web Browser",
+      "type": "shell",
+      "command": "cmd",
+      "windows": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "start http://localhost:5001"
+        ]
+      },
+      "osx": {
+        "command": "open",
+        "args": [
+          "http://localhost:5001"
+        ]
+      },
+      "linux": {
+        "command": "xdg-open",
+        "args": [
+          "http://localhost:5001"
+        ]
+      },
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Open Swagger Browser",
+      "type": "shell",
+      "command": "cmd",
+      "windows": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "start http://localhost:5208/swagger/ui"
+        ]
+      },
+      "osx": {
+        "command": "open",
+        "args": [
+          "http://localhost:5208/swagger/ui"
+        ]
+      },
+      "linux": {
+        "command": "xdg-open",
+        "args": [
+          "http://localhost:5208/swagger/ui"
+        ]
+      },
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "Start API & Web (Parallel)",
       "dependsOn": [
         "Start API (Swagger)",
@@ -68,6 +124,58 @@
         "showReuseMessage": true,
         "clear": false
       }
+    },
+    {
+      "label": "Start API & Web with Browsers",
+      "dependsOn": [
+        "Start API (Swagger)",
+        "Start Web UI",
+        "Delay then Open Browsers"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
+    {
+      "label": "Delay then Open Browsers",
+      "type": "shell",
+      "command": "powershell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "Start-Sleep -Seconds 5; Start-Process 'http://localhost:5001'; Start-Process 'http://localhost:5208/swagger/ui'"
+        ]
+      },
+      "osx": {
+        "command": "sleep",
+        "args": [
+          "5",
+          "&&",
+          "open",
+          "http://localhost:5001",
+          "&&",
+          "open",
+          "http://localhost:5208/swagger/ui"
+        ]
+      },
+      "linux": {
+        "command": "sh",
+        "args": [
+          "-c",
+          "sleep 5 && xdg-open http://localhost:5001 & xdg-open http://localhost:5208/swagger/ui"
+        ]
+      },
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": []
     },
     {
       "label": "Build",
