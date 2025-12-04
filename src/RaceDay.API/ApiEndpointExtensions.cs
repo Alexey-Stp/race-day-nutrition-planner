@@ -58,11 +58,11 @@ public static class ApiEndpointExtensions
     }
 
     // Product Handlers
-    private static async Task<IResult> GetAllProducts(IProductRepository repository)
+    private static async Task<IResult> GetAllProducts(IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
-            var products = await repository.GetAllProductsAsync();
+            var products = await repository.GetAllProductsAsync(cancellationToken);
             return Results.Ok(products);
         }
         catch (Exception ex)
@@ -71,11 +71,11 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetProductById(string id, IProductRepository repository)
+    private static async Task<IResult> GetProductById(string id, IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
-            var product = await repository.GetProductByIdAsync(id);
+            var product = await repository.GetProductByIdAsync(id, cancellationToken);
             return product == null ? Results.NotFound() : Results.Ok(product);
         }
         catch (Exception ex)
@@ -84,11 +84,11 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetProductsByType(string type, IProductRepository repository)
+    private static async Task<IResult> GetProductsByType(string type, IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
-            var products = await repository.GetProductsByTypeAsync(type);
+            var products = await repository.GetProductsByTypeAsync(type, cancellationToken);
             return Results.Ok(products);
         }
         catch (Exception ex)
@@ -97,14 +97,14 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> SearchProducts(string query, IProductRepository repository)
+    private static async Task<IResult> SearchProducts(string query, IProductRepository repository, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
 
         try
         {
-            var products = await repository.SearchProductsAsync(query);
+            var products = await repository.SearchProductsAsync(query, cancellationToken);
             return Results.Ok(products);
         }
         catch (Exception ex)
@@ -114,11 +114,11 @@ public static class ApiEndpointExtensions
     }
 
     // Activity Handlers
-    private static async Task<IResult> GetAllActivities()
+    private static async Task<IResult> GetAllActivities(CancellationToken cancellationToken)
     {
         try
         {
-            var activities = await ActivityRepository.GetAllActivitiesAsync();
+            var activities = await ActivityRepository.GetAllActivitiesAsync(cancellationToken);
             return Results.Ok(activities);
         }
         catch (Exception ex)
@@ -127,11 +127,11 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetActivityById(string id)
+    private static async Task<IResult> GetActivityById(string id, CancellationToken cancellationToken)
     {
         try
         {
-            var activity = await ActivityRepository.GetActivityByIdAsync(id);
+            var activity = await ActivityRepository.GetActivityByIdAsync(id, cancellationToken);
             return activity == null ? Results.NotFound() : Results.Ok(activity);
         }
         catch (Exception ex)
@@ -140,14 +140,14 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetActivitiesByType(string sportType)
+    private static async Task<IResult> GetActivitiesByType(string sportType, CancellationToken cancellationToken)
     {
         try
         {
             if (!Enum.TryParse<SportType>(sportType, ignoreCase: true, out var parsedSportType))
                 return Results.BadRequest("Invalid sport type. Valid values: Run, Bike, Triathlon");
 
-            var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(parsedSportType);
+            var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(parsedSportType, cancellationToken);
             return Results.Ok(activities);
         }
         catch (Exception ex)
@@ -156,14 +156,14 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> SearchActivities(string query)
+    private static async Task<IResult> SearchActivities(string query, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
 
         try
         {
-            var activities = await ActivityRepository.SearchActivitiesAsync(query);
+            var activities = await ActivityRepository.SearchActivitiesAsync(query, cancellationToken);
             return Results.Ok(activities);
         }
         catch (Exception ex)

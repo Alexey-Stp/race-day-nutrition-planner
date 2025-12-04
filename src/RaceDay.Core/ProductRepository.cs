@@ -11,18 +11,18 @@ public class ProductRepository : IProductRepository
     private static List<ProductInfo>? _products;
     private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
-    public async Task<List<ProductInfo>> GetAllProductsAsync()
+    public async Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)
     {
         if (_products != null)
             return _products;
 
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync(cancellationToken);
         try
         {
             if (_products != null)
                 return _products;
 
-            _products = await Task.Run(() => LoadProductsFromJsonFiles());
+            _products = await Task.Run(() => LoadProductsFromJsonFiles(), cancellationToken);
         }
         finally
         {
@@ -32,22 +32,22 @@ public class ProductRepository : IProductRepository
         return _products;
     }
 
-    public async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType)
+    public async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType, CancellationToken cancellationToken = default)
     {
-        var all = await GetAllProductsAsync();
+        var all = await GetAllProductsAsync(cancellationToken);
         return all.Where(p => p.ProductType.Equals(productType, StringComparison.OrdinalIgnoreCase))
                   .ToList();
     }
 
-    public async Task<ProductInfo?> GetProductByIdAsync(string id)
+    public async Task<ProductInfo?> GetProductByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var all = await GetAllProductsAsync();
+        var all = await GetAllProductsAsync(cancellationToken);
         return all.FirstOrDefault(p => p.Id == id);
     }
 
-    public async Task<List<ProductInfo>> SearchProductsAsync(string query)
+    public async Task<List<ProductInfo>> SearchProductsAsync(string query, CancellationToken cancellationToken = default)
     {
-        var all = await GetAllProductsAsync();
+        var all = await GetAllProductsAsync(cancellationToken);
         var lowerQuery = query.ToLower();
         
         return all.Where(p => 

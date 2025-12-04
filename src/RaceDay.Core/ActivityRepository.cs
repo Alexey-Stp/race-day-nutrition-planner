@@ -14,19 +14,19 @@ public class ActivityRepository
     /// <summary>
     /// Get all supported activities
     /// </summary>
-    public static async Task<List<ActivityInfo>> GetAllActivitiesAsync()
+    public static async Task<List<ActivityInfo>> GetAllActivitiesAsync(CancellationToken cancellationToken = default)
     {
         if (_activities != null)
             return _activities;
 
-        _activities = await LoadActivitiesFromJsonAsync();
+        _activities = await LoadActivitiesFromJsonAsync(cancellationToken);
         return _activities;
     }
 
     /// <summary>
     /// Load activities from embedded JSON resource
     /// </summary>
-    private static async Task<List<ActivityInfo>> LoadActivitiesFromJsonAsync()
+    private static async Task<List<ActivityInfo>> LoadActivitiesFromJsonAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -38,9 +38,13 @@ public class ActivityRepository
                 throw new FileNotFoundException($"Embedded resource '{resourceName}' not found");
 
             using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync();
+            var json = await reader.ReadToEndAsync(cancellationToken);
 
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var options = new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true,
+                Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+            };
             var activities = JsonSerializer.Deserialize<List<ActivityInfo>>(json, options);
 
             return activities ?? new List<ActivityInfo>();
@@ -54,30 +58,30 @@ public class ActivityRepository
     /// <summary>
     /// Get activity by ID
     /// </summary>
-    public static async Task<ActivityInfo?> GetActivityByIdAsync(string id)
+    public static async Task<ActivityInfo?> GetActivityByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var activities = await GetAllActivitiesAsync();
+        var activities = await GetAllActivitiesAsync(cancellationToken);
         return activities.FirstOrDefault(a => a.Id == id);
     }
 
     /// <summary>
     /// Get activities by sport type
     /// </summary>
-    public static async Task<List<ActivityInfo>> GetActivitiesBySportTypeAsync(SportType sportType)
+    public static async Task<List<ActivityInfo>> GetActivitiesBySportTypeAsync(SportType sportType, CancellationToken cancellationToken = default)
     {
-        var activities = await GetAllActivitiesAsync();
+        var activities = await GetAllActivitiesAsync(cancellationToken);
         return activities.Where(a => a.SportType == sportType).ToList();
     }
 
     /// <summary>
     /// Search activities by name or description
     /// </summary>
-    public static async Task<List<ActivityInfo>> SearchActivitiesAsync(string query)
+    public static async Task<List<ActivityInfo>> SearchActivitiesAsync(string query, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query))
             return new List<ActivityInfo>();
 
-        var activities = await GetAllActivitiesAsync();
+        var activities = await GetAllActivitiesAsync(cancellationToken);
         var lowerQuery = query.ToLower();
 
         return activities.Where(a =>

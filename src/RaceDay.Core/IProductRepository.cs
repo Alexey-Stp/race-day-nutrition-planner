@@ -8,20 +8,20 @@ public interface IProductRepository
     /// <summary>
     /// Gets all available products
     /// </summary>
-    Task<List<ProductInfo>> GetAllProductsAsync();
+    Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets products filtered by type
     /// </summary>
-    Task<List<ProductInfo>> GetProductsByTypeAsync(string productType);
+    Task<List<ProductInfo>> GetProductsByTypeAsync(string productType, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets a specific product by ID
     /// </summary>
-    Task<ProductInfo?> GetProductByIdAsync(string id);
+    Task<ProductInfo?> GetProductByIdAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Searches products by name, brand, or ID
     /// </summary>
-    Task<List<ProductInfo>> SearchProductsAsync(string query);
+    Task<List<ProductInfo>> SearchProductsAsync(string query, CancellationToken cancellationToken = default);
 }
