@@ -1,6 +1,6 @@
 # Race Day Nutrition Planner
 
-A modern .NET application that generates personalized nutrition plans for endurance athletes during races and training sessions. Available as both a web application (Blazor) with an interactive UI and a REST API for programmatic access.
+A modern application that generates personalized nutrition plans for endurance athletes during races and training sessions. Available as both a web application (React) with an interactive UI and a REST API for programmatic access.
 
 ## Overview
 
@@ -13,7 +13,7 @@ The application generates a time-based schedule showing when and how much of eac
 
 ## Features
 
-- **Interactive Web UI**: User-friendly Blazor web interface for creating nutrition plans
+- **Interactive Web UI**: User-friendly React web interface for creating nutrition plans
 - **Activity Presets**: 9 predefined endurance activities (Sprint Tri, Olympic Tri, Half/Full Ironman, Marathon, etc.)
 - **Personalized Calculations**: Adjusts nutrition targets based on athlete weight, race intensity, duration, and temperature
 - **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars) from multiple brands
@@ -44,17 +44,29 @@ RaceDayNutritionPlanner/
 │   │   ├── IProductRepository.cs  # Repository interface
 │   │   ├── ProductRepository.cs   # Product data access
 │   │   └── Data/                  # Embedded product catalogs (JSON)
-│   ├── RaceDay.Web/               # Blazor Server web application
-│   │   ├── Program.cs             # Web startup and configuration
-│   │   ├── Components/            # Blazor razor components
-│   │   └── wwwroot/               # Static web assets (CSS, JS)
+│   ├── RaceDay.Web.React/         # React web application (Vite + TypeScript)
+│   │   ├── src/
+│   │   │   ├── components/        # React components
+│   │   │   ├── types.ts           # TypeScript type definitions
+│   │   │   ├── api.ts             # API client
+│   │   │   ├── utils.ts           # Utility functions (formatDuration, etc.)
+│   │   │   ├── App.tsx            # Main application component
+│   │   │   └── App.css            # Application styles
+│   │   ├── package.json           # NPM dependencies
+│   │   └── vite.config.ts         # Vite configuration
 │   └── RaceDay.API/               # REST API
-│       └── Program.cs             # API startup and endpoints
+│       ├── Program.cs             # API startup and endpoints
+│       ├── ApiEndpointExtensions.cs # API endpoint definitions
+│       └── Endpoints:
+│           ├── /api/products      # Product catalog endpoints
+│           ├── /api/activities    # Activity presets endpoints
+│           └── /api/plan/generate # Nutrition plan generation (POST)
 ├── tests/
-│   └── RaceDay.Core.Tests/        # Unit tests (42 tests, 100% coverage)
+│   └── RaceDay.Core.Tests/        # Unit tests (59 tests, 100% coverage)
 │       ├── NutritionCalculatorTests.cs
 │       ├── PlanGeneratorTests.cs
-│       └── ValidationTests.cs
+│       ├── ValidationTests.cs
+│       └── ActivityRepositoryTests.cs
 └── RaceDayNutritionPlanner.sln
 ```
 
@@ -91,6 +103,8 @@ Validates input data to ensure:
 ## Requirements
 
 - .NET 9.0 SDK or later
+- Node.js 20.x or later (for React web application)
+- npm 10.x or later (for React web application)
 
 ## Getting Started
 
@@ -109,23 +123,55 @@ dotnet test
 
 ## Running the Application
 
-### Web Application (Recommended)
+### React Web Application (Recommended)
 
-The web application provides an interactive UI for creating nutrition plans:
+The React web application provides a modern, interactive UI for creating nutrition plans:
+
+#### Prerequisites
+First, start the API server (required for the web app to function):
 
 ```shell
-# Run the web application
-dotnet run --project src/RaceDay.Web/RaceDay.Web.csproj
+# Run the API server (in one terminal)
+dotnet run --project src/RaceDay.API/RaceDay.API.csproj
 ```
 
-Then navigate to `https://localhost:5001` (or the URL shown in the console) to access the web interface.
+The API will run on `http://localhost:5208`
+
+#### Running the React App
+
+```shell
+# Navigate to the React app directory
+cd src/RaceDay.Web.React
+
+# Install dependencies (first time only)
+npm install
+
+# Run the development server
+npm run dev
+```
+
+Then navigate to `http://localhost:5173` to access the web interface.
+
+#### Building for Production
+
+```shell
+# Build the React app for production
+cd src/RaceDay.Web.React
+npm run build
+
+# The built files will be in the dist/ directory
+# Serve them with any static file server
+npm run preview
+```
 
 #### Web Features:
 - Interactive form for athlete profile (body weight)
 - Race configuration (sport type, duration, temperature, intensity)
 - Dynamic product management (add/remove gels and drinks)
-- Real-time nutrition plan calculation
+- Server-side nutrition plan calculation via API
 - Visual display of targets and intake schedule
+- Product browser with filtering capabilities
+- Responsive design with modern UI
 
 ### REST API (Swagger/OpenAPI)
 
@@ -314,20 +360,31 @@ Current test coverage includes:
 
 The application follows a **separation of concerns** pattern:
 
-1. **RaceDay.Web** (Presentation Layer)
-   - Blazor Server web application
-   - Interactive UI with real-time calculations
-   - Communicates with API via HttpClient
-   - Located at: `src/RaceDay.Web`
+1. **RaceDay.Web.React** (Presentation Layer - React)
+   - Modern React web application with TypeScript
+   - Built with Vite for fast development and optimized builds
+   - Interactive UI with server-side calculations
+   - Communicates with API via REST
+   - Located at: `src/RaceDay.Web.React`
+   - **Components**:
+     - `AthleteProfileForm`: Body weight input
+     - `RaceDetailsForm`: Activity selection and race parameters
+     - `ProductsEditor`: Manage gels and drinks
+     - `ProductSelector`: Browse and add products from catalog
+     - `PlanResults`: Display nutrition targets and schedule
 
 2. **RaceDay.API** (Application/API Layer)
    - ASP.NET Core REST API with Swagger documentation
-   - Product query endpoints with CORS support
+   - Product and activity query endpoints
+   - Nutrition plan generation endpoint (POST /api/plan/generate)
+   - CORS support for frontend integration
    - Located at: `src/RaceDay.API`
    - Access Swagger UI at: `/swagger/ui`
 
 3. **RaceDay.Core** (Business Logic Layer)
    - Pure business logic and calculations
+   - `NutritionCalculator`: Calculate hourly nutrition targets
+   - `PlanGenerator`: Generate time-based intake schedules
    - Data access through repositories
    - Immutable domain models
    - Located at: `src/RaceDay.Core`
