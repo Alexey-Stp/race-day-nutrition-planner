@@ -154,7 +154,7 @@ function App() {
           />
           
           <button onClick={calculatePlan} className="btn btn-primary btn-lg btn-calculate">
-            📊 Calculate Nutrition Plan
+            Calculate Nutrition Plan
           </button>
         </div>
 
