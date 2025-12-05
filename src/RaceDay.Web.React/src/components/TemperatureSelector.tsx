@@ -19,8 +19,8 @@ export const TemperatureSelector: React.FC<TemperatureSelectorProps> = ({
   return (
     <div className="form-card">
       <div className="form-group inline-group">
-        <label>Temperature</label>
-        <div className="temperature-buttons">
+        <label htmlFor="temperature-buttons">Temperature</label>
+        <div id="temperature-buttons" className="temperature-buttons">
           {temperatureOptions.map((option) => {
             const description = TemperatureDescriptions[option];
             const isSelected = temperature === option;

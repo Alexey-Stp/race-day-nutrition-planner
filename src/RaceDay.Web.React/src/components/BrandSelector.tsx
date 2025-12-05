@@ -92,8 +92,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
 
       {/* Product Types */}
       <div className="form-group">
-        <label>Product Types</label>
-        <div className="checkbox-group">
+        <label htmlFor="product-types-group">Product Types</label>
+        <div id="product-types-group" className="checkbox-group">
           {productTypes.map(type => (
             <label key={type} className="checkbox-label">
               <input
@@ -110,14 +110,14 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
       {/* Brands */}
       <div className="form-group">
         <div className="label-with-buttons">
-          <label>Brands</label>
+          <label htmlFor="brands-group">Brands</label>
           <div className="button-group">
             <button onClick={selectAllBrands} className="link-button">Select All</button>
             <button onClick={deselectAllBrands} className="link-button">Deselect All</button>
           </div>
         </div>
-        <div className="checkbox-group">
-          {Array.from(brands).sort().map(brand => (
+        <div id="brands-group" className="checkbox-group">
+          {Array.from(brands).sort((a, b) => a.localeCompare(b)).map(brand => (
             <label key={brand} className="checkbox-label">
               <input
                 type="checkbox"
@@ -131,8 +131,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
       </div>
 
       <p className="info-text">
-        {selectedBrands.size} brand{selectedBrands.size !== 1 ? 's' : ''} selected • 
-        {' '}{selectedTypes.size} product type{selectedTypes.size !== 1 ? 's' : ''} selected
+        {selectedBrands.size} brand{selectedBrands.size === 1 ? '' : 's'} selected • 
+        {' '}{selectedTypes.size} product type{selectedTypes.size === 1 ? '' : 's'} selected
       </p>
     </div>
   );

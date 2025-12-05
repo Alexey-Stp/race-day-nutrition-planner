@@ -1204,12 +1204,7 @@ html, body {
 }
 
 /* Use existing .targets-grid defined at line 433 for desktop view */
-
-.target-item {
-    background: var(--light);
-    padding: 14px;
-    border-radius: 8px;
-}
+/* Use existing .target-item defined at line 439 for shared styles */
 
 .target-header {
     margin-bottom: 10px;
