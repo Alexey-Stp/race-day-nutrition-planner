@@ -1203,11 +1203,7 @@ html, body {
     margin-bottom: 14px;
 }
 
-.targets-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
+/* Use existing .targets-grid defined at line 433 for desktop view */
 
 .target-item {
     background: var(--light);
@@ -1251,45 +1247,10 @@ html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', monospace;
 }
 
-/* Schedule Table for PlanResults */
-.schedule-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--background);
-}
-
-.schedule-table thead {
-    background: var(--light);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-}
-
-.schedule-table th {
-    padding: 10px 12px;
-    text-align: left;
-    font-weight: 500;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color);
-}
+/* Schedule Table for PlanResults - see primary definition at line 497 */
 
 .schedule-table th.text-right {
     text-align: right;
-}
-
-.schedule-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.8125rem;
-}
-
-.schedule-table tbody tr:hover {
-    background: var(--light);
-}
-
-.schedule-table tbody tr:last-child td {
-    border-bottom: none;
 }
 
 .schedule-table .text-right {
