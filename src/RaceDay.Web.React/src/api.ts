@@ -57,17 +57,21 @@ export const api = {
   async generatePlan(
     athlete: AthleteProfile,
     race: RaceProfile,
-    products: ProductEditor[]
+    products: (ProductEditor & { productType: string })[]
   ): Promise<RaceNutritionPlan> {
+    // Map enums to integers for API
+    const sportTypeMap: Record<string, number> = { Run: 0, Bike: 1, Triathlon: 2 };
+    const intensityMap: Record<string, number> = { Easy: 0, Moderate: 1, Hard: 2 };
+    
     const request = {
       athleteWeightKg: athlete.weightKg,
-      sportType: race.sportType,
+      sportType: sportTypeMap[race.sportType],
       durationHours: race.durationHours,
       temperatureC: race.temperatureC,
-      intensity: race.intensity,
+      intensity: intensityMap[race.intensity],
       products: products.map(p => ({
         name: p.name,
-        productType: p.volumeMl && p.volumeMl > 0 ? 'drink' : 'gel',
+        productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
         volumeMl: p.volumeMl || 0
