@@ -110,6 +110,40 @@ html, body {
     font-size: 0.8125rem;
 }
 
+/* Inline group - label and control on same line */
+.form-group.inline-group {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group.inline-group label {
+    margin-bottom: 0;
+    white-space: nowrap;
+    min-width: 70px;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+}
+
+.form-group.inline-group .form-control,
+.form-group.inline-group .input-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.form-group.inline-group .duration-display {
+    background: var(--light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-width: 50px;
+    text-align: center;
+}
+
 .form-control {
     width: 100%;
     padding: 8px 10px;
@@ -305,6 +339,52 @@ html, body {
 
 .btn-calculate:hover {
     opacity: 0.85;
+}
+
+/* Temperature Buttons - Compact Control */
+.temperature-buttons {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+}
+
+.temp-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: capitalize;
+}
+
+.temp-btn:hover {
+    border-color: var(--primary);
+    background: var(--light);
+}
+
+.temp-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.temperature-details {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    padding: 4px 8px;
+}
+
+.temp-range {
+    background: var(--light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
 }
 
 /* Results Section */
@@ -1046,5 +1126,165 @@ html, body {
 @media (max-width: 768px) {
     .shopping-list-info {
         font-size: 0.6875rem;
+    }
+}
+
+/* Error Message */
+.error-message {
+    background: #fee;
+    border: 1px solid #fcc;
+    border-radius: 8px;
+    padding: 12px;
+    color: #c33;
+    font-size: 0.8125rem;
+    margin-bottom: 12px;
+}
+
+/* Link Buttons */
+.link-button {
+    background: none;
+    border: none;
+    color: var(--primary);
+    padding: 0;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+}
+
+.link-button:hover {
+    opacity: 0.7;
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.label-with-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.label-with-buttons label {
+    margin-bottom: 0;
+}
+
+/* Info Text */
+.info-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    padding: 6px 0;
+}
+
+/* Empty Results */
+.empty-results {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.empty-results .empty-message {
+    margin: 0;
+}
+
+/* Targets Card */
+.targets-card {
+    background: var(--background);
+}
+
+.targets-card h2 {
+    margin-bottom: 14px;
+}
+
+/* Use existing .targets-grid defined at line 433 for desktop view */
+/* Use existing .target-item defined at line 439 for shared styles */
+
+.target-header {
+    margin-bottom: 10px;
+}
+
+.target-header h3 {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin: 0;
+    font-weight: 500;
+}
+
+.target-values {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.value-row .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.value-row .value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', monospace;
+}
+
+/* Schedule Table for PlanResults - see primary definition at line 497 */
+
+.schedule-table th.text-right {
+    text-align: right;
+}
+
+.schedule-table .text-right {
+    text-align: right;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', monospace;
+}
+
+.shopping-list-table tfoot {
+    background: var(--light);
+    font-weight: 600;
+}
+
+.shopping-list-table tfoot tr {
+    border-top: 2px solid var(--border-color);
+}
+
+.shopping-list-table tfoot td {
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 0.8125rem;
+}
+
+.shopping-list-table tfoot .text-right {
+    text-align: right;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', monospace;
+}
+
+.totals-row td {
+    border-top: 2px solid var(--border-color);
+}
+
+/* Button States */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .targets-grid {
+        grid-template-columns: 1fr;
     }
 }

@@ -28,8 +28,15 @@ public static class PlanGenerator
 
         var gel = products.FirstOrDefault(p => p.ProductType == "gel")
             ?? throw new MissingProductException("gel");
-        var drink = products.FirstOrDefault(p => p.ProductType == "drink")
-            ?? throw new MissingProductException("drink");
+        
+        // Drink is required only for non-running sports
+        // For running, water is available at race points
+        var drink = race.SportType switch
+        {
+            SportType.Run => null,
+            _ => products.FirstOrDefault(p => p.ProductType == "drink")
+                ?? throw new MissingProductException("drink")
+        };
 
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
@@ -47,7 +54,6 @@ public static class PlanGenerator
             int time = i * intervalMin;
 
             double gelPortions = Math.Round((carbsPerInterval / gel.CarbsG) * 2) / 2;
-            double drinkPortions = Math.Round((fluidsPerInterval / drink.VolumeMl) * 2) / 2;
 
             if (gelPortions > 0)
             {
@@ -56,12 +62,23 @@ public static class PlanGenerator
                 totalSodium += gelPortions * gel.SodiumMg;
             }
 
-            if (drinkPortions > 0)
+            // Only add drinks for non-running sports
+            if (drink != null)
             {
-                schedule.Add(new IntakeItem(time, drink.Name, drinkPortions));
-                totalFluids += drinkPortions * drink.VolumeMl;
-                totalSodium += drinkPortions * drink.SodiumMg;
+                double drinkPortions = Math.Round((fluidsPerInterval / drink.VolumeMl) * 2) / 2;
+                if (drinkPortions > 0)
+                {
+                    schedule.Add(new IntakeItem(time, drink.Name, drinkPortions));
+                    totalFluids += drinkPortions * drink.VolumeMl;
+                    totalSodium += drinkPortions * drink.SodiumMg;
+                }
             }
+        }
+
+        // For running, account for water from race points
+        if (race.SportType == SportType.Run)
+        {
+            totalFluids = targets.FluidsMlPerHour * race.DurationHours;
         }
 
         // Calculate product summaries for shopping list
@@ -85,3 +102,4 @@ public static class PlanGenerator
         );
     }
 }
+

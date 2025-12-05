@@ -6,21 +6,17 @@ import { formatDuration } from '../utils';
 interface RaceDetailsFormProps {
   sportType: SportType;
   duration: number;
-  temperature: number;
   intensity: IntensityLevel;
   onSportTypeChange: (sport: SportType) => void;
   onDurationChange: (duration: number) => void;
-  onTemperatureChange: (temp: number) => void;
   onIntensityChange: (intensity: IntensityLevel) => void;
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   duration,
-  temperature,
   intensity,
   onSportTypeChange,
   onDurationChange,
-  onTemperatureChange,
   onIntensityChange
 }) => {
   const [activities, setActivities] = useState<ActivityInfo[]>([]);
@@ -85,28 +81,27 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
 
   return (
     <div className="form-card">
-      <h2>Race Details</h2>
-      
-      <div className="form-group">
+      <div className="form-group inline-group">
         <label htmlFor="activity">Activity</label>
         {loading ? (
           <p className="loading">Loading...</p>
         ) : (
-          <>
-            <select id="activity" onChange={handleActivityChange} className="form-control" defaultValue="">
-              <option value="">Choose activity</option>
-              {activities.map(activity => (
-                <option key={activity.id} value={activity.id}>
-                  {activity.name}
-                </option>
-              ))}
-            </select>
-          </>
+          <select id="activity" onChange={handleActivityChange} className="form-control" defaultValue="">
+            <option value="">Choose activity</option>
+            {activities.map(activity => (
+              <option key={activity.id} value={activity.id}>
+                {activity.name}
+              </option>
+            ))}
+          </select>
         )}
       </div>
 
+      <div className="form-group inline-group">
+        <label htmlFor="duration">Duration</label>
+        <div className="duration-display">{formatDuration(currentDisplayDuration)}</div>
+      </div>
       <div className="form-group">
-        <label htmlFor="duration">Duration: {formatDuration(currentDisplayDuration)}</label>
         <div className="slider-group">
           <input
             type="range"
@@ -126,24 +121,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
         </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="temperature">Temperature</label>
-        <div className="input-group">
-          <input
-            type="number"
-            id="temperature"
-            value={temperature}
-            onChange={(e) => onTemperatureChange(Number.parseFloat(e.target.value) || 0)}
-            className="form-control"
-            min="-10"
-            max="40"
-            step="1"
-          />
-          <span className="input-unit">°C</span>
-        </div>
-      </div>
-
-      <div className="form-group">
+      <div className="form-group inline-group">
         <label htmlFor="intensity">Intensity</label>
         <select
           id="intensity"

@@ -24,4 +24,12 @@ public interface IProductRepository
     /// Searches products by name, brand, or ID
     /// </summary>
     Task<List<ProductInfo>> SearchProductsAsync(string query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get filtered products by brand and excluded types
+    /// </summary>
+    /// <param name="filter">Filter criteria (brand, excluded types)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Filtered list of products</returns>
+    Task<List<ProductInfo>> GetFilteredProductsAsync(ProductFilter? filter, CancellationToken cancellationToken = default);
 }

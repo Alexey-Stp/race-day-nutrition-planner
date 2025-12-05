@@ -3,15 +3,14 @@ namespace RaceDay.Core.Tests;
 public class PlanGeneratorTests
 {
     [Fact]
-    public void Generate_WithValidInputs_CreatesNutritionPlan()
+    public void Generate_RunningWithGelOnly_CreatesNutritionPlan()
     {
-        // Arrange
+        // Arrange - Running only needs gels, water comes from race points
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
-            new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100),
-            new Product("Test Drink 500ml", "drink", CarbsG: 30, SodiumMg: 300, VolumeMl: 500)
+            new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100)
         };
 
         // Act
@@ -22,6 +21,7 @@ public class PlanGeneratorTests
         Assert.Equal(race, plan.Race);
         Assert.NotNull(plan.Targets);
         Assert.NotNull(plan.Schedule);
+        Assert.True(plan.TotalFluidsMl > 0); // Fluids still accounted from race points
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class PlanGeneratorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Drink 500ml", "drink", CarbsG: 30, SodiumMg: 300, VolumeMl: 500)
@@ -41,11 +41,11 @@ public class PlanGeneratorTests
     }
 
     [Fact]
-    public void Generate_WithoutDrinkProduct_ThrowsException()
+    public void Generate_BikeWithoutDrinkProduct_ThrowsException()
     {
-        // Arrange
+        // Arrange - Bike races require drinks
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100)
@@ -59,9 +59,9 @@ public class PlanGeneratorTests
     [Fact]
     public void Generate_ScheduleHasCorrectIntervals()
     {
-        // Arrange
+        // Arrange - Triathlon needs both gels and drinks
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Triathlon, DurationHours: 1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -83,7 +83,7 @@ public class PlanGeneratorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -102,9 +102,9 @@ public class PlanGeneratorTests
     [Fact]
     public void Generate_CustomInterval_UsesCorrectInterval()
     {
-        // Arrange
+        // Arrange - Use Bike to test drinks inclusion
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -125,9 +125,9 @@ public class PlanGeneratorTests
     [Fact]
     public void Generate_IncludesProductSummaries()
     {
-        // Arrange
+        // Arrange - Use Bike to test products
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -145,9 +145,9 @@ public class PlanGeneratorTests
     [Fact]
     public void Generate_ProductSummaries_AggregatesCorrectly()
     {
-        // Arrange
+        // Arrange - Use Bike to test products
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Test Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -179,9 +179,9 @@ public class PlanGeneratorTests
     [Fact]
     public void Generate_ProductSummaries_OrderedByProductName()
     {
-        // Arrange
+        // Arrange - Use Bike to test products
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Zinc Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -200,9 +200,9 @@ public class PlanGeneratorTests
     [Fact]
     public void Generate_ProductSummaries_ReflectsAllScheduleItems()
     {
-        // Arrange
+        // Arrange - Use Triathlon to test with all products
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Triathlon, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
         var products = new List<Product>
         {
             new Product("Energy Gel", "gel", CarbsG: 25, SodiumMg: 100),
@@ -219,3 +219,4 @@ public class PlanGeneratorTests
         Assert.Equal(totalSchedulePortions, totalSummaryPortions);
     }
 }
+

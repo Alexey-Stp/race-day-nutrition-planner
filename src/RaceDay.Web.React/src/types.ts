@@ -16,6 +16,44 @@ export const IntensityLevel = {
 
 export type IntensityLevel = typeof IntensityLevel[keyof typeof IntensityLevel];
 
+export const TemperatureCondition = {
+  Cold: "Cold",
+  Moderate: "Moderate",
+  Hot: "Hot"
+} as const;
+
+export type TemperatureCondition = typeof TemperatureCondition[keyof typeof TemperatureCondition];
+
+export const TemperatureDescriptions: Record<TemperatureCondition, { range: string; effects: string[] }> = {
+  Cold: {
+    range: "≤ 5°C",
+    effects: [
+      "Reduced fluid needs",
+      "Less sodium required",
+      "Risk of overconsumption",
+      "Lower sweating rate"
+    ]
+  },
+  Moderate: {
+    range: "5-25°C",
+    effects: [
+      "Baseline nutrition targets",
+      "Standard fluid intake",
+      "Optimal conditions",
+      "Stable digestion"
+    ]
+  },
+  Hot: {
+    range: "≥ 25°C",
+    effects: [
+      "Increased fluid needs",
+      "Higher sodium requirements",
+      "Risk of dehydration",
+      "Faster carb absorption"
+    ]
+  }
+};
+
 export interface ProductInfo {
   id: string;
   name: string;
@@ -53,7 +91,7 @@ export interface AthleteProfile {
 export interface RaceProfile {
   sportType: SportType;
   durationHours: number;
-  temperatureC: number;
+  temperature: TemperatureCondition;
   intensity: IntensityLevel;
 }
 

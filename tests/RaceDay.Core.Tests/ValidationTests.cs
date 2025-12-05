@@ -8,7 +8,7 @@ public class ValidationTests
     public void ValidateRaceProfile_WithValidData_DoesNotThrow()
     {
         // Arrange
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
         Validation.ValidateRaceProfile(race); // Should not throw
@@ -18,7 +18,7 @@ public class ValidationTests
     public void ValidateRaceProfile_ZeroDuration_ThrowsValidationException()
     {
         // Arrange
-        var race = new RaceProfile(SportType.Run, DurationHours: 0, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 0, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
         var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
@@ -29,7 +29,7 @@ public class ValidationTests
     public void ValidateRaceProfile_NegativeDuration_ThrowsValidationException()
     {
         // Arrange
-        var race = new RaceProfile(SportType.Run, DurationHours: -1, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: -1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
         var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
@@ -40,7 +40,7 @@ public class ValidationTests
     public void ValidateRaceProfile_ExcessiveDuration_ThrowsValidationException()
     {
         // Arrange
-        var race = new RaceProfile(SportType.Run, DurationHours: 25, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 25, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
         var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
@@ -48,37 +48,23 @@ public class ValidationTests
     }
 
     [Fact]
-    public void ValidateRaceProfile_TooLowTemperature_ThrowsValidationException()
+    public void ValidateRaceProfile_ColdTemperature_ValidatesCorrectly()
     {
         // Arrange
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: -25, Intensity: IntensityLevel.Moderate);
-
-        // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
-        Assert.Contains("Temperature must be between -20 and 50 degrees Celsius", exception.Message);
-    }
-
-    [Fact]
-    public void ValidateRaceProfile_TooHighTemperature_ThrowsValidationException()
-    {
-        // Arrange
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 55, Intensity: IntensityLevel.Moderate);
-
-        // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
-        Assert.Contains("Temperature must be between -20 and 50 degrees Celsius", exception.Message);
-    }
-
-    [Fact]
-    public void ValidateRaceProfile_ExtremeTemperatureBoundaries_ValidatesCorrectly()
-    {
-        // Arrange
-        var raceCold = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: -20, Intensity: IntensityLevel.Moderate);
-        var raceHot = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 50, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Cold, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert - should not throw
-        Validation.ValidateRaceProfile(raceCold);
-        Validation.ValidateRaceProfile(raceHot);
+        Validation.ValidateRaceProfile(race);
+    }
+
+    [Fact]
+    public void ValidateRaceProfile_HotTemperature_ValidatesCorrectly()
+    {
+        // Arrange
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Hot, Intensity: IntensityLevel.Moderate);
+
+        // Act & Assert - should not throw
+        Validation.ValidateRaceProfile(race);
     }
 
     #endregion
