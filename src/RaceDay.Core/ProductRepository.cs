@@ -57,6 +57,33 @@ public class ProductRepository : IProductRepository
             .ToList();
     }
 
+    public async Task<List<ProductInfo>> GetFilteredProductsAsync(ProductFilter? filter, CancellationToken cancellationToken = default)
+    {
+        var all = await GetAllProductsAsync(cancellationToken);
+
+        if (filter == null)
+            return all;
+
+        var filtered = all;
+
+        // Filter by brand if specified
+        if (!string.IsNullOrWhiteSpace(filter.Brand))
+        {
+            filtered = filtered.Where(p => p.Brand.Equals(filter.Brand, StringComparison.OrdinalIgnoreCase))
+                               .ToList();
+        }
+
+        // Exclude types if specified
+        if (filter.ExcludeTypes != null && filter.ExcludeTypes.Count > 0)
+        {
+            var excludeTypesLower = filter.ExcludeTypes.Select(t => t.ToLower()).ToList();
+            filtered = filtered.Where(p => !excludeTypesLower.Contains(p.ProductType.ToLower()))
+                               .ToList();
+        }
+
+        return filtered;
+    }
+
     private static List<ProductInfo> LoadProductsFromJsonFiles()
     {
         try

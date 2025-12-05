@@ -44,15 +44,6 @@ public static class NutritionConstants
     }
 
     /// <summary>
-    /// Temperature thresholds (degrees Celsius)
-    /// </summary>
-    public static class Temperature
-    {
-        public const double HotThreshold = 25;
-        public const double ColdThreshold = 5;
-    }
-
-    /// <summary>
     /// Athlete weight thresholds (kilograms)
     /// </summary>
     public static class Weight

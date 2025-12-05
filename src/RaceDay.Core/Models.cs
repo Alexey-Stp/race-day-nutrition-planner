@@ -27,6 +27,19 @@ public enum IntensityLevel
 }
 
 /// <summary>
+/// Temperature conditions affecting nutrition needs
+/// </summary>
+public enum TemperatureCondition
+{
+    /// <summary>Very Cold: ≤ 5°C - Reduces fluid needs, no sodium effect</summary>
+    Cold,
+    /// <summary>Moderate: 5-25°C - Baseline nutrition targets (no adjustments)</summary>
+    Moderate,
+    /// <summary>Hot: ≥ 25°C - Increases fluid and sodium needs significantly</summary>
+    Hot
+}
+
+/// <summary>
 /// Athlete characteristics
 /// </summary>
 /// <param name="WeightKg">Body weight in kilograms</param>
@@ -37,13 +50,23 @@ public record AthleteProfile(double WeightKg);
 /// </summary>
 /// <param name="SportType">Type of sport</param>
 /// <param name="DurationHours">Duration in hours</param>
-/// <param name="TemperatureC">Temperature in degrees Celsius</param>
+/// <param name="Temperature">Temperature condition (Cold, Moderate, Hot)</param>
 /// <param name="Intensity">Exercise intensity level</param>
 public record RaceProfile(
     SportType SportType,
     double DurationHours,
-    double TemperatureC,
+    TemperatureCondition Temperature,
     IntensityLevel Intensity
+);
+
+/// <summary>
+/// Product filter for plan generation
+/// </summary>
+/// <param name="Brand">Filter by brand (e.g., "SiS", "Maurten"). Null = all brands</param>
+/// <param name="ExcludeTypes">Exclude product types (e.g., ["gel", "caffeine"]). Empty = none excluded</param>
+public record ProductFilter(
+    string? Brand = null,
+    List<string>? ExcludeTypes = null
 );
 
 /// <summary>

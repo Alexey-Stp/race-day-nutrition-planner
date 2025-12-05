@@ -44,12 +44,20 @@ public static class NutritionCalculator
     {
         double fluids = NutritionConstants.Fluids.BaseIntake;
 
-        // Temperature adjustments
-        if (race.TemperatureC >= NutritionConstants.Temperature.HotThreshold)
-            fluids += NutritionConstants.Fluids.HotWeatherBonus;
-        
-        if (race.TemperatureC <= NutritionConstants.Temperature.ColdThreshold)
-            fluids -= NutritionConstants.Fluids.ColdWeatherPenalty;
+        // Temperature adjustments based on condition
+        switch (race.Temperature)
+        {
+            case TemperatureCondition.Hot:
+                fluids += NutritionConstants.Fluids.HotWeatherBonus;
+                break;
+            case TemperatureCondition.Cold:
+                fluids -= NutritionConstants.Fluids.ColdWeatherPenalty;
+                break;
+            case TemperatureCondition.Moderate:
+            default:
+                // No adjustment for moderate temperature
+                break;
+        }
 
         // Weight adjustments
         if (athlete.WeightKg > NutritionConstants.Weight.HeavyAthleteThreshold)
@@ -66,8 +74,8 @@ public static class NutritionCalculator
     {
         double sodium = NutritionConstants.Sodium.BaseIntake;
 
-        // Temperature adjustment
-        if (race.TemperatureC >= NutritionConstants.Temperature.HotThreshold)
+        // Temperature adjustment (hot weather increases sodium loss)
+        if (race.Temperature == TemperatureCondition.Hot)
             sodium += NutritionConstants.Sodium.HotWeatherBonus;
 
         // Weight adjustment

@@ -16,8 +16,7 @@ public static class Validation
         if (race.DurationHours > 24)
             throw new ValidationException(nameof(race.DurationHours), "Duration cannot exceed 24 hours");
 
-        if (race.TemperatureC < -20 || race.TemperatureC > 50)
-            throw new ValidationException(nameof(race.TemperatureC), "Temperature must be between -20 and 50 degrees Celsius");
+        // Temperature is now an enum, validation happens at conversion time in API
     }
 
     /// <summary>

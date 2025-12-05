@@ -7,7 +7,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Easy);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -21,7 +21,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -35,7 +35,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Hard);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -49,7 +49,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Triathlon, DurationHours: 6, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Triathlon, DurationHours: 6, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -63,7 +63,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 30, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Hot, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -77,7 +77,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 75);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 0, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Cold, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -91,7 +91,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 90);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -106,7 +106,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 55);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 20, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -120,7 +120,7 @@ public class NutritionCalculatorTests
     {
         // Arrange - extreme cold + light athlete
         var athlete = new AthleteProfile(WeightKg: 50);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 0, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Cold, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -134,7 +134,7 @@ public class NutritionCalculatorTests
     {
         // Arrange
         var athlete = new AthleteProfile(WeightKg: 90);
-        var race = new RaceProfile(SportType.Run, DurationHours: 2, TemperatureC: 30, Intensity: IntensityLevel.Moderate);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Hot, Intensity: IntensityLevel.Moderate);
 
         // Act
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -143,3 +143,4 @@ public class NutritionCalculatorTests
         Assert.Equal(700, targets.SodiumMgPerHour); // 400 + 200 (hot) + 100 (heavy)
     }
 }
+

@@ -63,11 +63,18 @@ export const api = {
     const sportTypeMap: Record<string, number> = { Run: 0, Bike: 1, Triathlon: 2 };
     const intensityMap: Record<string, number> = { Easy: 0, Moderate: 1, Hard: 2 };
     
+    // Convert TemperatureCondition enum to representative temperature in Celsius
+    const temperatureCMap: Record<string, number> = {
+      Cold: 0,      // ≤ 5°C
+      Moderate: 15, // 5-25°C
+      Hot: 30       // ≥ 25°C
+    };
+    
     const request = {
       athleteWeightKg: athlete.weightKg,
       sportType: sportTypeMap[race.sportType],
       durationHours: race.durationHours,
-      temperatureC: race.temperatureC,
+      temperatureC: temperatureCMap[race.temperature],
       intensity: intensityMap[race.intensity],
       products: products.map(p => ({
         name: p.name,

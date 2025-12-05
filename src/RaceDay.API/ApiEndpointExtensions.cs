@@ -186,7 +186,7 @@ public static class ApiEndpointExtensions
     }
 
     // Plan Generation Handlers
-    private static IResult GeneratePlan(PlanGenerationRequest request)
+    private static async Task<IResult> GeneratePlan(PlanGenerationRequest request, IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
@@ -194,29 +194,65 @@ public static class ApiEndpointExtensions
             if (request == null)
                 return Results.BadRequest("Request body is required");
 
-            if (request.Products == null || request.Products.Count == 0)
+            List<Product> products;
+
+            // Get products either from explicit list or from filter
+            if (request.Products != null && request.Products.Count > 0)
+            {
+                // Use provided products
+                products = request.Products.Select(p => new Product(
+                    p.Name,
+                    p.ProductType,
+                    p.CarbsG,
+                    p.SodiumMg,
+                    p.VolumeMl
+                )).ToList();
+            }
+            else if (request.Filter != null)
+            {
+                // Use filtered products from repository
+                var filteredProductInfos = await repository.GetFilteredProductsAsync(request.Filter, cancellationToken);
+
+                if (filteredProductInfos.Count == 0)
+                    return Results.BadRequest("No products found matching the specified filter");
+
+                products = filteredProductInfos.Select(p => new Product(
+                    p.Name,
+                    p.ProductType,
+                    p.CarbsG,
+                    p.SodiumMg,
+                    p.VolumeMl
+                )).ToList();
+            }
+            else
+            {
+                return Results.BadRequest("Either 'products' or 'filter' must be provided");
+            }
+
+            if (products.Count == 0)
                 return Results.BadRequest("At least one product is required");
+
+            // Convert temperature Celsius to TemperatureCondition enum
+            var temperatureCondition = request.TemperatureC switch
+            {
+                <= 5 => TemperatureCondition.Cold,
+                >= 25 => TemperatureCondition.Hot,
+                _ => TemperatureCondition.Moderate
+            };
 
             // Create profiles
             var athlete = new AthleteProfile(request.AthleteWeightKg);
             var race = new RaceProfile(
                 request.SportType,
                 request.DurationHours,
-                request.TemperatureC,
+                temperatureCondition,
                 request.Intensity
             );
 
-            // Convert products
-            var products = request.Products.Select(p => new Product(
-                p.Name,
-                p.ProductType,
-                p.CarbsG,
-                p.SodiumMg,
-                p.VolumeMl
-            )).ToList();
-
-            // Generate plan
-            var plan = PlanGenerator.Generate(race, athlete, products);
+            // Generate plan with optional custom interval
+            var plan = request.IntervalMin.HasValue
+                ? PlanGenerator.Generate(race, athlete, products, request.IntervalMin.Value)
+                : PlanGenerator.Generate(race, athlete, products);
 
             return Results.Ok(plan);
         }
@@ -235,14 +271,16 @@ public static class ApiEndpointExtensions
     }
 }
 
-// Request model for plan generation
+// Request models for plan generation
 public record PlanGenerationRequest(
     double AthleteWeightKg,
     SportType SportType,
     double DurationHours,
     double TemperatureC,
     IntensityLevel Intensity,
-    List<ProductRequest> Products
+    List<ProductRequest>? Products = null,
+    ProductFilter? Filter = null,
+    int? IntervalMin = null
 );
 
 public record ProductRequest(
