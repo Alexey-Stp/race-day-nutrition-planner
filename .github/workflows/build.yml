@@ -34,7 +34,7 @@ jobs:
       run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed"
     
     - name: Install React dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
       working-directory: src/RaceDay.Web.React
       continue-on-error: false
     
@@ -79,7 +79,7 @@ jobs:
         node-version: '20'
     
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --ignore-scripts
       working-directory: src/RaceDay.Web.React
     
     - name: TypeScript Check
