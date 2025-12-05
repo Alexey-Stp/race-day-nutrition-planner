@@ -11,8 +11,7 @@ export const AthleteProfileForm: React.FC<AthleteProfileFormProps> = ({
 }) => {
   return (
     <div className="form-card">
-      <h2>Athlete Profile</h2>
-      <div className="form-group">
+      <div className="form-group inline-group">
         <label htmlFor="weight">Weight</label>
         <div className="input-group">
           <input
