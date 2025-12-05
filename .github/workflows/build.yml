@@ -1,4 +1,4 @@
-name: Build Solution
+name: Build & Test
 
 on:
   push:
@@ -7,9 +7,50 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
+    name: Build, Test & Quality Check
 
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Restore .NET dependencies
+      run: dotnet restore
+    
+    - name: Build .NET Solution
+      run: dotnet build --configuration Release --no-restore --verbosity normal
+    
+    - name: Run Unit Tests
+      run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed"
+    
+    - name: Install React dependencies
+      run: npm ci
+      working-directory: src/RaceDay.Web.React
+      continue-on-error: false
+    
+    - name: Build React Application
+      run: npm run build
+      working-directory: src/RaceDay.Web.React
+      continue-on-error: false
+    
+    - name: Verify Code Quality
+      run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+      continue-on-error: false
+
+  lint-check:
+    runs-on: ubuntu-latest
+    name: Code Analysis
+    
     steps:
     - uses: actions/checkout@v4
     
@@ -21,8 +62,27 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
+    - name: Analyze with StyleCop
+      run: dotnet build --configuration Release --no-restore /p:EnforceCodeStyleInBuild=true
+      continue-on-error: true
+
+  web-lint:
+    runs-on: ubuntu-latest
+    name: TypeScript & React Lint
     
-    - name: Run tests
-      run: dotnet test --configuration Release --no-build --verbosity normal
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install dependencies
+      run: npm ci
+      working-directory: src/RaceDay.Web.React
+    
+    - name: TypeScript Check
+      run: npx tsc --noEmit
+      working-directory: src/RaceDay.Web.React
+      continue-on-error: false
