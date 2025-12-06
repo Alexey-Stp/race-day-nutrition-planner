@@ -337,8 +337,14 @@ html, body {
     background: var(--primary);
 }
 
-.btn-calculate:hover {
+.btn-calculate:hover:not(:disabled) {
     opacity: 0.85;
+}
+
+.btn-calculate:disabled {
+    background: var(--secondary);
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Temperature Buttons - Compact Control */
@@ -385,6 +391,75 @@ html, body {
     padding: 2px 6px;
     border-radius: 4px;
     display: inline-block;
+}
+
+/* Intensity Buttons - Matching Temperature Design */
+.intensity-buttons {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+}
+
+.intensity-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: capitalize;
+}
+
+.intensity-btn:hover {
+    border-color: var(--primary);
+    background: var(--light);
+}
+
+.intensity-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.intensity-details {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    padding: 4px 8px;
+}
+
+.intensity-effects {
+    background: var(--light);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    line-height: 1.3;
+}
+
+.carb-range {
+    background: var(--primary);
+    color: white;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    text-align: center;
+    font-weight: 500;
+}
+
+.heart-rate-zone {
+    background: var(--danger);
+    color: white;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 500;
 }
 
 /* Results Section */
@@ -938,6 +1013,35 @@ html, body {
     color: var(--primary);
 }
 
+/* Radio Group Styles - Single Selection */
+.radio-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-weight: 400;
+    color: var(--text-primary);
+    user-select: none;
+    font-size: 0.8125rem;
+}
+
+.radio-label input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--primary);
+}
+
+.radio-label:hover {
+    color: var(--primary);
+}
+
 /* Tooltip Styles */
 .label-with-tooltip {
     display: flex;
@@ -1127,6 +1231,92 @@ html, body {
     .shopping-list-info {
         font-size: 0.6875rem;
     }
+}
+
+/* Shopping Card - New Format */
+.shopping-card h2 {
+    margin-bottom: 12px;
+}
+
+.shopping-summary {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.shopping-summary .summary-stat {
+    flex: 1;
+    text-align: center;
+}
+
+.shopping-summary .label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.shopping-summary .value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.shopping-items {
+    margin-bottom: 12px;
+}
+
+.shopping-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.8125rem;
+}
+
+.shopping-item:last-child {
+    border-bottom: none;
+}
+
+.item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.item-details {
+    display: flex;
+    gap: 12px;
+    color: var(--text-secondary);
+}
+
+.item-details .portion {
+    min-width: 80px;
+    text-align: right;
+}
+
+.item-details .carbs {
+    min-width: 70px;
+    text-align: right;
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.shopping-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.shopping-actions .btn {
+    flex: 1;
+    font-size: 0.8125rem;
+    padding: 8px 12px;
 }
 
 /* Error Message */
@@ -1335,6 +1525,132 @@ html, body {
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+}
+
+.modal-content {
+    background: var(--background);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    max-height: 80vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    padding: 4px 8px;
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.assortment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.assortment-item {
+    background: var(--light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s ease;
+}
+
+.assortment-item:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+}
+
+.item-header {
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.item-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    gap: 8px;
+}
+
+.item-details .type {
+    background: var(--border-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: capitalize;
+}
+
+.item-details .carbs {
+    font-weight: 500;
+    color: var(--primary);
+}
+
+.item-sodium {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.modal-footer .btn {
+    flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

@@ -2,6 +2,7 @@ using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.Core.Models;
 using RaceDay.Core.Exceptions;
+using RaceDay.Core.Utilities;
 
 namespace RaceDay.API;
 
@@ -256,11 +257,15 @@ public static class ApiEndpointExtensions
             var service = new NutritionPlanService();
             var nutritionEvents = service.GeneratePlan(race, athlete, products);
 
-            // Create response with advanced plan data
+            // Calculate shopping summary using extension
+            var shoppingSummary = nutritionEvents.CalculateShoppingList();
+
+            // Create response with advanced plan data and shopping summary
             var response = new AdvancedPlanResponse(
                 race,
                 athlete,
-                nutritionEvents
+                nutritionEvents,
+                shoppingSummary
             );
 
             return Results.Ok(response);
@@ -306,5 +311,6 @@ public record ProductRequest(
 public record AdvancedPlanResponse(
     RaceProfile Race,
     AthleteProfile Athlete,
-    List<NutritionEvent> NutritionSchedule
+    List<NutritionEvent> NutritionSchedule,
+    ShoppingSummary? ShoppingSummary = null
 );

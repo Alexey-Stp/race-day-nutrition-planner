@@ -54,6 +54,42 @@ export const TemperatureDescriptions: Record<TemperatureCondition, { range: stri
   }
 };
 
+export const IntensityDescriptions: Record<IntensityLevel, { icon: string; carbRange: string; heartRateZone: string; effects: string[] }> = {
+  Easy: {
+    icon: "🟢",
+    carbRange: "30-60 g/hr",
+    heartRateZone: "Zone 1-2 (60-75% max HR)",
+    effects: [
+      "Conversational pace",
+      "Lower carb needs",
+      "Minimal fuel requirements",
+      "Comfortable breathing"
+    ]
+  },
+  Moderate: {
+    icon: "🟡",
+    carbRange: "60-90 g/hr",
+    heartRateZone: "Zone 3 (75-85% max HR)",
+    effects: [
+      "Steady effort",
+      "Standard nutrition targets",
+      "Regular intake intervals",
+      "Manageable intensity"
+    ]
+  },
+  Hard: {
+    icon: "🔴",
+    carbRange: "90-120 g/hr",
+    heartRateZone: "Zone 4-5 (85-100% max HR)",
+    effects: [
+      "High effort/competitive",
+      "Maximum carb intake",
+      "Frequent fuel needs",
+      "Elevated heart rate"
+    ]
+  }
+};
+
 export interface ProductInfo {
   id: string;
   name: string;
@@ -112,13 +148,37 @@ export interface ProductSummary {
   totalPortions: number;
 }
 
-export interface RaceNutritionPlan {
-  targets: NutritionTargets;
-  totalCarbsG: number;
-  totalFluidsMl: number;
-  totalSodiumMg: number;
-  schedule: ScheduleItem[];
-  productSummaries: ProductSummary[];
+export interface NutritionEvent {
+  timeMin: number;
+  phase: string;
+  productName: string;
+  amountPortions: number;
+  action: string;
+  totalCarbsSoFar: number;
+  hasCaffeine: boolean;
+}
+
+export interface AdvancedPlanResponse {
+  race: RaceProfile;
+  athlete: AthleteProfile;
+  nutritionSchedule: NutritionEvent[];
+  shoppingSummary?: ShoppingSummary;
+}
+
+export interface ShoppingSummary {
+  items: ShoppingItem[];
+  totalProductCount: number;
+  totalCarbs: number;
+}
+
+export interface ShoppingItem {
+  productName: string;
+  totalPortions: number;
+  totalCarbs: number;
+}
+
+export interface RaceNutritionPlan extends AdvancedPlanResponse {
+  // For backward compatibility - new response is advanced plan
 }
 
 export interface ScheduleDisplayItem {

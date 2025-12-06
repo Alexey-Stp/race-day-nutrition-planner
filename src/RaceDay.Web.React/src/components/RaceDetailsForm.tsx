@@ -120,20 +120,6 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
           </div>
         </div>
       </div>
-
-      <div className="form-group inline-group">
-        <label htmlFor="intensity">Intensity</label>
-        <select
-          id="intensity"
-          value={intensity}
-          onChange={(e) => onIntensityChange(e.target.value as IntensityLevel)}
-          className="form-control"
-        >
-          <option value={IntensityLevel.Easy}>Easy</option>
-          <option value={IntensityLevel.Moderate}>Moderate</option>
-          <option value={IntensityLevel.Hard}>Hard</option>
-        </select>
-      </div>
     </div>
   );
 };
