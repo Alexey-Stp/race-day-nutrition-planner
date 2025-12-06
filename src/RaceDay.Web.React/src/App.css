@@ -1750,6 +1750,54 @@ html, body {
     flex-shrink: 0;
 }
 
+/* Products Table in Modal */
+.products-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.products-table thead {
+    background-color: var(--light);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.products-table th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+.products-table th.text-right {
+    text-align: right;
+}
+
+.products-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.products-table tbody tr:hover {
+    background-color: var(--light);
+}
+
+.products-table td {
+    padding: 10px 8px;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.products-table td.product-name {
+    font-weight: 500;
+}
+
+.products-table td.text-right {
+    text-align: right;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
 @media (max-width: 768px) {
     .targets-grid {
         grid-template-columns: 1fr;
