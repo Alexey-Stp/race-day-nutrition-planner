@@ -30,8 +30,17 @@ jobs:
     - name: Build .NET Solution
       run: dotnet build --configuration Release --no-restore --verbosity normal
     
-    - name: Run Unit Tests
-      run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed"
+    - name: Run Unit Tests with Code Coverage
+      run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed" --collect:"XPlat Code Coverage"
+    
+    - name: Generate Coverage Report
+      uses: daniel-arm/cobertura-report-action@v1
+      with:
+        coverage_report_path: ${{ github.workspace }}/tests/**/coverage.cobertura.xml
+        minimum_coverage: 80
+        fail_if_below_minimum: true
+        show_line: true
+        show_branch: true
     
     - name: Install React dependencies
       run: npm ci --ignore-scripts
