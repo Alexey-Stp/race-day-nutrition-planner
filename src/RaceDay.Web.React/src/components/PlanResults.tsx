@@ -19,8 +19,11 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
   const duration = plan.race?.durationHours || 0;
 
+  // Create a unique key based on plan content to force re-render on plan changes
+  const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
+
   return (
-    <div className="results-section">
+    <div className="results-section" key={planKey}>
       <div className="results-card">
         <h2>Race Nutrition Plan</h2>
         
@@ -67,8 +70,8 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {schedule.map((event) => (
-                    <tr key={`${event.timeMin}-${event.productName}`}>
+                  {schedule.map((event, index) => (
+                    <tr key={`${index}-${event.timeMin}-${event.productName}`}>
                       <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
                       <td>{formatPhase(event.phase)}</td>
                       <td>{event.productName}</td>
