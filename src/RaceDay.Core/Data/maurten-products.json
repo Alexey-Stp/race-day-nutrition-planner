@@ -19,6 +19,7 @@
     "sodiumMg": 85,
     "caloriesKcal": 100,
     "volumeMl": 40,
+    "caffeineMg": 100,
     "imageUrl": "/images/products/maurten-gel-100-caf-100.png"
   },
   {
@@ -31,6 +32,18 @@
     "caloriesKcal": 160,
     "volumeMl": 65,
     "imageUrl": "/images/products/maurten-gel-160.png"
+  },
+  {
+    "id": "maurten-gel-160-caf-100",
+    "brand": "Maurten",
+    "name": "Maurten GEL 160 CAF 100",
+    "productType": "gel",
+    "carbsG": 40,
+    "sodiumMg": 120,
+    "caloriesKcal": 160,
+    "volumeMl": 65,
+    "caffeineMg": 100,
+    "imageUrl": "/images/products/maurten-gel-160-caf-100.png"
   },
   {
     "id": "maurten-drinkmix-160-500",
