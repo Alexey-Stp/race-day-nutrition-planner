@@ -366,6 +366,25 @@ html, body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: capitalize;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.temp-btn .btn-range {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.temp-btn:hover .btn-range {
+    color: var(--text-primary);
+}
+
+.temp-btn.active .btn-range {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .temp-btn:hover {

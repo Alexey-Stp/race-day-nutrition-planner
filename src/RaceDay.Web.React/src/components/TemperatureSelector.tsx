@@ -32,7 +32,8 @@ export const TemperatureSelector: React.FC<TemperatureSelectorProps> = ({
                 onClick={() => onTemperatureChange(option)}
                 title={description.effects.join(', ')}
               >
-                {option}
+                <div>{option}</div>
+                <div className="btn-range">{description.range}</div>
               </button>
             );
           })}
