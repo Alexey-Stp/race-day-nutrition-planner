@@ -98,4 +98,49 @@
     "volumeMl": 500,
     "imageUrl": "/images/products/sis-rego-recovery-drink-500.png"
   }
+  ,
+  {
+    "id": "sis-go-hydro-caffeine-tablet-500",
+    "brand": "SiS",
+    "name": "SiS GO Hydro + Caffeine Tablet (500 ml)",
+    "productType": "drink",
+    "carbsG": 0,
+    "sodiumMg": 350,
+    "caloriesKcal": 15,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-go-hydro-caffeine-tablet-500.png"
+  },
+  {
+    "id": "sis-beta-fuel-drink-mix-80",
+    "brand": "SiS",
+    "name": "SiS Beta Fuel Drink Mix (80 g)",
+    "productType": "drink",
+    "carbsG": 80,
+    "sodiumMg": 200,
+    "caloriesKcal": 320,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-beta-fuel-drink-mix-80.png"
+  },
+  {
+    "id": "sis-go-isotonic-sports-drink-500",
+    "brand": "SiS",
+    "name": "SiS GO Isotonic Sports Drink (500 ml)",
+    "productType": "drink",
+    "carbsG": 36,
+    "sodiumMg": 300,
+    "caloriesKcal": 144,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-go-isotonic-sports-drink-500.png"
+  },
+  {
+    "id": "sis-go-caffeine-shot-60",
+    "brand": "SiS",
+    "name": "SiS GO Caffeine Shot (60 ml)",
+    "productType": "drink",
+    "carbsG": 0,
+    "sodiumMg": 0,
+    "caloriesKcal": 10,
+    "volumeMl": 60,
+    "imageUrl": "/images/products/sis-go-caffeine-shot-60.png"
+  }
 ]
