@@ -18,9 +18,51 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
   const duration = plan.race?.durationHours || 0;
+  const intensity = plan.race?.intensity || 'Moderate';
+  const athleteWeight = plan.athlete?.weightKg || 75;
+
+  // Calculate target carbs based on intensity and weight
+  const intensityCarbsMap: Record<string, number> = {
+    Easy: 50,      // g/hour
+    Moderate: 70,  // g/hour
+    Hard: 90       // g/hour
+  };
+  const carbsPerHour = intensityCarbsMap[intensity] || 70;
+  const targetTotalCarbs = carbsPerHour * duration;
+  const carbsPercentage = totalCarbs > 0 ? (totalCarbs / targetTotalCarbs) * 100 : 0;
+
+  // Caffeine targets - typically 1.3mg per kg body weight at 1.5 hour mark, max ~200-300mg
+  const maxCaffeineTarget = Math.min(athleteWeight * 2, 300); // Conservative estimate
+  const caffeinePercentage = totalCaffeine > 0 ? (totalCaffeine / maxCaffeineTarget) * 100 : 0;
 
   // Create a unique key based on plan content to force re-render on plan changes
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
+
+  const ProgressBar: React.FC<{ value: number; max: number; percentage: number; label: string }> = ({ value, max, percentage, label }) => {
+    const isOptimal = percentage >= 95 && percentage <= 105;
+    const isHigh = percentage > 105;
+    const isLow = percentage < 95;
+    
+    return (
+      <div className="progress-item">
+        <div className="progress-header">
+          <span className="progress-label">{label}</span>
+          <span className="progress-value">{value.toFixed(0)} / {max.toFixed(0)}</span>
+        </div>
+        <div className="progress-bar-container">
+          <div className="progress-bar">
+            <div 
+              className={`progress-fill ${isOptimal ? 'optimal' : isHigh ? 'high' : isLow ? 'low' : ''}`}
+              style={{ width: `${Math.min(percentage, 100)}%` }}
+            />
+          </div>
+          <span className={`progress-percent ${isOptimal ? 'optimal' : isHigh ? 'high' : isLow ? 'low' : ''}`}>
+            {percentage.toFixed(0)}%
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="results-section" key={planKey}>
@@ -34,26 +76,28 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
             {/* Targets Section */}
             <div className="targets-section">
               <h3>Targets</h3>
-              <table className="targets-table">
-                <tbody>
-                  <tr>
-                    <td className="target-label">Total Carbs</td>
-                    <td className="target-value">{totalCarbs.toFixed(0)}g</td>
-                  </tr>
-                  <tr>
-                    <td className="target-label">Total Events</td>
-                    <td className="target-value">{schedule.length}</td>
-                  </tr>
-                  <tr>
-                    <td className="target-label">Duration</td>
-                    <td className="target-value">{duration.toFixed(2)}h</td>
-                  </tr>
-                  <tr>
-                    <td className="target-label">Total Caffeine</td>
-                    <td className="target-value">{totalCaffeine.toFixed(0)}mg</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div className="targets-container">
+                <div className="target-info">
+                  <div className="info-item">
+                    <span className="info-label">Target Carbs (per hour):</span>
+                    <span className="info-value">{carbsPerHour}g/h × {duration.toFixed(1)}h = {targetTotalCarbs.toFixed(0)}g</span>
+                  </div>
+                </div>
+                
+                <ProgressBar 
+                  value={totalCarbs}
+                  max={targetTotalCarbs}
+                  percentage={carbsPercentage}
+                  label="Plan Carbs vs Target"
+                />
+                
+                <ProgressBar 
+                  value={totalCaffeine}
+                  max={maxCaffeineTarget}
+                  percentage={caffeinePercentage}
+                  label="Plan Caffeine vs Target"
+                />
+              </div>
             </div>
 
             <div className="schedule-table">

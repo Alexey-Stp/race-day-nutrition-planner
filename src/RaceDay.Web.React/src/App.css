@@ -1819,6 +1819,113 @@ html, body {
     letter-spacing: -0.3px;
 }
 
+.targets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.target-info {
+    background: var(--light);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+}
+
+.progress-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.progress-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 20px;
+    background: var(--light);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+    transition: width 0.3s ease;
+    border-radius: 9px;
+}
+
+.progress-fill.optimal {
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+}
+
+.progress-fill.high {
+    background: linear-gradient(90deg, #ff9800, #f57c00);
+}
+
+.progress-fill.low {
+    background: linear-gradient(90deg, #2196F3, #1976D2);
+}
+
+.progress-percent {
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 35px;
+    text-align: right;
+    color: var(--text-secondary);
+}
+
+.progress-percent.optimal {
+    color: #4CAF50;
+}
+
+.progress-percent.high {
+    color: #ff9800;
+}
+
+.progress-percent.low {
+    color: #2196F3;
+}
+
 .targets-table {
     width: 100%;
     border-collapse: collapse;
