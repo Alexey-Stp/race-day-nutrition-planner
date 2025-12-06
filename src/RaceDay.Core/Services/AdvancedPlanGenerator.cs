@@ -11,13 +11,13 @@ using RaceDay.Core.Constants;
 /// </summary>
 public class AdvancedPlanGenerator
 {
-    private record PhaseSegment(RacePhase Phase, double StartHour, double EndHour);
-    private record Slot(int TimeMin, RacePhase Phase);
+    private sealed record PhaseSegment(RacePhase Phase, double StartHour, double EndHour);
+    private sealed record Slot(int TimeMin, RacePhase Phase);
 
     /// <summary>
     /// Planner state tracking during generation
     /// </summary>
-    private class PlannerState
+    private sealed class PlannerState
     {
         public double TotalCarbs { get; set; }
         public double TotalCaffeineMg { get; set; }
@@ -57,13 +57,14 @@ public class AdvancedPlanGenerator
         var preRaceProduct = products.FirstOrDefault(p => p.Texture == ProductTexture.Bake);
         if (preRaceProduct != null)
         {
+            state.TotalCarbs += preRaceProduct.CarbsG;
             plan.Add(new NutritionEvent(
                 TimeMin: -15,
                 Phase: RacePhase.Swim, // Generic phase for pre-race
                 ProductName: preRaceProduct.Name,
                 AmountPortions: 1,
                 Action: "Eat",
-                TotalCarbsSoFar: state.TotalCarbs += preRaceProduct.CarbsG,
+                TotalCarbsSoFar: state.TotalCarbs,
                 HasCaffeine: false
             ));
         }
@@ -157,14 +158,14 @@ public class AdvancedPlanGenerator
 
     private enum RaceMode { Running, Cycling, TriathlonHalf, TriathlonFull }
 
-    private RaceMode DetermineRaceMode(SportType sportType) =>
+    private static RaceMode DetermineRaceMode(SportType sportType) =>
         sportType switch
         {
             SportType.Bike => RaceMode.Cycling,
             _ => RaceMode.Running // Triathlon support would come from duration/context
         };
 
-    private int GetSlotInterval(RaceMode mode) =>
+    private static int GetSlotInterval(RaceMode mode) =>
         mode switch
         {
             RaceMode.TriathlonHalf or RaceMode.TriathlonFull => AdvancedNutritionConfig.TriathlonSlotIntervalMin,
@@ -198,7 +199,7 @@ public class AdvancedPlanGenerator
         return new List<PhaseSegment> { new(phase, 0, totalHours) };
     }
 
-    private List<Slot> BuildSlots(int durationMinutes, int slotInterval, List<PhaseSegment> phases)
+    private static List<Slot> BuildSlots(int durationMinutes, int slotInterval, List<PhaseSegment> phases)
     {
         var slots = new List<Slot>();
         int numSlots = (int)Math.Ceiling((double)durationMinutes / slotInterval);
@@ -263,7 +264,7 @@ public class AdvancedPlanGenerator
         var candidates = mode switch
         {
             RaceMode.Cycling => SelectCyclingCandidates(isEndPhase, products, random),
-            _ => SelectRunningCandidates(isEndPhase, products, random)
+            _ => SelectRunningCandidates(isEndPhase, products)
         };
 
         if (!candidates.Any())
@@ -298,12 +299,11 @@ public class AdvancedPlanGenerator
         return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
     }
 
-    private IEnumerable<ProductEnhanced> SelectRunningCandidates(
+    private static IEnumerable<ProductEnhanced> SelectRunningCandidates(
         bool isEndPhase,
-        List<ProductEnhanced> products,
-        Random random)
+        List<ProductEnhanced> products)
     {
-        if (!isEndPhase && random.NextDouble() < 0.3)
+        if (!isEndPhase)
             return products.Where(p => p.Texture == ProductTexture.LightGel);
 
         if (isEndPhase)
@@ -312,14 +312,14 @@ public class AdvancedPlanGenerator
         return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
     }
 
-    private ProductEnhanced? SelectExtraProduct(RaceMode mode, List<ProductEnhanced> products) =>
+    private static ProductEnhanced? SelectExtraProduct(RaceMode mode, List<ProductEnhanced> products) =>
         mode switch
         {
             RaceMode.Cycling => products.FirstOrDefault(p => p.Texture == ProductTexture.Chew || p.Texture == ProductTexture.Bake),
             _ => products.FirstOrDefault(p => p.Texture == ProductTexture.Gel)
         };
 
-    private string GetAction(ProductTexture texture) =>
+    private static string GetAction(ProductTexture texture) =>
         texture switch
         {
             ProductTexture.Gel or ProductTexture.LightGel => "Squeeze",

@@ -133,6 +133,13 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
             setAssortmentBrand(Array.from(selectedBrands)[0]);
             setShowAssortment(true);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setAssortmentBrand(Array.from(selectedBrands)[0]);
+              setShowAssortment(true);
+            }
+          }}
           style={{ marginTop: '12px', width: '100%' }}
         >
           🛍️ View All {Array.from(selectedBrands)[0]} Products
@@ -141,8 +148,15 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
 
       {/* Assortment Modal */}
       {showAssortment && assortmentBrand && (
-        <div className="modal-overlay" onClick={() => setShowAssortment(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowAssortment(false)}
+          role="presentation"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setShowAssortment(false);
+          }}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} tabIndex={0}>
             <div className="modal-header">
               <h2>{assortmentBrand} - Full Assortment</h2>
               <button className="modal-close" onClick={() => setShowAssortment(false)}>✕</button>
@@ -153,8 +167,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
                 {products
                   .filter(p => p.brand === assortmentBrand)
                   .sort((a, b) => a.productType.localeCompare(b.productType))
-                  .map((product, idx) => (
-                    <div key={idx} className="assortment-item">
+                  .map((product) => (
+                    <div key={product.name} className="assortment-item">
                       <div className="item-header">
                         <strong>{product.name}</strong>
                       </div>

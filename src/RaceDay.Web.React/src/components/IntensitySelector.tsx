@@ -48,8 +48,8 @@ export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
           <strong>Heart Rate:</strong> {IntensityDescriptions[intensity].heartRateZone}
         </div>
         <div className="effects-list">
-          {IntensityDescriptions[intensity].effects.map((effect, idx) => (
-            <div key={idx} className="effect-item">
+          {IntensityDescriptions[intensity].effects.map((effect) => (
+            <div key={effect} className="effect-item">
               <span className="bullet">•</span>
               <span>{effect}</span>
             </div>

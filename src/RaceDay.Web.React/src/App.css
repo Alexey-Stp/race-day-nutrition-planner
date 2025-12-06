@@ -1298,7 +1298,7 @@ html, body {
     text-align: right;
 }
 
-.item-details .carbs {
+.shopping-items .carbs {
     min-width: 70px;
     text-align: right;
     font-weight: 500;
@@ -1630,6 +1630,8 @@ html, body {
 }
 
 .item-details .carbs {
+    min-width: 70px;
+    text-align: right;
     font-weight: 500;
     color: var(--primary);
 }

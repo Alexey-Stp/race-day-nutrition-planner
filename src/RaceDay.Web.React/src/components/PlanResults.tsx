@@ -55,8 +55,8 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {schedule.map((event, idx) => (
-                    <tr key={idx}>
+                  {schedule.map((event) => (
+                    <tr key={`${event.timeMin}-${event.productName}`}>
                       <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
                       <td>{event.phase}</td>
                       <td>{event.productName}</td>
