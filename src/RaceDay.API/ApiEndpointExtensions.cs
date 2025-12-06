@@ -252,12 +252,18 @@ public static class ApiEndpointExtensions
                 request.Intensity
             );
 
-            // Generate plan with optional custom interval
-            var plan = request.IntervalMin.HasValue
-                ? PlanGenerator.Generate(race, athlete, products, request.IntervalMin.Value)
-                : PlanGenerator.Generate(race, athlete, products);
+            // Generate advanced plan using the service
+            var service = new NutritionPlanService();
+            var nutritionEvents = service.GeneratePlan(race, athlete, products);
 
-            return Results.Ok(plan);
+            // Create response with advanced plan data
+            var response = new AdvancedPlanResponse(
+                race,
+                athlete,
+                nutritionEvents
+            );
+
+            return Results.Ok(response);
         }
         catch (ValidationException ex)
         {
@@ -292,4 +298,13 @@ public record ProductRequest(
     double CarbsG,
     double SodiumMg,
     double VolumeMl
+);
+
+/// <summary>
+/// Response model for advanced nutrition plan generation
+/// </summary>
+public record AdvancedPlanResponse(
+    RaceProfile Race,
+    AthleteProfile Athlete,
+    List<NutritionEvent> NutritionSchedule
 );
