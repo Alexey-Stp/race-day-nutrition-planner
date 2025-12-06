@@ -108,7 +108,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             className="form-slider"
             min={minDuration}
             max={maxDuration}
-            step="0.25"
+            step="0.01667"
           />
           <div className="slider-labels">
             <span>{formatDuration(minDuration)}</span>
