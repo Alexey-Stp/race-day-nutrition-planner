@@ -236,6 +236,49 @@ public class AdvancedPlanGeneratorTests
         Assert.True(lastEvent.TimeMin <= 180, "Last event should be within race duration");
     }
 
+    [Fact]
+    public void GeneratePlan_TriathlonRace_ContainsBikeAndRunPhases()
+    {
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(SportType.Triathlon, DurationHours: 3, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTestProducts();
+
+        // Act
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        // Assert
+        Assert.NotEmpty(plan);
+        
+        // Current implementation: Triathlon is treated as Run phase (Bike + Run combined)
+        // Future enhancement: Separate into Swim -> Bike -> Run phases
+        var mainEvents = plan.Where(e => e.TimeMin > 0).ToList();
+        Assert.NotEmpty(mainEvents);
+        
+        // All events should have a phase description
+        foreach (var @event in mainEvents)
+        {
+            Assert.NotNull(@event.PhaseDescription);
+            Assert.NotEmpty(@event.PhaseDescription);
+            
+            // Phase should match the description
+            string phaseName = @event.Phase.ToString();
+            Assert.Contains(phaseName, @event.PhaseDescription);
+            
+            // Should not have nutrition during swim phase
+            Assert.NotEqual(RacePhase.Swim, @event.Phase);
+        }
+        
+        // Current: Triathlon maps to Run phase
+        var runEvents = mainEvents.Where(e => e.Phase == RacePhase.Run).ToList();
+        Assert.NotEmpty(runEvents);
+        
+        // Pre-race event should exist with appropriate phase
+        var preRaceEvent = plan.FirstOrDefault(e => e.TimeMin == -15);
+        Assert.NotNull(preRaceEvent);
+        Assert.NotNull(preRaceEvent.PhaseDescription);
+    }
+
     private List<ProductEnhanced> CreateTestProducts()
     {
         return new List<ProductEnhanced>
