@@ -40,11 +40,11 @@ public class AdvancedPlanGenerator
         var weightKg = athlete.WeightKg;
 
         // Build phase timeline (important for triathlon)
-        var phases = BuildPhaseTimeline(raceMode, durationHours);
+        var phases = AdvancedPlanGenerator.BuildPhaseTimeline(raceMode, durationHours);
         var slots = BuildSlots(durationMinutes, slotInterval, phases);
 
         // Calculate targets
-        var carbsPerHour = CalculateCarbsPerHour(raceMode, weightKg);
+        var carbsPerHour = AdvancedPlanGenerator.CalculateCarbsPerHour(raceMode, weightKg);
         var totalCarbs = carbsPerHour * durationHours;
 
         // Initialize planner state
@@ -74,8 +74,6 @@ public class AdvancedPlanGenerator
         // Run phase detection for better product selection
         var runSegment = phases.FirstOrDefault(p => p.Phase == RacePhase.Run);
         var bikeSegment = phases.FirstOrDefault(p => p.Phase == RacePhase.Bike);
-        double runStartHour = runSegment?.StartHour ?? 0;
-        double bikeStartHour = bikeSegment?.StartHour ?? 0;
 
         // Main race schedule
         foreach (var slot in slots)
@@ -86,17 +84,14 @@ public class AdvancedPlanGenerator
 
             double currentHour = slot.TimeMin / 60.0;
             bool isEndPhase = currentHour > durationHours * AdvancedNutritionConfig.EndPhaseThreshold;
-            bool wantsCaffeine = ShouldUseCaffeine(currentHour, weightKg, state);
+            bool wantsCaffeine = AdvancedPlanGenerator.ShouldUseCaffeine(currentHour, weightKg, state);
 
-            var product = SelectProductForSlot(
+            var product = AdvancedPlanGenerator.SelectProductForSlot(
                 raceMode,
-                slot,
                 isEndPhase,
                 wantsCaffeine,
                 products,
-                random,
-                runStartHour,
-                bikeStartHour);
+                random);
 
             if (product == null)
                 continue;
@@ -175,7 +170,7 @@ public class AdvancedPlanGenerator
             _ => AdvancedNutritionConfig.RunningSlotIntervalMin
         };
 
-    private double CalculateCarbsPerHour(RaceMode mode, double weightKg)
+    private static double CalculateCarbsPerHour(RaceMode mode, double weightKg)
     {
         double perKg = mode switch
         {
@@ -194,7 +189,7 @@ public class AdvancedPlanGenerator
         return Math.Min(hardCap, perKg * weightKg);
     }
 
-    private List<PhaseSegment> BuildPhaseTimeline(RaceMode mode, double totalHours)
+    private static List<PhaseSegment> BuildPhaseTimeline(RaceMode mode, double totalHours)
     {
         // Currently supporting simple modes; triathlon logic can be added
         var phase = mode == RaceMode.Cycling ? RacePhase.Bike : RacePhase.Run;
@@ -240,7 +235,7 @@ public class AdvancedPlanGenerator
         };
     }
 
-    private bool ShouldUseCaffeine(double currentHour, double weightKg, PlannerState state)
+    private static bool ShouldUseCaffeine(double currentHour, double weightKg, PlannerState state)
     {
         double maxTotal = AdvancedNutritionConfig.MaxCaffeineMgPerKg * weightKg;
 
@@ -253,15 +248,12 @@ public class AdvancedPlanGenerator
         return currentHour >= state.NextCaffeineHour - 0.1;
     }
 
-    private ProductEnhanced? SelectProductForSlot(
+    private static ProductEnhanced? SelectProductForSlot(
         RaceMode mode,
-        Slot slot,
         bool isEndPhase,
         bool wantsCaffeine,
         List<ProductEnhanced> products,
-        Random random,
-        double runStartHour,
-        double bikeStartHour)
+        Random random)
     {
         var candidates = mode switch
         {
@@ -287,7 +279,7 @@ public class AdvancedPlanGenerator
         return selected;
     }
 
-    private IEnumerable<ProductEnhanced> SelectCyclingCandidates(
+    private static IEnumerable<ProductEnhanced> SelectCyclingCandidates(
         bool isEndPhase,
         List<ProductEnhanced> products,
         Random random)

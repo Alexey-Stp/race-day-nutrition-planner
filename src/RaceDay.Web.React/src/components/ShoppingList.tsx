@@ -32,7 +32,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({ plan }) => {
         {summary.items.map((item) => (
           <div key={item.productName} className="shopping-item">
             <div className="item-name">{item.productName}</div>
-            <div className="item-details">
+            <div className="shopping-item-details">
               <span className="portion">{item.totalPortions.toFixed(1)} portion(s)</span>
               <span className="carbs">{item.totalCarbs.toFixed(0)}g</span>
             </div>

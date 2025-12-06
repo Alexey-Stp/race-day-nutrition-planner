@@ -7,12 +7,12 @@ interface PlanResultsProps {
 }
 
 export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
-  if (!plan || !plan.nutritionSchedule) {
+  if (!plan?.nutritionSchedule) {
     return null;
   }
 
   // Group schedule items by time
-  const schedule = plan.nutritionSchedule || [];
+  const schedule = plan.nutritionSchedule;
 
   // Calculate totals
   const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;

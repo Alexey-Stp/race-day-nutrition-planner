@@ -1287,13 +1287,13 @@ html, body {
     color: var(--text-primary);
 }
 
-.item-details {
+.shopping-item-details {
     display: flex;
     gap: 12px;
     color: var(--text-secondary);
 }
 
-.item-details .portion {
+.shopping-item-details .portion {
     min-width: 80px;
     text-align: right;
 }

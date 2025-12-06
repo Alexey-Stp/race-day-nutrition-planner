@@ -50,7 +50,7 @@ public static class ShoppingListExtensions
             .ToList();
 
         var totalProductCount = (int)events.Sum(e => e.AmountPortions);
-        var totalCarbs = events.Count > 0 ? events[events.Count - 1].TotalCarbsSoFar : 0;
+        var totalCarbs = events[events.Count - 1].TotalCarbsSoFar;
 
         return new ShoppingSummary(
             Items: itemsMap,

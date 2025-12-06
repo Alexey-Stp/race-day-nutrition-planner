@@ -151,12 +151,14 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
         <div 
           className="modal-overlay" 
           onClick={() => setShowAssortment(false)}
-          role="presentation"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Brand assortment modal"
           onKeyDown={(e) => {
             if (e.key === 'Escape') setShowAssortment(false);
           }}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} tabIndex={0}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{assortmentBrand} - Full Assortment</h2>
               <button className="modal-close" onClick={() => setShowAssortment(false)}>✕</button>

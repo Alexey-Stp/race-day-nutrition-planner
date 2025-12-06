@@ -60,8 +60,8 @@ export const NutritionTargetsDisplay: React.FC<NutritionTargetsProps> = ({
           </tr>
         </thead>
         <tbody>
-          {nutritionData.map((item, index) => (
-            <tr key={index}>
+          {nutritionData.map((item) => (
+            <tr key={item.type}>
               <td className="type-cell">{item.type}</td>
               <td className="value-cell">{item.perHour.toFixed(1)} {item.unit}</td>
               <td className="value-cell">{item.total.toFixed(1)} {item.unit}</td>
