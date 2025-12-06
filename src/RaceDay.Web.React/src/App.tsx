@@ -4,16 +4,17 @@ import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
+import { IntensitySelector } from './components/IntensitySelector';
 import { BrandSelector } from './components/BrandSelector';
+import { ProductsList } from './components/ProductsList';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
-import { NutritionTargetsDisplay } from './components/NutritionTargets';
 import './App.css';
 
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
-  const [sportType, setSportType] = useState<SportType>(SportType.Triathlon);
-  const [duration, setDuration] = useState(2);
+  const [sportType, setSportType] = useState<SportType>(SportType.Run);
+  const [duration, setDuration] = useState(1.5);
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
 
@@ -21,19 +22,19 @@ function App() {
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'selector' | 'list'>('selector');
 
-  // Map for quick product lookups
-  const productMap = new Map(
-    selectedProducts.map(p => [
-      p.name,
-      {
-        brand: p.brand,
-        type: p.productType,
-        carbsG: p.carbsG,
-        sodiumMg: p.sodiumMg
-      }
-    ])
-  );
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    return (
+      athleteWeight > 0 &&
+      sportType &&
+      duration > 0 &&
+      temperature &&
+      intensity &&
+      selectedProducts.length > 0
+    );
+  };
 
   const generatePlan = async () => {
     if (selectedProducts.length === 0) {
@@ -91,9 +92,12 @@ function App() {
           <RaceDetailsForm
             sportType={sportType}
             duration={duration}
-            intensity={intensity}
             onSportTypeChange={setSportType}
             onDurationChange={setDuration}
+          />
+
+          <IntensitySelector
+            intensity={intensity}
             onIntensityChange={setIntensity}
           />
 
@@ -102,14 +106,37 @@ function App() {
             onTemperatureChange={setTemperature}
           />
 
-          <BrandSelector onBrandsSelected={setSelectedProducts} />
+          <div className="product-selector-tabs">
+            <button 
+              className={`tab-btn ${viewMode === 'selector' ? 'active' : ''}`}
+              onClick={() => setViewMode('selector')}
+            >
+              Select by Brand
+            </button>
+            <button 
+              className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+            >
+              View All Products
+            </button>
+          </div>
+
+          {viewMode === 'selector' ? (
+            <BrandSelector onBrandsSelected={setSelectedProducts} />
+          ) : (
+            <ProductsList onProductSelected={(product) => {
+              if (!selectedProducts.find(p => p.id === product.id)) {
+                setSelectedProducts([...selectedProducts, product]);
+              }
+            }} />
+          )}
 
           {error && <div className="error-message" style={{ marginTop: '10px' }}>{error}</div>}
 
           <button 
             onClick={generatePlan} 
             className="btn btn-primary btn-lg btn-calculate"
-            disabled={loading || selectedProducts.length === 0}
+            disabled={loading || !isFormValid()}
           >
             {loading ? 'Generating...' : 'Generate Plan'}
           </button>
@@ -119,15 +146,8 @@ function App() {
         <div className="results-container">
           {plan ? (
             <>
-              <PlanResults plan={plan} productMap={productMap} />
-              <ShoppingList productSummaries={plan.productSummaries} productMap={productMap} />
-              <NutritionTargetsDisplay
-                targets={plan.targets}
-                totalCarbsG={plan.totalCarbsG}
-                totalFluidsMl={plan.totalFluidsMl}
-                totalSodiumMg={plan.totalSodiumMg}
-                durationHours={duration}
-              />
+              <PlanResults plan={plan} />
+              <ShoppingList plan={plan} />
             </>
           ) : (
             <div className="form-card empty-results">

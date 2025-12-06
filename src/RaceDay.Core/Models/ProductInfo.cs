@@ -21,5 +21,6 @@ public record ProductInfo(
     double SodiumMg,
     double CaloriesKcal,
     double VolumeMl,
-    string ImageUrl
+    string ImageUrl,
+    double? CaffeineMg = null
 );

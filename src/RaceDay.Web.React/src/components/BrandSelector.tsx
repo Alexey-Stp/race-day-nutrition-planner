@@ -13,6 +13,8 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
   const [selectedTypes, setSelectedTypes] = useState<Set<string>>(new Set(['gel', 'drink', 'chew', 'bar']));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAssortment, setShowAssortment] = useState(false);
+  const [assortmentBrand, setAssortmentBrand] = useState<string | null>(null);
 
   const productTypes = ['gel', 'drink', 'chew', 'bar'];
 
@@ -27,7 +29,9 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
         // Extract unique brands
         const uniqueBrands = new Set(data.map(p => p.brand).filter(Boolean));
         setBrands(uniqueBrands);
-        setSelectedBrands(new Set(uniqueBrands)); // Select all brands by default
+        // Select first brand by default (single selection)
+        const firstBrand = Array.from(uniqueBrands).sort((a, b) => a.localeCompare(b))[0];
+        setSelectedBrands(firstBrand ? new Set([firstBrand]) : new Set());
         setError(null);
       } catch (err) {
         setError('Failed to load products');
@@ -53,13 +57,12 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
   }, [selectedBrands, selectedTypes, updateParent]);
 
   const toggleBrand = (brand: string) => {
-    const updated = new Set(selectedBrands);
-    if (updated.has(brand)) {
-      updated.delete(brand);
+    // For single selection, if clicking the same brand, deselect it; otherwise select only that brand
+    if (selectedBrands.has(brand) && selectedBrands.size === 1) {
+      setSelectedBrands(new Set());
     } else {
-      updated.add(brand);
+      setSelectedBrands(new Set([brand]));
     }
-    setSelectedBrands(updated);
   };
 
   const toggleType = (type: string) => {
@@ -70,14 +73,6 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
       updated.add(type);
     }
     setSelectedTypes(updated);
-  };
-
-  const selectAllBrands = () => {
-    setSelectedBrands(new Set(brands));
-  };
-
-  const deselectAllBrands = () => {
-    setSelectedBrands(new Set());
   };
 
   if (loading) {
@@ -109,18 +104,13 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
 
       {/* Brands */}
       <div className="form-group">
-        <div className="label-with-buttons">
-          <label htmlFor="brands-group">Brands</label>
-          <div className="button-group">
-            <button onClick={selectAllBrands} className="link-button">Select All</button>
-            <button onClick={deselectAllBrands} className="link-button">Deselect All</button>
-          </div>
-        </div>
-        <div id="brands-group" className="checkbox-group">
+        <label htmlFor="brands-group">Brand (Select One)</label>
+        <div id="brands-group" className="radio-group">
           {Array.from(brands).sort((a, b) => a.localeCompare(b)).map(brand => (
-            <label key={brand} className="checkbox-label">
+            <label key={brand} className="radio-label">
               <input
-                type="checkbox"
+                type="radio"
+                name="brand-selection"
                 checked={selectedBrands.has(brand)}
                 onChange={() => toggleBrand(brand)}
               />
@@ -131,9 +121,79 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
       </div>
 
       <p className="info-text">
-        {selectedBrands.size} brand{selectedBrands.size === 1 ? '' : 's'} selected • 
+        {selectedBrands.size > 0 ? `${Array.from(selectedBrands)[0]} selected` : 'No brand selected'} • 
         {' '}{selectedTypes.size} product type{selectedTypes.size === 1 ? '' : 's'} selected
       </p>
+
+      {/* View Assortment Button */}
+      {selectedBrands.size > 0 && (
+        <button
+          className="btn btn-secondary"
+          onClick={() => {
+            setAssortmentBrand(Array.from(selectedBrands)[0]);
+            setShowAssortment(true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setAssortmentBrand(Array.from(selectedBrands)[0]);
+              setShowAssortment(true);
+            }
+          }}
+          style={{ marginTop: '12px', width: '100%' }}
+        >
+          🛍️ View All {Array.from(selectedBrands)[0]} Products
+        </button>
+      )}
+
+      {/* Assortment Modal */}
+      {showAssortment && assortmentBrand && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowAssortment(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Brand assortment modal"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setShowAssortment(false);
+          }}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{assortmentBrand} - Full Assortment</h2>
+              <button className="modal-close" onClick={() => setShowAssortment(false)}>✕</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="assortment-grid">
+                {products
+                  .filter(p => p.brand === assortmentBrand)
+                  .sort((a, b) => a.productType.localeCompare(b.productType))
+                  .map((product) => (
+                    <div key={product.name} className="assortment-item">
+                      <div className="item-header">
+                        <strong>{product.name}</strong>
+                      </div>
+                      <div className="item-details">
+                        <span className="type">{product.productType}</span>
+                        <span className="carbs">{product.carbsG}g carbs</span>
+                      </div>
+                      {product.sodiumMg > 0 && (
+                        <div className="item-sodium">
+                          <span>{product.sodiumMg}mg sodium</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={() => setShowAssortment(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,67 +1,92 @@
 import React from 'react';
 import type { RaceNutritionPlan } from '../types';
-import { formatDuration } from '../utils';
+import { formatDuration, formatPhase } from '../utils';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
-  productMap?: Map<string, { brand: string; type: string; carbsG: number; sodiumMg: number }>;
 }
 
-export const PlanResults: React.FC<PlanResultsProps> = ({ plan, productMap }) => {
-  if (!plan) {
+export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
+  if (!plan?.nutritionSchedule) {
     return null;
   }
 
   // Group schedule items by time
-  const uniqueTimes = Array.from(new Set(plan.schedule.map(s => s.timeMin))).sort((a, b) => a - b);
+  const schedule = plan.nutritionSchedule;
+
+  // Calculate totals
+  const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
+  const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
+  const duration = plan.race?.durationHours || 0;
+
+  // Create a unique key based on plan content to force re-render on plan changes
+  const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
 
   return (
-    <div className="results-section">
+    <div className="results-section" key={planKey}>
       <div className="results-card">
-        <h2>Race Plan</h2>
+        <h2>Race Nutrition Plan</h2>
         
-        {uniqueTimes.length === 0 ? (
+        {schedule.length === 0 ? (
           <p className="empty-message">No schedule generated</p>
         ) : (
-          <div className="schedule-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Product</th>
-                  <th>Brand</th>
-                  <th className="text-right">Portions</th>
-                  <th className="text-right">Carbs (g)</th>
-                  <th className="text-right">Sodium (mg)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {uniqueTimes.map(timeMin => {
-                  const itemsAtTime = plan.schedule.filter(s => s.timeMin === timeMin);
-                  return itemsAtTime.map((item, idx) => {
-                    const productInfo = productMap?.get(item.productName);
-                    const carbsTotal = productInfo ? productInfo.carbsG * item.amountPortions : 0;
-                    const sodiumTotal = productInfo ? productInfo.sodiumMg * item.amountPortions : 0;
-                    
-                    return (
-                      <tr key={`${timeMin}-${idx}`}>
-                        <td>
-                          {idx === 0 && (
-                            <strong>{formatDuration(timeMin / 60)}</strong>
-                          )}
-                        </td>
-                        <td>{item.productName}</td>
-                        <td>{productInfo?.brand || '-'}</td>
-                        <td className="text-right">{item.amountPortions}</td>
-                        <td className="text-right">{carbsTotal.toFixed(1)}</td>
-                        <td className="text-right">{sodiumTotal.toFixed(0)}</td>
-                      </tr>
-                    );
-                  });
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            {/* Targets Section */}
+            <div className="targets-section">
+              <h3>Targets</h3>
+              <table className="targets-table">
+                <tbody>
+                  <tr>
+                    <td className="target-label">Total Carbs</td>
+                    <td className="target-value">{totalCarbs.toFixed(0)}g</td>
+                  </tr>
+                  <tr>
+                    <td className="target-label">Total Events</td>
+                    <td className="target-value">{schedule.length}</td>
+                  </tr>
+                  <tr>
+                    <td className="target-label">Duration</td>
+                    <td className="target-value">{duration.toFixed(2)}h</td>
+                  </tr>
+                  <tr>
+                    <td className="target-label">Total Caffeine</td>
+                    <td className="target-value">{totalCaffeine.toFixed(0)}mg</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="schedule-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Phase</th>
+                    <th>Phase Description</th>
+                    <th>Product</th>
+                    <th>Action</th>
+                    <th className="text-right">Carbs</th>
+                    <th className="text-right">Total</th>
+                    <th>Caffeine</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedule.map((event, index) => (
+                    <tr key={`${index}-${event.timeMin}-${event.productName}`} title={event.phaseDescription}>
+                      <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
+                      <td>{formatPhase(event.phase)}</td>
+                      <td className="phase-desc">{event.phaseDescription}</td>
+                      <td>{event.productName}</td>
+                      <td>{event.action}</td>
+                      <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
+                      <td className="text-right">{event.amountPortions} portion(s)</td>
+                      <td>{event.hasCaffeine ? `☕ ${event.caffeineMg || '?'}mg` : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

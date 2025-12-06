@@ -2,6 +2,7 @@ using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.Core.Models;
 using RaceDay.Core.Exceptions;
+using RaceDay.Core.Utilities;
 
 namespace RaceDay.API;
 
@@ -71,6 +72,35 @@ public static class ApiEndpointExtensions
         group.MapPost("/generate", GeneratePlan)
             .WithName("GeneratePlan")
             .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products");
+    }
+
+    /// <summary>
+    /// Map UI metadata API endpoints (descriptions, ranges, etc. for frontend)
+    /// </summary>
+    public static void MapMetadataEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/metadata")
+            .WithTags("Metadata");
+
+        group.MapGet("/", GetUIMetadata)
+            .WithName("GetUIMetadata")
+            .WithDescription("Get all UI metadata including temperature, intensity, and default activity information");
+
+        group.MapGet("/temperatures", GetTemperatureMetadata)
+            .WithName("GetTemperatureMetadata")
+            .WithDescription("Get temperature condition metadata with ranges and effects");
+
+        group.MapGet("/intensities", GetIntensityMetadata)
+            .WithName("GetIntensityMetadata")
+            .WithDescription("Get intensity level metadata with icons, carb ranges, and effects");
+
+        group.MapGet("/defaults", GetDefaults)
+            .WithName("GetDefaults")
+            .WithDescription("Get default values for the application");
+
+        group.MapGet("/configuration", GetConfigurationMetadata)
+            .WithName("GetConfigurationMetadata")
+            .WithDescription("Get all nutrition configuration including sport-specific parameters, thresholds, and descriptions");
     }
 
     // Product Handlers
@@ -208,7 +238,8 @@ public static class ApiEndpointExtensions
                     p.ProductType,
                     p.CarbsG,
                     p.SodiumMg,
-                    p.VolumeMl
+                    p.VolumeMl,
+                    p.CaffeineMg
                 )).ToList();
             }
             else if (request.Filter != null)
@@ -224,7 +255,8 @@ public static class ApiEndpointExtensions
                     p.ProductType,
                     p.CarbsG,
                     p.SodiumMg,
-                    p.VolumeMl
+                    p.VolumeMl,
+                    p.CaffeineMg
                 )).ToList();
             }
             else
@@ -252,12 +284,22 @@ public static class ApiEndpointExtensions
                 request.Intensity
             );
 
-            // Generate plan with optional custom interval
-            var plan = request.IntervalMin.HasValue
-                ? PlanGenerator.Generate(race, athlete, products, request.IntervalMin.Value)
-                : PlanGenerator.Generate(race, athlete, products);
+            // Generate advanced plan using the service
+            var service = new NutritionPlanService();
+            var nutritionEvents = service.GeneratePlan(race, athlete, products);
 
-            return Results.Ok(plan);
+            // Calculate shopping summary using extension
+            var shoppingSummary = nutritionEvents.CalculateShoppingList();
+
+            // Create response with advanced plan data and shopping summary
+            var response = new AdvancedPlanResponse(
+                race,
+                athlete,
+                nutritionEvents,
+                shoppingSummary
+            );
+
+            return Results.Ok(response);
         }
         catch (ValidationException ex)
         {
@@ -272,9 +314,73 @@ public static class ApiEndpointExtensions
             return Results.Problem($"Error generating plan: {ex.Message}");
         }
     }
-}
 
-// Request models for plan generation
+    // Metadata Handlers
+    private static IResult GetUIMetadata()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetUIMetadata();
+            return Results.Ok(metadata);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult GetTemperatureMetadata()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetTemperatureMetadata();
+            return Results.Ok(metadata);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading temperature metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult GetIntensityMetadata()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetIntensityMetadata();
+            return Results.Ok(metadata);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading intensity metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult GetDefaults()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetUIMetadata();
+            return Results.Ok(new { defaultActivityId = metadata.DefaultActivityId });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading defaults: {ex.Message}");
+        }
+    }
+
+    private static IResult GetConfigurationMetadata()
+    {
+        try
+        {
+            var config = ConfigurationMetadataService.GetConfigurationMetadata();
+            return Results.Ok(config);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading configuration metadata: {ex.Message}");
+        }
+    }
+}
 public record PlanGenerationRequest(
     double AthleteWeightKg,
     SportType SportType,
@@ -291,5 +397,16 @@ public record ProductRequest(
     string ProductType,
     double CarbsG,
     double SodiumMg,
-    double VolumeMl
+    double VolumeMl,
+    double? CaffeineMg = null
+);
+
+/// <summary>
+/// Response model for advanced nutrition plan generation
+/// </summary>
+public record AdvancedPlanResponse(
+    RaceProfile Race,
+    AthleteProfile Athlete,
+    List<NutritionEvent> NutritionSchedule,
+    ShoppingSummary? ShoppingSummary = null
 );

@@ -1,38 +1,40 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { SportType, IntensityLevel, type ActivityInfo } from '../types';
+import { SportType, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../utils';
 
 interface RaceDetailsFormProps {
   sportType: SportType;
   duration: number;
-  intensity: IntensityLevel;
   onSportTypeChange: (sport: SportType) => void;
   onDurationChange: (duration: number) => void;
-  onIntensityChange: (intensity: IntensityLevel) => void;
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   duration,
-  intensity,
   onSportTypeChange,
-  onDurationChange,
-  onIntensityChange
+  onDurationChange
 }) => {
   const [activities, setActivities] = useState<ActivityInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [minDuration, setMinDuration] = useState(0.5);
   const [maxDuration, setMaxDuration] = useState(24);
   const [currentDisplayDuration, setCurrentDisplayDuration] = useState(duration);
+  const [currentActivityId, setCurrentActivityId] = useState<string>('');
 
   const loadActivities = useCallback(async () => {
     try {
-      const data = await api.getActivities();
-      setActivities(data);
+      const [activitiesData, defaultsData] = await Promise.all([
+        api.getActivities(),
+        api.getDefaults()
+      ]);
+      setActivities(activitiesData);
       
-      // Set default activity to Olympic Triathlon
-      const defaultActivity = data.find(a => a.id === 'olympic-triathlon');
+      // Set default activity from backend
+      const defaultActivityId = defaultsData.defaultActivityId;
+      const defaultActivity = activitiesData.find(a => a.id === defaultActivityId);
       if (defaultActivity) {
+        setCurrentActivityId(defaultActivityId);
         onSportTypeChange(defaultActivity.sportType);
         setMinDuration(defaultActivity.minDurationHours);
         setMaxDuration(defaultActivity.maxDurationHours);
@@ -54,22 +56,6 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
     setCurrentDisplayDuration(duration);
   }, [duration]);
 
-  const handleActivityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const activityId = e.target.value;
-    if (!activityId) {
-      return;
-    }
-
-    const activity = activities.find(a => a.id === activityId);
-    if (activity) {
-      setMinDuration(activity.minDurationHours);
-      setMaxDuration(activity.maxDurationHours);
-      onDurationChange(activity.bestTimeHours);
-      setCurrentDisplayDuration(activity.bestTimeHours);
-      onSportTypeChange(activity.sportType);
-    }
-  };
-
   const handleDurationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDuration = Number.parseFloat(e.target.value);
     setCurrentDisplayDuration(newDuration);
@@ -81,20 +67,30 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
 
   return (
     <div className="form-card">
-      <div className="form-group inline-group">
-        <label htmlFor="activity">Activity</label>
-        {loading ? (
-          <p className="loading">Loading...</p>
-        ) : (
-          <select id="activity" onChange={handleActivityChange} className="form-control" defaultValue="">
-            <option value="">Choose activity</option>
-            {activities.map(activity => (
-              <option key={activity.id} value={activity.id}>
+      <h2>Sport Type</h2>
+      <div className="form-group">
+        <div className="activity-buttons">
+          {loading ? (
+            <p className="loading">Loading activities...</p>
+          ) : (
+            activities.map(activity => (
+              <button
+                key={activity.id}
+                className={`activity-btn ${currentActivityId === activity.id ? 'active' : ''}`}
+                onClick={() => {
+                  setCurrentActivityId(activity.id);
+                  setMinDuration(activity.minDurationHours);
+                  setMaxDuration(activity.maxDurationHours);
+                  onDurationChange(activity.bestTimeHours);
+                  setCurrentDisplayDuration(activity.bestTimeHours);
+                  onSportTypeChange(activity.sportType);
+                }}
+              >
                 {activity.name}
-              </option>
-            ))}
-          </select>
-        )}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
       <div className="form-group inline-group">
@@ -119,20 +115,6 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             <span>{formatDuration(maxDuration)}</span>
           </div>
         </div>
-      </div>
-
-      <div className="form-group inline-group">
-        <label htmlFor="intensity">Intensity</label>
-        <select
-          id="intensity"
-          value={intensity}
-          onChange={(e) => onIntensityChange(e.target.value as IntensityLevel)}
-          className="form-control"
-        >
-          <option value={IntensityLevel.Easy}>Easy</option>
-          <option value={IntensityLevel.Moderate}>Moderate</option>
-          <option value={IntensityLevel.Hard}>Hard</option>
-        </select>
       </div>
     </div>
   );

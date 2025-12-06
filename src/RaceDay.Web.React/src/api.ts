@@ -1,4 +1,4 @@
-import type { ProductInfo, ActivityInfo, RaceNutritionPlan, AthleteProfile, RaceProfile, ProductEditor } from './types';
+import type { ProductInfo, ActivityInfo, RaceNutritionPlan, AthleteProfile, RaceProfile, ProductEditor, UIMetadata, TemperatureMetadata, IntensityMetadata, ConfigurationMetadata } from './types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5208';
 
@@ -26,6 +26,12 @@ export const api = {
       throw new Error('Failed to search products');
     }
     return response.json();
+  },
+
+  async getBrands(): Promise<string[]> {
+    const products = await this.getProducts();
+    const brands = Array.from(new Set(products.map(p => p.brand))).sort();
+    return brands;
   },
 
   // Activities
@@ -98,6 +104,47 @@ export const api = {
       throw new Error(error || 'Failed to generate nutrition plan');
     }
 
+    return response.json();
+  },
+
+  // Metadata
+  async getUIMetadata(): Promise<UIMetadata> {
+    const response = await fetch(`${API_BASE_URL}/api/metadata`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch UI metadata');
+    }
+    return response.json();
+  },
+
+  async getTemperatureMetadata(): Promise<TemperatureMetadata[]> {
+    const response = await fetch(`${API_BASE_URL}/api/metadata/temperatures`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch temperature metadata');
+    }
+    return response.json();
+  },
+
+  async getIntensityMetadata(): Promise<IntensityMetadata[]> {
+    const response = await fetch(`${API_BASE_URL}/api/metadata/intensities`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch intensity metadata');
+    }
+    return response.json();
+  },
+
+  async getDefaults(): Promise<{ defaultActivityId: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/metadata/defaults`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch defaults');
+    }
+    return response.json();
+  },
+
+  async getConfigurationMetadata(): Promise<ConfigurationMetadata> {
+    const response = await fetch(`${API_BASE_URL}/api/metadata/configuration`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch configuration metadata');
+    }
     return response.json();
   },
 };
