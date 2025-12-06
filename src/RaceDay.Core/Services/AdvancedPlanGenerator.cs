@@ -49,7 +49,9 @@ public class AdvancedPlanGenerator
 
         // Initialize planner state
         var state = InitPlannerState(raceMode, weightKg);
-        var random = new Random(42); // Deterministic for testing
+        // Use fixed seed for reproducible results. Safe here as Random is local to this method call
+        // and not shared across threads. Each API request gets its own instance.
+        var random = new Random(42);
 
         var plan = new List<NutritionEvent>();
 

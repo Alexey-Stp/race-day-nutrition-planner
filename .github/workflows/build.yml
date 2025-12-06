@@ -34,7 +34,7 @@ jobs:
       run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed" --collect:"XPlat Code Coverage" --results-directory ./coverage
     
     - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@e28ff129e5465c2c0dcc3666ca3ecda4d58c6c33
       with:
         files: ./coverage/**/coverage.cobertura.xml
         flags: unittests
