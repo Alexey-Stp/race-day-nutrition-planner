@@ -459,26 +459,18 @@ public class AdvancedPlanGeneratorTests
         // Assert - Total caffeine <= MaxCaffeineMgPerKg * weightKg
         double maxCaffeineMg = 5.0 * athlete.WeightKg; // 5.0 mg/kg limit
         
-        // Get caffeine from events with CaffeineMg populated
-        double totalCaffeine = plan
-            .Where(e => e.HasCaffeine)
-            .Sum(e => e.CaffeineMg ?? 0);
-        
-        // Also compute from products
-        var caffeineFromProducts = 0.0;
+        // Calculate total caffeine from products (ground truth)
+        var totalCaffeineFromProducts = 0.0;
         foreach (var evt in plan.Where(e => e.HasCaffeine))
         {
             var product = products.FirstOrDefault(p => p.Name == evt.ProductName);
             if (product != null)
-                caffeineFromProducts += product.CaffeineMg;
+                totalCaffeineFromProducts += product.CaffeineMg * evt.AmountPortions;
         }
         
-        // Use the higher of the two values for assertion
-        var actualTotal = Math.Max(totalCaffeine, caffeineFromProducts);
-        
         Assert.True(
-            actualTotal <= maxCaffeineMg,
-            $"Total caffeine {actualTotal}mg exceeds limit {maxCaffeineMg}mg");
+            totalCaffeineFromProducts <= maxCaffeineMg,
+            $"Total caffeine {totalCaffeineFromProducts}mg exceeds limit {maxCaffeineMg}mg");
     }
 
     [Fact]
@@ -553,8 +545,10 @@ public class AdvancedPlanGeneratorTests
     [Fact]
     public void GeneratePlan_TriathlonBikePhase_FirstThirtyMinutesElectrolyteDrinksOnly()
     {
-        // Arrange - This test is for future triathlon support
-        // For now, we skip if triathlon phases aren't properly implemented
+        // Arrange - This test validates the specification for future triathlon support.
+        // Note: Current implementation maps SportType.Triathlon to Running mode (see DetermineRaceMode).
+        // This test will pass vacuously until triathlon phases are fully implemented.
+        // When implementation is complete, this test will validate the actual triathlon behavior.
         var athlete = new AthleteProfile(WeightKg: 75);
         var race = new RaceProfile(SportType.Triathlon, DurationHours: 5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
@@ -572,27 +566,26 @@ public class AdvancedPlanGeneratorTests
                 .Where(e => e.TimeMin >= bikeStartTime && e.TimeMin <= bikeStartTime + 30)
                 .ToList();
             
-            // In the first 30 min of bike, products should be electrolyte drinks
+            // In the first 30 min of bike, all products should be electrolyte drinks
             foreach (var evt in firstThirtyMinOfBike)
             {
                 var product = products.FirstOrDefault(p => p.Name == evt.ProductName);
-                if (product != null)
-                {
-                    // Validate it's a drink with electrolyte type
-                    if (product.Texture == ProductTexture.Drink)
-                    {
-                        Assert.Equal("Electrolyte", product.ProductType);
-                    }
-                }
+                Assert.NotNull(product);
+                
+                // Validate it's a drink with electrolyte type
+                Assert.Equal(ProductTexture.Drink, product.Texture);
+                Assert.Equal("Electrolyte", product.ProductType);
             }
         }
-        // If no bike events, test passes (not applicable for this race config)
+        // If no bike events, test passes (not applicable until triathlon phases are implemented)
     }
 
     [Fact]
     public void GeneratePlan_TriathlonRunPhase_FirstHourLightTexturesOnly()
     {
-        // Arrange - This test is for future triathlon support
+        // Arrange - This test validates the specification for future triathlon support.
+        // Note: Current implementation maps SportType.Triathlon to Running mode (see DetermineRaceMode).
+        // This test will validate actual triathlon behavior when implementation is complete.
         var athlete = new AthleteProfile(WeightKg: 75);
         var race = new RaceProfile(SportType.Triathlon, DurationHours: 5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
@@ -610,17 +603,16 @@ public class AdvancedPlanGeneratorTests
                 .Where(e => e.TimeMin >= runStartTime && e.TimeMin <= runStartTime + 60)
                 .ToList();
             
-            // In the first hour of run, textures should be light
+            // In the first hour of run, textures should be "light": LightGel or Bake
+            // (easier on the stomach during the transition from bike to run)
             foreach (var evt in firstHourOfRun)
             {
                 var product = products.FirstOrDefault(p => p.Name == evt.ProductName);
-                if (product != null)
-                {
-                    Assert.Contains(product.Texture, new[] { ProductTexture.LightGel, ProductTexture.Bake });
-                }
+                Assert.NotNull(product);
+                Assert.Contains(product.Texture, new[] { ProductTexture.LightGel, ProductTexture.Bake });
             }
         }
-        // If no run events, test passes (not applicable for this race config)
+        // If no run events, test passes (not applicable until triathlon phases are implemented)
     }
 
     [Fact]
