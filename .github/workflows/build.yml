@@ -31,16 +31,25 @@ jobs:
       run: dotnet build --configuration Release --no-restore --verbosity normal
     
     - name: Run Unit Tests with Code Coverage
-      run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed" --collect:"XPlat Code Coverage"
+      run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed" --collect:"XPlat Code Coverage" --results-directory ./coverage
     
-    - name: Generate Coverage Report
-      uses: daniel-arm/cobertura-report-action@v1
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v3
       with:
-        coverage_report_path: ${{ github.workspace }}/tests/**/coverage.cobertura.xml
-        minimum_coverage: 80
-        fail_if_below_minimum: true
-        show_line: true
-        show_branch: true
+        files: ./coverage/**/coverage.cobertura.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: Check Coverage Threshold
+      run: |
+        COVERAGE=$(find ./coverage -name "coverage.cobertura.xml" -exec grep -o 'line-rate="[^"]*"' {} \; | head -1 | grep -o '[0-9]*\.[0-9]*')
+        if (( $(echo "$COVERAGE < 0.80" | bc -l) )); then
+          echo "❌ Coverage is $COVERAGE (80% required)"
+          exit 1
+        else
+          echo "✅ Coverage is $COVERAGE (meets 80% requirement)"
+        fi
     
     - name: Install React dependencies
       run: npm ci --ignore-scripts
