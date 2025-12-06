@@ -19,6 +19,7 @@
     "sodiumMg": 10,
     "caloriesKcal": 87,
     "volumeMl": 60,
+    "caffeineMg": 75,
     "imageUrl": "/images/products/sis-go-energy-caffeine-gel-60.png"
   },
   {
@@ -108,6 +109,7 @@
     "sodiumMg": 350,
     "caloriesKcal": 15,
     "volumeMl": 500,
+    "caffeineMg": 75,
     "imageUrl": "/images/products/sis-go-hydro-caffeine-tablet-500.png"
   },
   {
@@ -141,6 +143,7 @@
     "sodiumMg": 0,
     "caloriesKcal": 10,
     "volumeMl": 60,
+    "caffeineMg": 150,
     "imageUrl": "/images/products/sis-go-caffeine-shot-60.png"
   },
   {
@@ -152,6 +155,7 @@
     "sodiumMg": 200,
     "caloriesKcal": 158,
     "volumeMl": 60,
+    "caffeineMg": 200,
     "imageUrl": "/images/products/sis-beta-fuel-gel-nootropics-60.png"
   }
 ]
