@@ -99,6 +99,7 @@ export interface ProductInfo {
   sodiumMg: number;
   volumeMl: number;
   caloriesKcal: number;
+  caffeineMg?: number;
 }
 
 export interface ActivityInfo {
@@ -156,6 +157,7 @@ export interface NutritionEvent {
   action: string;
   totalCarbsSoFar: number;
   hasCaffeine: boolean;
+  caffeineMg?: number;
 }
 
 export interface AdvancedPlanResponse {

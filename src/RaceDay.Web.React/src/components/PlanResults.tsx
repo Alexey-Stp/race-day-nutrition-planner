@@ -16,6 +16,8 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
 
   // Calculate totals
   const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
+  const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
+  const duration = plan.race?.durationHours || 0;
 
   return (
     <div className="results-section">
@@ -26,19 +28,29 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
           <p className="empty-message">No schedule generated</p>
         ) : (
           <>
-            <div className="plan-summary">
-              <div className="summary-stat">
-                <span className="label">Total Carbs</span>
-                <span className="value">{totalCarbs.toFixed(0)}g</span>
-              </div>
-              <div className="summary-stat">
-                <span className="label">Total Events</span>
-                <span className="value">{schedule.length}</span>
-              </div>
-              <div className="summary-stat">
-                <span className="label">Duration</span>
-                <span className="value">{plan.race?.durationHours || 0}h</span>
-              </div>
+            {/* Targets Section */}
+            <div className="targets-section">
+              <h3>Targets</h3>
+              <table className="targets-table">
+                <tbody>
+                  <tr>
+                    <td className="target-label">Total Carbs</td>
+                    <td className="target-value">{totalCarbs.toFixed(0)}g</td>
+                  </tr>
+                  <tr>
+                    <td className="target-label">Total Events</td>
+                    <td className="target-value">{schedule.length}</td>
+                  </tr>
+                  <tr>
+                    <td className="target-label">Duration</td>
+                    <td className="target-value">{duration.toFixed(2)}h</td>
+                  </tr>
+                  <tr>
+                    <td className="target-label">Total Caffeine</td>
+                    <td className="target-value">{totalCaffeine.toFixed(0)}mg</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <div className="schedule-table">
@@ -51,7 +63,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                     <th>Action</th>
                     <th className="text-right">Carbs</th>
                     <th className="text-right">Total</th>
-                    {schedule.some(e => e.hasCaffeine) && <th>Caffeine</th>}
+                    <th>Caffeine</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -63,9 +75,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                       <td>{event.action}</td>
                       <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
                       <td className="text-right">{event.amountPortions} portion(s)</td>
-                      {schedule.some(e => e.hasCaffeine) && (
-                        <td>{event.hasCaffeine ? '☕' : '-'}</td>
-                      )}
+                      <td>{event.hasCaffeine ? `☕ ${event.caffeineMg || '?'}mg` : '-'}</td>
                     </tr>
                   ))}
                 </tbody>

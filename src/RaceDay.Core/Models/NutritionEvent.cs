@@ -17,5 +17,6 @@ public record NutritionEvent(
     double AmountPortions,
     string Action,
     double TotalCarbsSoFar,
-    bool HasCaffeine = false
+    bool HasCaffeine = false,
+    double? CaffeineMg = null
 );
