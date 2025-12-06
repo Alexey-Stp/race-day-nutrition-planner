@@ -53,5 +53,49 @@
     "caloriesKcal": 15,
     "volumeMl": 500,
     "imageUrl": "/images/products/sis-go-hydro-tablet-500.png"
+  },
+  {
+    "id": "sis-beta-fuel-bar",
+    "brand": "SiS",
+    "name": "SiS Beta Fuel Bar",
+    "productType": "bar",
+    "carbsG": 40,
+    "sodiumMg": 150,
+    "caloriesKcal": 200,
+    "volumeMl": 0,
+    "imageUrl": "/images/products/sis-beta-fuel-bar.png"
+  },
+  {
+    "id": "sis-go-energy-bar-40",
+    "brand": "SiS",
+    "name": "SiS GO Energy Bar",
+    "productType": "bar",
+    "carbsG": 30,
+    "sodiumMg": 100,
+    "caloriesKcal": 150,
+    "volumeMl": 0,
+    "imageUrl": "/images/products/sis-go-energy-bar-40.png"
+  },
+  {
+    "id": "sis-go-energy-drink-500",
+    "brand": "SiS",
+    "name": "SiS GO Energy + Electrolyte Drink (500 ml)",
+    "productType": "drink",
+    "carbsG": 36,
+    "sodiumMg": 350,
+    "caloriesKcal": 144,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-go-energy-drink-500.png"
+  },
+  {
+    "id": "sis-rego-recovery-drink-500",
+    "brand": "SiS",
+    "name": "SiS REGO Rapid Recovery Drink (500 ml)",
+    "productType": "recovery",
+    "carbsG": 50,
+    "sodiumMg": 250,
+    "caloriesKcal": 200,
+    "volumeMl": 500,
+    "imageUrl": "/images/products/sis-rego-recovery-drink-500.png"
   }
 ]
