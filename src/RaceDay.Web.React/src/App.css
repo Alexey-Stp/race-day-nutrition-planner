@@ -465,6 +465,36 @@ html, body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: capitalize;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.intensity-btn .intensity-icon {
+    font-size: 1.2rem;
+}
+
+.intensity-btn .btn-carbs {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.intensity-btn .btn-hr {
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.intensity-btn:hover .btn-carbs,
+.intensity-btn:hover .btn-hr {
+    color: var(--text-primary);
+}
+
+.intensity-btn.active .btn-carbs,
+.intensity-btn.active .btn-hr {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .intensity-btn:hover {

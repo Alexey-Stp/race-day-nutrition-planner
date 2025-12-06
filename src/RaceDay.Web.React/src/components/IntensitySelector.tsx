@@ -32,28 +32,13 @@ export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
                 onClick={() => onIntensityChange(option)}
                 title={description.effects.join(', ')}
               >
-                <span className="intensity-icon">{description.icon}</span>
-                <span className="intensity-label">{option}</span>
+                <div className="intensity-icon">{description.icon}</div>
+                <div>{option}</div>
+                <div className="btn-carbs">{description.carbRange}</div>
+                <div className="btn-hr">{description.heartRateZone}</div>
               </button>
             );
           })}
-        </div>
-      </div>
-      {/* Show selected intensity details */}
-      <div className="intensity-details">
-        <div className="carb-range">
-          <strong>Carbs:</strong> {IntensityDescriptions[intensity].carbRange}
-        </div>
-        <div className="heart-rate-zone">
-          <strong>Heart Rate:</strong> {IntensityDescriptions[intensity].heartRateZone}
-        </div>
-        <div className="effects-list">
-          {IntensityDescriptions[intensity].effects.map((effect) => (
-            <div key={effect} className="effect-item">
-              <span className="bullet">•</span>
-              <span>{effect}</span>
-            </div>
-          ))}
         </div>
       </div>
     </div>
