@@ -6,6 +6,7 @@ import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
 import { IntensitySelector } from './components/IntensitySelector';
 import { BrandSelector } from './components/BrandSelector';
+import { ProductsList } from './components/ProductsList';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
 import './App.css';
@@ -21,6 +22,7 @@ function App() {
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'selector' | 'list'>('selector');
 
   // Check if all required fields are filled
   const isFormValid = () => {
@@ -104,7 +106,30 @@ function App() {
             onTemperatureChange={setTemperature}
           />
 
-          <BrandSelector onBrandsSelected={setSelectedProducts} />
+          <div className="product-selector-tabs">
+            <button 
+              className={`tab-btn ${viewMode === 'selector' ? 'active' : ''}`}
+              onClick={() => setViewMode('selector')}
+            >
+              Select by Brand
+            </button>
+            <button 
+              className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setViewMode('list')}
+            >
+              View All Products
+            </button>
+          </div>
+
+          {viewMode === 'selector' ? (
+            <BrandSelector onBrandsSelected={setSelectedProducts} />
+          ) : (
+            <ProductsList onProductSelected={(product) => {
+              if (!selectedProducts.find(p => p.id === product.id)) {
+                setSelectedProducts([...selectedProducts, product]);
+              }
+            }} />
+          )}
 
           {error && <div className="error-message" style={{ marginTop: '10px' }}>{error}</div>}
 
