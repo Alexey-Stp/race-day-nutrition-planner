@@ -51,7 +51,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                     <th>Action</th>
                     <th className="text-right">Carbs</th>
                     <th className="text-right">Total</th>
-                    {schedule.some(e => e.hasCaffeine) && <th>Caffeine</th>}
+                    <th>Caffeine</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -63,9 +63,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                       <td>{event.action}</td>
                       <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
                       <td className="text-right">{event.amountPortions} portion(s)</td>
-                      {schedule.some(e => e.hasCaffeine) && (
-                        <td>{event.hasCaffeine ? '☕' : '-'}</td>
-                      )}
+                      <td>{event.hasCaffeine ? `☕ ${event.caffeineMg || '?'}mg` : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
