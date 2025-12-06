@@ -55,6 +55,9 @@ public class AdvancedPlanGenerator
 
         var plan = new List<NutritionEvent>();
 
+        // Get the main race phase for pre-race event
+        var mainPhase = phases.FirstOrDefault()?.Phase ?? RacePhase.Run;
+
         // Pre-race intake (15 min before)
         var preRaceProduct = products.FirstOrDefault(p => p.Texture == ProductTexture.Bake);
         if (preRaceProduct != null)
@@ -62,7 +65,7 @@ public class AdvancedPlanGenerator
             state.TotalCarbs += preRaceProduct.CarbsG;
             plan.Add(new NutritionEvent(
                 TimeMin: -15,
-                Phase: RacePhase.Swim, // Generic phase for pre-race
+                Phase: mainPhase, // Use the actual race phase instead of generic Swim
                 ProductName: preRaceProduct.Name,
                 AmountPortions: 1,
                 Action: "Eat",
