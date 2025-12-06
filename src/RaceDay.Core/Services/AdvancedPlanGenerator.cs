@@ -97,16 +97,26 @@ public class AdvancedPlanGenerator
                 continue;
 
             // Validate caffeine doesn't exceed limit
-            if (wantsCaffeine && product.HasCaffeine)
+            if (product.HasCaffeine)
             {
                 double maxCaffeine = AdvancedNutritionConfig.MaxCaffeineMgPerKg * weightKg;
                 if (state.TotalCaffeineMg + product.CaffeineMg > maxCaffeine)
                 {
-                    // Fall back to non-caffeine version
-                    product = products.FirstOrDefault(p =>
+                    // Fall back to non-caffeine version - must exist to avoid exceeding limit
+                    var nonCaffeinatedFallback = products.FirstOrDefault(p =>
                         !p.HasCaffeine &&
                         p.Texture == product.Texture &&
-                        p.ProductType == product.ProductType) ?? product;
+                        p.ProductType == product.ProductType);
+                    
+                    if (nonCaffeinatedFallback != null)
+                    {
+                        product = nonCaffeinatedFallback;
+                    }
+                    else
+                    {
+                        // No suitable replacement, skip this event to avoid exceeding caffeine limit
+                        continue;
+                    }
                 }
             }
 
@@ -245,7 +255,7 @@ public class AdvancedPlanGenerator
         if (state.TotalCaffeineMg >= maxTotal)
             return false;
 
-        return currentHour >= state.NextCaffeineHour - 0.1;
+        return true;
     }
 
     private static ProductEnhanced? SelectProductForSlot(
@@ -274,6 +284,16 @@ public class AdvancedPlanGenerator
 
             if (caffeinated != null)
                 selected = caffeinated;
+        }
+        else if (!wantsCaffeine && selected.HasCaffeine)
+        {
+            // If we don't want caffeine but selected a caffeinated product, swap for non-caffeinated
+            var nonCaffeinated = products.FirstOrDefault(p =>
+                !p.HasCaffeine &&
+                (p.Texture == selected.Texture || p.ProductType == selected.ProductType));
+
+            if (nonCaffeinated != null)
+                selected = nonCaffeinated;
         }
 
         return selected;
