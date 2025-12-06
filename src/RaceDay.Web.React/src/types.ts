@@ -57,7 +57,7 @@ export const TemperatureDescriptions: Record<TemperatureCondition, { range: stri
 export const IntensityDescriptions: Record<IntensityLevel, { icon: string; carbRange: string; heartRateZone: string; effects: string[] }> = {
   Easy: {
     icon: "🟢",
-    carbRange: "30-60 g/hr",
+    carbRange: "45 g/hr",
     heartRateZone: "Zone 1-2 (60-75% max HR)",
     effects: [
       "Conversational pace",
@@ -68,7 +68,7 @@ export const IntensityDescriptions: Record<IntensityLevel, { icon: string; carbR
   },
   Moderate: {
     icon: "🟡",
-    carbRange: "60-90 g/hr",
+    carbRange: "75 g/hr",
     heartRateZone: "Zone 3 (75-85% max HR)",
     effects: [
       "Steady effort",
@@ -79,7 +79,7 @@ export const IntensityDescriptions: Record<IntensityLevel, { icon: string; carbR
   },
   Hard: {
     icon: "🔴",
-    carbRange: "90-120 g/hr",
+    carbRange: "105 g/hr",
     heartRateZone: "Zone 4-5 (85-100% max HR)",
     effects: [
       "High effort/competitive",
