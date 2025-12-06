@@ -20,79 +20,55 @@ export const NutritionTargetsDisplay: React.FC<NutritionTargetsProps> = ({
   const fluidsPerHour = targets.fluidsMlPerHour;
   const sodiumPerHour = targets.sodiumMgPerHour;
 
+  const nutritionData = [
+    {
+      type: 'Carbohydrates',
+      unit: 'g',
+      perHour: carbsPerHour,
+      total: totalCarbsG
+    },
+    {
+      type: 'Calories',
+      unit: 'kcal',
+      perHour: carbsPerHour * 4,
+      total: totalCarbsG * 4
+    },
+    {
+      type: 'Fluids',
+      unit: 'ml',
+      perHour: fluidsPerHour,
+      total: totalFluidsMl
+    },
+    {
+      type: 'Sodium',
+      unit: 'mg',
+      perHour: sodiumPerHour,
+      total: totalSodiumMg
+    }
+  ];
+
   return (
     <div className="form-card targets-card">
       <h2>Nutrition Targets</h2>
       
-      <div className="targets-grid">
-        {/* Carbohydrates */}
-        <div className="target-item">
-          <div className="target-header">
-            <h3>Carbohydrates</h3>
-          </div>
-          <div className="target-values">
-            <div className="value-row">
-              <span className="label">Per Hour:</span>
-              <span className="value">{carbsPerHour.toFixed(1)} g</span>
-            </div>
-            <div className="value-row">
-              <span className="label">Total ({durationHours}h):</span>
-              <span className="value">{totalCarbsG.toFixed(1)} g</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Calories */}
-        <div className="target-item">
-          <div className="target-header">
-            <h3>Calories</h3>
-          </div>
-          <div className="target-values">
-            <div className="value-row">
-              <span className="label">Per Hour:</span>
-              <span className="value">{(carbsPerHour * 4).toFixed(0)} kcal</span>
-            </div>
-            <div className="value-row">
-              <span className="label">Total ({durationHours}h):</span>
-              <span className="value">{(totalCarbsG * 4).toFixed(0)} kcal</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Fluids */}
-        <div className="target-item">
-          <div className="target-header">
-            <h3>Fluids</h3>
-          </div>
-          <div className="target-values">
-            <div className="value-row">
-              <span className="label">Per Hour:</span>
-              <span className="value">{fluidsPerHour.toFixed(0)} ml</span>
-            </div>
-            <div className="value-row">
-              <span className="label">Total ({durationHours}h):</span>
-              <span className="value">{totalFluidsMl.toFixed(0)} ml</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sodium */}
-        <div className="target-item">
-          <div className="target-header">
-            <h3>Sodium</h3>
-          </div>
-          <div className="target-values">
-            <div className="value-row">
-              <span className="label">Per Hour:</span>
-              <span className="value">{sodiumPerHour.toFixed(0)} mg</span>
-            </div>
-            <div className="value-row">
-              <span className="label">Total ({durationHours}h):</span>
-              <span className="value">{totalSodiumMg.toFixed(0)} mg</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <table className="targets-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Per Hour</th>
+            <th>Total ({durationHours}h)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {nutritionData.map((item) => (
+            <tr key={item.type}>
+              <td className="type-cell">{item.type}</td>
+              <td className="value-cell">{item.perHour.toFixed(1)} {item.unit}</td>
+              <td className="value-cell">{item.total.toFixed(1)} {item.unit}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

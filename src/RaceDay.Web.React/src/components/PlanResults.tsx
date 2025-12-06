@@ -4,64 +4,74 @@ import { formatDuration } from '../utils';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
-  productMap?: Map<string, { brand: string; type: string; carbsG: number; sodiumMg: number }>;
 }
 
-export const PlanResults: React.FC<PlanResultsProps> = ({ plan, productMap }) => {
-  if (!plan) {
+export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
+  if (!plan?.nutritionSchedule) {
     return null;
   }
 
   // Group schedule items by time
-  const uniqueTimes = Array.from(new Set(plan.schedule.map(s => s.timeMin))).sort((a, b) => a - b);
+  const schedule = plan.nutritionSchedule;
+
+  // Calculate totals
+  const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
 
   return (
     <div className="results-section">
       <div className="results-card">
-        <h2>Race Plan</h2>
+        <h2>Race Nutrition Plan</h2>
         
-        {uniqueTimes.length === 0 ? (
+        {schedule.length === 0 ? (
           <p className="empty-message">No schedule generated</p>
         ) : (
-          <div className="schedule-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Product</th>
-                  <th>Brand</th>
-                  <th className="text-right">Portions</th>
-                  <th className="text-right">Carbs (g)</th>
-                  <th className="text-right">Sodium (mg)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {uniqueTimes.map(timeMin => {
-                  const itemsAtTime = plan.schedule.filter(s => s.timeMin === timeMin);
-                  return itemsAtTime.map((item, idx) => {
-                    const productInfo = productMap?.get(item.productName);
-                    const carbsTotal = productInfo ? productInfo.carbsG * item.amountPortions : 0;
-                    const sodiumTotal = productInfo ? productInfo.sodiumMg * item.amountPortions : 0;
-                    
-                    return (
-                      <tr key={`${timeMin}-${idx}`}>
-                        <td>
-                          {idx === 0 && (
-                            <strong>{formatDuration(timeMin / 60)}</strong>
-                          )}
-                        </td>
-                        <td>{item.productName}</td>
-                        <td>{productInfo?.brand || '-'}</td>
-                        <td className="text-right">{item.amountPortions}</td>
-                        <td className="text-right">{carbsTotal.toFixed(1)}</td>
-                        <td className="text-right">{sodiumTotal.toFixed(0)}</td>
-                      </tr>
-                    );
-                  });
-                })}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="plan-summary">
+              <div className="summary-stat">
+                <span className="label">Total Carbs</span>
+                <span className="value">{totalCarbs.toFixed(0)}g</span>
+              </div>
+              <div className="summary-stat">
+                <span className="label">Total Events</span>
+                <span className="value">{schedule.length}</span>
+              </div>
+              <div className="summary-stat">
+                <span className="label">Duration</span>
+                <span className="value">{plan.race?.durationHours || 0}h</span>
+              </div>
+            </div>
+
+            <div className="schedule-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Phase</th>
+                    <th>Product</th>
+                    <th>Action</th>
+                    <th className="text-right">Carbs</th>
+                    <th className="text-right">Total</th>
+                    {schedule.some(e => e.hasCaffeine) && <th>Caffeine</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedule.map((event) => (
+                    <tr key={`${event.timeMin}-${event.productName}`}>
+                      <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
+                      <td>{event.phase}</td>
+                      <td>{event.productName}</td>
+                      <td>{event.action}</td>
+                      <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
+                      <td className="text-right">{event.amountPortions} portion(s)</td>
+                      {schedule.some(e => e.hasCaffeine) && (
+                        <td>{event.hasCaffeine ? '☕' : '-'}</td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>
