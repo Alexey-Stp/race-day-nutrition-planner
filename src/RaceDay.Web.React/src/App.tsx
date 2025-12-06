@@ -4,10 +4,10 @@ import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
+import { IntensitySelector } from './components/IntensitySelector';
 import { BrandSelector } from './components/BrandSelector';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
-import { NutritionTargetsDisplay } from './components/NutritionTargets';
 import './App.css';
 
 function App() {
@@ -22,18 +22,17 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Map for quick product lookups
-  const productMap = new Map(
-    selectedProducts.map(p => [
-      p.name,
-      {
-        brand: p.brand,
-        type: p.productType,
-        carbsG: p.carbsG,
-        sodiumMg: p.sodiumMg
-      }
-    ])
-  );
+  // Check if all required fields are filled
+  const isFormValid = () => {
+    return (
+      athleteWeight > 0 &&
+      sportType &&
+      duration > 0 &&
+      temperature &&
+      intensity &&
+      selectedProducts.length > 0
+    );
+  };
 
   const generatePlan = async () => {
     if (selectedProducts.length === 0) {
@@ -91,9 +90,12 @@ function App() {
           <RaceDetailsForm
             sportType={sportType}
             duration={duration}
-            intensity={intensity}
             onSportTypeChange={setSportType}
             onDurationChange={setDuration}
+          />
+
+          <IntensitySelector
+            intensity={intensity}
             onIntensityChange={setIntensity}
           />
 
@@ -109,7 +111,7 @@ function App() {
           <button 
             onClick={generatePlan} 
             className="btn btn-primary btn-lg btn-calculate"
-            disabled={loading || selectedProducts.length === 0}
+            disabled={loading || !isFormValid()}
           >
             {loading ? 'Generating...' : 'Generate Plan'}
           </button>
@@ -119,15 +121,8 @@ function App() {
         <div className="results-container">
           {plan ? (
             <>
-              <PlanResults plan={plan} productMap={productMap} />
-              <ShoppingList productSummaries={plan.productSummaries} productMap={productMap} />
-              <NutritionTargetsDisplay
-                targets={plan.targets}
-                totalCarbsG={plan.totalCarbsG}
-                totalFluidsMl={plan.totalFluidsMl}
-                totalSodiumMg={plan.totalSodiumMg}
-                durationHours={duration}
-              />
+              <PlanResults plan={plan} />
+              <ShoppingList plan={plan} />
             </>
           ) : (
             <div className="form-card empty-results">

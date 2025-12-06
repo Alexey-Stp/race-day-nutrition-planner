@@ -1,23 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { SportType, IntensityLevel, type ActivityInfo } from '../types';
+import { SportType, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../utils';
 
 interface RaceDetailsFormProps {
   sportType: SportType;
   duration: number;
-  intensity: IntensityLevel;
   onSportTypeChange: (sport: SportType) => void;
   onDurationChange: (duration: number) => void;
-  onIntensityChange: (intensity: IntensityLevel) => void;
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   duration,
-  intensity,
   onSportTypeChange,
-  onDurationChange,
-  onIntensityChange
+  onDurationChange
 }) => {
   const [activities, setActivities] = useState<ActivityInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,20 +115,6 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             <span>{formatDuration(maxDuration)}</span>
           </div>
         </div>
-      </div>
-
-      <div className="form-group inline-group">
-        <label htmlFor="intensity">Intensity</label>
-        <select
-          id="intensity"
-          value={intensity}
-          onChange={(e) => onIntensityChange(e.target.value as IntensityLevel)}
-          className="form-control"
-        >
-          <option value={IntensityLevel.Easy}>Easy</option>
-          <option value={IntensityLevel.Moderate}>Moderate</option>
-          <option value={IntensityLevel.Hard}>Hard</option>
-        </select>
       </div>
     </div>
   );

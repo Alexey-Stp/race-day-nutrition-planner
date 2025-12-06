@@ -2,6 +2,7 @@ using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.Core.Models;
 using RaceDay.Core.Exceptions;
+using RaceDay.Core.Utilities;
 
 namespace RaceDay.API;
 
@@ -252,12 +253,22 @@ public static class ApiEndpointExtensions
                 request.Intensity
             );
 
-            // Generate plan with optional custom interval
-            var plan = request.IntervalMin.HasValue
-                ? PlanGenerator.Generate(race, athlete, products, request.IntervalMin.Value)
-                : PlanGenerator.Generate(race, athlete, products);
+            // Generate advanced plan using the service
+            var service = new NutritionPlanService();
+            var nutritionEvents = service.GeneratePlan(race, athlete, products);
 
-            return Results.Ok(plan);
+            // Calculate shopping summary using extension
+            var shoppingSummary = nutritionEvents.CalculateShoppingList();
+
+            // Create response with advanced plan data and shopping summary
+            var response = new AdvancedPlanResponse(
+                race,
+                athlete,
+                nutritionEvents,
+                shoppingSummary
+            );
+
+            return Results.Ok(response);
         }
         catch (ValidationException ex)
         {
@@ -292,4 +303,14 @@ public record ProductRequest(
     double CarbsG,
     double SodiumMg,
     double VolumeMl
+);
+
+/// <summary>
+/// Response model for advanced nutrition plan generation
+/// </summary>
+public record AdvancedPlanResponse(
+    RaceProfile Race,
+    AthleteProfile Athlete,
+    List<NutritionEvent> NutritionSchedule,
+    ShoppingSummary? ShoppingSummary = null
 );
