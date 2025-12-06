@@ -137,11 +137,12 @@ public static class AdvancedPlanGenerator
 
                 double portions = 0;
                 
-                if (product.ProductType == "gel")
+                // Calculate portions based on product type
+                if (product.ProductType == "gel") // TODO: Consider using constants for product types
                 {
                     portions = Math.Round((carbsPerInterval / product.CarbsG) * 2) / 2;
                 }
-                else if (product.ProductType == "drink")
+                else if (product.ProductType == "drink") // TODO: Consider using constants for product types
                 {
                     double fluidsPerInterval = targets.FluidsMlPerHour * intervalMin / 60.0;
                     portions = Math.Round((fluidsPerInterval / product.VolumeMl) * 2) / 2;
@@ -222,6 +223,7 @@ public static class AdvancedPlanGenerator
         Dictionary<RacePhase, (int StartMin, int EndMin)> phases,
         RaceMode raceMode)
     {
+        // Filter out any null products from the input list (defensive programming)
         var filtered = products.Where(p => p != null).ToList();
 
         // Triathlon-specific rules
