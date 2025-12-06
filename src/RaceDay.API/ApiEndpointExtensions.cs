@@ -1,4 +1,7 @@
-using RaceDay.Core;
+using RaceDay.Core.Services;
+using RaceDay.Core.Repositories;
+using RaceDay.Core.Models;
+using RaceDay.Core.Exceptions;
 
 namespace RaceDay.API;
 

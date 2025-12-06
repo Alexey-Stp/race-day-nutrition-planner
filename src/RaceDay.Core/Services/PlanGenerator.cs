@@ -1,4 +1,8 @@
-﻿namespace RaceDay.Core;
+﻿namespace RaceDay.Core.Services;
+using RaceDay.Core.Models;
+using RaceDay.Core.Repositories;
+using RaceDay.Core.Utilities;
+using RaceDay.Core.Exceptions;
 
 /// <summary>
 /// Generates race nutrition plans with time-based schedules

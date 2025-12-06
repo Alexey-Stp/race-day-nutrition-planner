@@ -1,4 +1,5 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Repositories;
+using RaceDay.Core.Models;
 
 /// <summary>
 /// Interface for accessing product information

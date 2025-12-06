@@ -1,4 +1,6 @@
 namespace RaceDay.Core.Tests;
+using RaceDay.Core.Models;
+using RaceDay.Core.Repositories;
 
 public class ActivityRepositoryTests
 {

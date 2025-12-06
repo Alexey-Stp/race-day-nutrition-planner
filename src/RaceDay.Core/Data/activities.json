@@ -6,8 +6,7 @@
     "description": "Sprint distance triathlon: 750m swim, 20km bike, 5km run",
     "minDurationHours": 1.0,
     "maxDurationHours": 2.5,
-    "bestTimeHours": 1.25,
-    "bestTimeFormatted": "1:15"
+    "bestTimeHours": 1.25
   },
   {
     "id": "olympic-triathlon",
@@ -16,8 +15,7 @@
     "description": "Olympic distance triathlon: 1.5km swim, 40km bike, 10km run",
     "minDurationHours": 2.0,
     "maxDurationHours": 4.0,
-    "bestTimeHours": 1.85,
-    "bestTimeFormatted": "1:51"
+    "bestTimeHours": 1.85
   },
   {
     "id": "half-ironman",
@@ -26,8 +24,7 @@
     "description": "Half Ironman distance: 1.9km swim, 90km bike, 21.1km run",
     "minDurationHours": 4.5,
     "maxDurationHours": 8.0,
-    "bestTimeHours": 3.75,
-    "bestTimeFormatted": "3:45"
+    "bestTimeHours": 3.75
   },
   {
     "id": "ironman",
@@ -36,8 +33,16 @@
     "description": "Full Ironman distance: 3.8km swim, 180km bike, 42.2km run",
     "minDurationHours": 10.0,
     "maxDurationHours": 17.0,
-    "bestTimeHours": 8.0,
-    "bestTimeFormatted": "8:00"
+    "bestTimeHours": 8.0
+  },
+  {
+    "id": "10k-run",
+    "name": "10K Run",
+    "sportType": "Run",
+    "description": "Running: 10km (6.2 miles)",
+    "minDurationHours": 0.5,
+    "maxDurationHours": 1.5,
+    "bestTimeHours": 0.583
   },
   {
     "id": "half-marathon",
@@ -46,8 +51,7 @@
     "description": "Running: 21.1km (13.1 miles)",
     "minDurationHours": 1.5,
     "maxDurationHours": 4.0,
-    "bestTimeHours": 0.583,
-    "bestTimeFormatted": "0:35"
+    "bestTimeHours": 1.75
   },
   {
     "id": "marathon",
@@ -56,57 +60,15 @@
     "description": "Running: 42.2km (26.2 miles)",
     "minDurationHours": 3.0,
     "maxDurationHours": 7.0,
-    "bestTimeHours": 2.083,
-    "bestTimeFormatted": "2:05"
+    "bestTimeHours": 3.5
   },
   {
-    "id": "ultramarathon-50k",
-    "name": "50K Ultramarathon",
-    "sportType": "Run",
-    "description": "Running: 50km ultramarathon",
-    "minDurationHours": 5.0,
+    "id": "long-cycling-race",
+    "name": "Long Distance Cycling Race",
+    "sportType": "Bike",
+    "description": "Cycling: Long distance race (100-200km)",
+    "minDurationHours": 1.0,
     "maxDurationHours": 12.0,
-    "bestTimeHours": 2.92,
-    "bestTimeFormatted": "2:55"
-  },
-  {
-    "id": "century-ride",
-    "name": "Century Ride",
-    "sportType": "Bike",
-    "description": "Cycling: 160km (100 miles)",
-    "minDurationHours": 5.0,
-    "maxDurationHours": 12.0,
-    "bestTimeHours": 2.5,
-    "bestTimeFormatted": "2:30"
-  },
-  {
-    "id": "gran-fondo",
-    "name": "Gran Fondo",
-    "sportType": "Bike",
-    "description": "Cycling: Long distance group ride (typically 120-160km)",
-    "minDurationHours": 4.0,
-    "maxDurationHours": 10.0,
-    "bestTimeHours": 2.92,
-    "bestTimeFormatted": "2:55"
-  },
-  {
-    "id": "mtb-marathon",
-    "name": "Mountain Bike Marathon",
-    "sportType": "Bike",
-    "description": "Mountain biking: Marathon distance (typically 40-65km)",
-    "minDurationHours": 3.5,
-    "maxDurationHours": 8.0,
-    "bestTimeHours": 2.25,
-    "bestTimeFormatted": "2:15"
-  },
-  {
-    "id": "gravel-grinder",
-    "name": "Gravel Grinder",
-    "sportType": "Bike",
-    "description": "Off-road cycling: Mixed terrain (typically 100-200km)",
-    "minDurationHours": 6.0,
-    "maxDurationHours": 15.0,
-    "bestTimeHours": 4.5,
-    "bestTimeFormatted": "4:30"
+    "bestTimeHours": 6.0
   }
 ]

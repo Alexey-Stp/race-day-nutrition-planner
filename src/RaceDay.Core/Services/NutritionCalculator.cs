@@ -1,4 +1,6 @@
-﻿namespace RaceDay.Core;
+﻿namespace RaceDay.Core.Services;
+using RaceDay.Core.Models;
+using RaceDay.Core.Constants;
 
 /// <summary>
 /// Calculates nutrition targets based on athlete and race profiles

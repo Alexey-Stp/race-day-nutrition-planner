@@ -1,4 +1,4 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Models;
 
 /// <summary>
 /// Detailed product information from the product catalog
