@@ -115,7 +115,8 @@ html, body {
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
 }
 
 .form-group.inline-group label {
@@ -127,9 +128,11 @@ html, body {
 }
 
 .form-group.inline-group .form-control,
-.form-group.inline-group .input-group {
+.form-group.inline-group .input-group,
+.form-group.inline-group .intensity-buttons {
     flex: 1;
     margin-bottom: 0;
+    width: 100%;
 }
 
 .form-group.inline-group .duration-display {
@@ -451,6 +454,8 @@ html, body {
     display: flex;
     gap: 10px;
     flex: 1;
+    width: 100%;
+    justify-content: space-between;
 }
 
 .intensity-btn {
@@ -469,7 +474,6 @@ html, body {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    min-width: 120px;
 }
 
 .intensity-btn .intensity-icon {
