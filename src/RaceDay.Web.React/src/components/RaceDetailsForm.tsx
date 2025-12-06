@@ -26,8 +26,8 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
       const data = await api.getActivities();
       setActivities(data);
       
-      // Set default activity to Olympic Triathlon
-      const defaultActivity = data.find(a => a.id === 'olympic-triathlon');
+      // Set default activity to Run
+      const defaultActivity = data.find(a => a.id === 'run');
       if (defaultActivity) {
         onSportTypeChange(defaultActivity.sportType);
         setMinDuration(defaultActivity.minDurationHours);
@@ -50,22 +50,6 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
     setCurrentDisplayDuration(duration);
   }, [duration]);
 
-  const handleActivityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const activityId = e.target.value;
-    if (!activityId) {
-      return;
-    }
-
-    const activity = activities.find(a => a.id === activityId);
-    if (activity) {
-      setMinDuration(activity.minDurationHours);
-      setMaxDuration(activity.maxDurationHours);
-      onDurationChange(activity.bestTimeHours);
-      setCurrentDisplayDuration(activity.bestTimeHours);
-      onSportTypeChange(activity.sportType);
-    }
-  };
-
   const handleDurationInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDuration = Number.parseFloat(e.target.value);
     setCurrentDisplayDuration(newDuration);
@@ -77,20 +61,29 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
 
   return (
     <div className="form-card">
-      <div className="form-group inline-group">
-        <label htmlFor="activity">Activity</label>
-        {loading ? (
-          <p className="loading">Loading...</p>
-        ) : (
-          <select id="activity" onChange={handleActivityChange} className="form-control" defaultValue="">
-            <option value="">Choose activity</option>
-            {activities.map(activity => (
-              <option key={activity.id} value={activity.id}>
+      <h2>Sport Type</h2>
+      <div className="form-group">
+        <div className="activity-buttons">
+          {loading ? (
+            <p className="loading">Loading activities...</p>
+          ) : (
+            activities.map(activity => (
+              <button
+                key={activity.id}
+                className={`activity-btn ${activity.sportType === (activities.find(a => a.sportType)?.sportType) ? 'active' : ''}`}
+                onClick={() => {
+                  setMinDuration(activity.minDurationHours);
+                  setMaxDuration(activity.maxDurationHours);
+                  onDurationChange(activity.bestTimeHours);
+                  setCurrentDisplayDuration(activity.bestTimeHours);
+                  onSportTypeChange(activity.sportType);
+                }}
+              >
                 {activity.name}
-              </option>
-            ))}
-          </select>
-        )}
+              </button>
+            ))
+          )}
+        </div>
       </div>
 
       <div className="form-group inline-group">

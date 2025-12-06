@@ -28,6 +28,12 @@ export const api = {
     return response.json();
   },
 
+  async getBrands(): Promise<string[]> {
+    const products = await this.getProducts();
+    const brands = Array.from(new Set(products.map(p => p.brand))).sort();
+    return brands;
+  },
+
   // Activities
   async getActivities(): Promise<ActivityInfo[]> {
     const response = await fetch(`${API_BASE_URL}/api/activities`);
