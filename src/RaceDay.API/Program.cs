@@ -46,5 +46,6 @@ app.UseCors("AllowAll");
 app.MapProductEndpoints();
 app.MapActivityEndpoints();
 app.MapPlanEndpoints();
+app.MapMetadataEndpoints();
 
 app.Run();

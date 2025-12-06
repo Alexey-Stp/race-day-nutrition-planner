@@ -62,6 +62,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   <tr>
                     <th>Time</th>
                     <th>Phase</th>
+                    <th>Phase Description</th>
                     <th>Product</th>
                     <th>Action</th>
                     <th className="text-right">Carbs</th>
@@ -71,9 +72,10 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                 </thead>
                 <tbody>
                   {schedule.map((event, index) => (
-                    <tr key={`${index}-${event.timeMin}-${event.productName}`}>
+                    <tr key={`${index}-${event.timeMin}-${event.productName}`} title={event.phaseDescription}>
                       <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
                       <td>{formatPhase(event.phase)}</td>
+                      <td className="phase-desc">{event.phaseDescription}</td>
                       <td>{event.productName}</td>
                       <td>{event.action}</td>
                       <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>

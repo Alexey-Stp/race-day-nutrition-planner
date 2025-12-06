@@ -65,7 +65,8 @@ public class AdvancedPlanGenerator
             state.TotalCarbs += preRaceProduct.CarbsG;
             plan.Add(new NutritionEvent(
                 TimeMin: -15,
-                Phase: mainPhase, // Use the actual race phase instead of generic Swim
+                Phase: mainPhase,
+                PhaseDescription: GetPhaseDescription(mainPhase),
                 ProductName: preRaceProduct.Name,
                 AmountPortions: 1,
                 Action: "Eat",
@@ -121,6 +122,7 @@ public class AdvancedPlanGenerator
             plan.Add(new NutritionEvent(
                 TimeMin: slot.TimeMin,
                 Phase: slot.Phase,
+                PhaseDescription: GetPhaseDescription(slot.Phase),
                 ProductName: product.Name,
                 AmountPortions: 1,
                 Action: GetAction(product.Texture),
@@ -137,9 +139,11 @@ public class AdvancedPlanGenerator
             if (extraProduct != null)
             {
                 state.TotalCarbs += extraProduct.CarbsG;
+                var finalPhase = raceMode == RaceMode.Cycling ? RacePhase.Bike : RacePhase.Run;
                 plan.Add(new NutritionEvent(
                     TimeMin: durationMinutes,
-                    Phase: raceMode == RaceMode.Cycling ? RacePhase.Bike : RacePhase.Run,
+                    Phase: finalPhase,
+                    PhaseDescription: GetPhaseDescription(finalPhase),
                     ProductName: extraProduct.Name,
                     AmountPortions: 1,
                     Action: GetAction(extraProduct.Texture),
@@ -156,6 +160,18 @@ public class AdvancedPlanGenerator
     #region Helper Methods
 
     private enum RaceMode { Running, Cycling, TriathlonHalf, TriathlonFull }
+
+    /// <summary>
+    /// Get human-friendly description for a race phase
+    /// </summary>
+    private static string GetPhaseDescription(RacePhase phase) =>
+        phase switch
+        {
+            RacePhase.Swim => "Swim - Lower intensity nutrition due to difficulty of consuming during water",
+            RacePhase.Bike => "Bike - Optimal for consuming nutrition, easier digestion",
+            RacePhase.Run => "Run - Stomach more sensitive, prefer gels and drinks",
+            _ => "Race Phase"
+        };
 
     private static RaceMode DetermineRaceMode(SportType sportType) =>
         sportType switch

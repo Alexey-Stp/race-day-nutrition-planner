@@ -1007,6 +1007,13 @@ html, body {
     font-size: 0.8125rem;
 }
 
+.schedule-table td.phase-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    max-width: 200px;
+    word-wrap: break-word;
+}
+
 .schedule-table tbody tr:hover {
     background: var(--light);
 }

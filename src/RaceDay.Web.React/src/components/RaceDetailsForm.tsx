@@ -20,16 +20,21 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   const [minDuration, setMinDuration] = useState(0.5);
   const [maxDuration, setMaxDuration] = useState(24);
   const [currentDisplayDuration, setCurrentDisplayDuration] = useState(duration);
-  const [currentActivityId, setCurrentActivityId] = useState<string>('run');
+  const [currentActivityId, setCurrentActivityId] = useState<string>('');
 
   const loadActivities = useCallback(async () => {
     try {
-      const data = await api.getActivities();
-      setActivities(data);
+      const [activitiesData, defaultsData] = await Promise.all([
+        api.getActivities(),
+        api.getDefaults()
+      ]);
+      setActivities(activitiesData);
       
-      // Set default activity to Run
-      const defaultActivity = data.find(a => a.id === 'run');
+      // Set default activity from backend
+      const defaultActivityId = defaultsData.defaultActivityId;
+      const defaultActivity = activitiesData.find(a => a.id === defaultActivityId);
       if (defaultActivity) {
+        setCurrentActivityId(defaultActivityId);
         onSportTypeChange(defaultActivity.sportType);
         setMinDuration(defaultActivity.minDurationHours);
         setMaxDuration(defaultActivity.maxDurationHours);

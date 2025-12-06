@@ -90,6 +90,80 @@ export const IntensityDescriptions: Record<IntensityLevel, { icon: string; carbR
   }
 };
 
+// Metadata types from backend API
+export interface TemperatureMetadata {
+  condition: TemperatureCondition;
+  range: string;
+  effects: string[];
+}
+
+export interface IntensityMetadata {
+  level: IntensityLevel;
+  icon: string;
+  carbRange: string;
+  heartRateZone: string;
+  effects: string[];
+}
+
+export interface UIMetadata {
+  temperatures: TemperatureMetadata[];
+  intensities: IntensityMetadata[];
+  defaultActivityId: string;
+}
+
+// Configuration metadata types
+export interface PhaseInfo {
+  phase: string;
+  name: string;
+  description: string;
+}
+
+export interface NutritionTargetConfig {
+  name: string;
+  unit: string;
+  description: string;
+  minValue: number;
+  maxValue: number;
+  baseValue: number;
+}
+
+export interface SportConfig {
+  sportType: string;
+  name: string;
+  description: string;
+  carbsPerKgPerHour: number;
+  maxCarbsPerHour: number;
+  slotIntervalMinutes: number;
+  caffeineStartHour: number;
+  caffeineIntervalHours: number;
+  maxCaffeineMgPerKg: number;
+}
+
+export interface TemperatureAdjustment {
+  temperatureCondition: string;
+  range: string;
+  fluidBonus: number;
+  sodiumBonus: number;
+  description: string;
+}
+
+export interface AthleteWeightConfig {
+  thresholdKg: number;
+  category: string;
+  fluidBonus: number;
+  sodiumBonus: number;
+  description: string;
+}
+
+export interface ConfigurationMetadata {
+  phases: PhaseInfo[];
+  nutritionTargets: NutritionTargetConfig[];
+  sports: SportConfig[];
+  temperatureAdjustments: TemperatureAdjustment[];
+  athleteWeightThresholds: AthleteWeightConfig[];
+  descriptions: Record<string, string>;
+}
+
 export interface ProductInfo {
   id: string;
   name: string;
@@ -152,6 +226,7 @@ export interface ProductSummary {
 export interface NutritionEvent {
   timeMin: number;
   phase: string;
+  phaseDescription: string;
   productName: string;
   amountPortions: number;
   action: string;
