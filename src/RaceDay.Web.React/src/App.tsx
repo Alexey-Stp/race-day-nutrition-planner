@@ -12,8 +12,8 @@ import './App.css';
 
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
-  const [sportType, setSportType] = useState<SportType>(SportType.Triathlon);
-  const [duration, setDuration] = useState(2);
+  const [sportType, setSportType] = useState<SportType>(SportType.Run);
+  const [duration, setDuration] = useState(1.5);
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
 
