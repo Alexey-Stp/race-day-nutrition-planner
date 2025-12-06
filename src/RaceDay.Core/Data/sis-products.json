@@ -142,5 +142,16 @@
     "caloriesKcal": 10,
     "volumeMl": 60,
     "imageUrl": "/images/products/sis-go-caffeine-shot-60.png"
+  },
+  {
+    "id": "sis-beta-fuel-gel-nootropics-60",
+    "brand": "SiS",
+    "name": "SiS Beta Fuel Gel + Nootropics",
+    "productType": "gel",
+    "carbsG": 40,
+    "sodiumMg": 200,
+    "caloriesKcal": 158,
+    "volumeMl": 60,
+    "imageUrl": "/images/products/sis-beta-fuel-gel-nootropics-60.png"
   }
 ]
