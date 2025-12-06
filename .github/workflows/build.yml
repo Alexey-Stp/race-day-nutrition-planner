@@ -41,14 +41,71 @@ jobs:
         name: codecov-umbrella
         fail_ci_if_error: false
     
-    - name: Check Coverage Threshold
+    - name: Check Coverage Threshold & Report Low Coverage
       run: |
-        COVERAGE=$(find ./coverage -name "coverage.cobertura.xml" -exec grep -o 'line-rate="[^"]*"' {} \; | head -1 | grep -o '[0-9]*\.[0-9]*')
-        if (( $(echo "$COVERAGE < 0.80" | bc -l) )); then
-          echo "❌ Coverage is $COVERAGE (80% required)"
+        COVERAGE_FILE=$(find ./coverage -name "coverage.cobertura.xml" | head -1)
+        
+        if [ -z "$COVERAGE_FILE" ]; then
+          echo "❌ No coverage report found!"
+          exit 1
+        fi
+        
+        # Extract overall coverage
+        OVERALL_COVERAGE=$(grep -o 'line-rate="[^"]*"' "$COVERAGE_FILE" | head -1 | grep -o '[0-9]*\.[0-9]*')
+        OVERALL_PERCENT=$(($(echo "$OVERALL_COVERAGE * 100" | bc -l | cut -d. -f1)))
+        
+        echo ""
+        echo "════════════════════════════════════════════════════════════"
+        echo "📊 CODE COVERAGE REPORT"
+        echo "════════════════════════════════════════════════════════════"
+        echo ""
+        
+        # Show overall coverage
+        if (( $(echo "$OVERALL_COVERAGE < 0.80" | bc -l) )); then
+          echo "❌ Overall Coverage: $OVERALL_PERCENT% (Target: 80%)"
+        else
+          echo "✅ Overall Coverage: $OVERALL_PERCENT% (Target: 80%)"
+        fi
+        echo ""
+        
+        # Extract and show low coverage files
+        echo "📁 Classes/Files with Low Coverage (< 50%):"
+        echo "────────────────────────────────────────────────────────────"
+        
+        grep '<class' "$COVERAGE_FILE" | while read line; do
+          CLASS_NAME=$(echo "$line" | grep -o 'name="[^"]*"' | cut -d'"' -f2)
+          LINE_RATE=$(echo "$line" | grep -o 'line-rate="[^"]*"' | cut -d'"' -f2)
+          LINE_PERCENT=$(($(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)))
+          
+          if (( $(echo "$LINE_RATE < 0.50" | bc -l) )); then
+            echo "  🔴 $CLASS_NAME: $LINE_PERCENT%"
+          fi
+        done
+        
+        echo ""
+        echo "📁 Classes/Files with Medium Coverage (50-79%):"
+        echo "────────────────────────────────────────────────────────────"
+        
+        grep '<class' "$COVERAGE_FILE" | while read line; do
+          CLASS_NAME=$(echo "$line" | grep -o 'name="[^"]*"' | cut -d'"' -f2)
+          LINE_RATE=$(echo "$line" | grep -o 'line-rate="[^"]*"' | cut -d'"' -f2)
+          LINE_PERCENT=$(($(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)))
+          
+          if (( $(echo "$LINE_RATE >= 0.50 && $LINE_RATE < 0.80" | bc -l) )); then
+            echo "  🟡 $CLASS_NAME: $LINE_PERCENT%"
+          fi
+        done
+        
+        echo ""
+        echo "════════════════════════════════════════════════════════════"
+        
+        # Fail if below threshold
+        if (( $(echo "$OVERALL_COVERAGE < 0.80" | bc -l) )); then
+          echo ""
+          echo "⚠️  Coverage check FAILED - Write tests for uncovered code above"
           exit 1
         else
-          echo "✅ Coverage is $COVERAGE (meets 80% requirement)"
+          echo "✅ Coverage check PASSED"
         fi
     
     - name: Install React dependencies
