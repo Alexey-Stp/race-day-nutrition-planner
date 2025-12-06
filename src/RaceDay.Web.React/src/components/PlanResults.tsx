@@ -53,21 +53,6 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
               </table>
             </div>
 
-            <div className="plan-summary">
-              <div className="summary-stat">
-                <span className="label">Total Carbs</span>
-                <span className="value">{totalCarbs.toFixed(0)}g</span>
-              </div>
-              <div className="summary-stat">
-                <span className="label">Total Events</span>
-                <span className="value">{schedule.length}</span>
-              </div>
-              <div className="summary-stat">
-                <span className="label">Duration</span>
-                <span className="value">{duration}h</span>
-              </div>
-            </div>
-
             <div className="schedule-table">
               <table>
                 <thead>
