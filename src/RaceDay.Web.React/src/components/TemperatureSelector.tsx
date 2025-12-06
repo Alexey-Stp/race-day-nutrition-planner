@@ -39,10 +39,6 @@ export const TemperatureSelector: React.FC<TemperatureSelectorProps> = ({
           })}
         </div>
       </div>
-      {/* Show selected temp details on hover */}
-      <div className="temperature-details">
-        <span className="temp-range">{TemperatureDescriptions[temperature].range}</span>
-      </div>
     </div>
   );
 };
