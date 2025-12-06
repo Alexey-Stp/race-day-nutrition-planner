@@ -1,23 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { SportType, IntensityLevel, type ActivityInfo } from '../types';
+import { SportType, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../utils';
 
 interface RaceDetailsFormProps {
   sportType: SportType;
   duration: number;
-  intensity: IntensityLevel;
   onSportTypeChange: (sport: SportType) => void;
   onDurationChange: (duration: number) => void;
-  onIntensityChange: (intensity: IntensityLevel) => void;
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   duration,
-  intensity,
   onSportTypeChange,
-  onDurationChange,
-  onIntensityChange
+  onDurationChange
 }) => {
   const [activities, setActivities] = useState<ActivityInfo[]>([]);
   const [loading, setLoading] = useState(true);

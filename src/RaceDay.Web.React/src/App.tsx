@@ -90,10 +90,8 @@ function App() {
           <RaceDetailsForm
             sportType={sportType}
             duration={duration}
-            intensity={intensity}
             onSportTypeChange={setSportType}
             onDurationChange={setDuration}
-            onIntensityChange={setIntensity}
           />
 
           <IntensitySelector
