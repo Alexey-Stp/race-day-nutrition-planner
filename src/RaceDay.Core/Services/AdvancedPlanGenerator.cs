@@ -67,13 +67,10 @@ public class AdvancedPlanGenerator
                 AmountPortions: 1,
                 Action: "Eat",
                 TotalCarbsSoFar: state.TotalCarbs,
-                HasCaffeine: false
+                HasCaffeine: false,
+                CaffeineMg: null
             ));
         }
-
-        // Run phase detection for better product selection
-        var runSegment = phases.FirstOrDefault(p => p.Phase == RacePhase.Run);
-        var bikeSegment = phases.FirstOrDefault(p => p.Phase == RacePhase.Bike);
 
         // Main race schedule
         foreach (var slot in slots)
@@ -125,7 +122,8 @@ public class AdvancedPlanGenerator
                 AmountPortions: 1,
                 Action: GetAction(product.Texture),
                 TotalCarbsSoFar: state.TotalCarbs,
-                HasCaffeine: product.HasCaffeine
+                HasCaffeine: product.HasCaffeine,
+                CaffeineMg: product.HasCaffeine ? product.CaffeineMg : null
             ));
         }
 
@@ -143,7 +141,8 @@ public class AdvancedPlanGenerator
                     AmountPortions: 1,
                     Action: GetAction(extraProduct.Texture),
                     TotalCarbsSoFar: state.TotalCarbs,
-                    HasCaffeine: extraProduct.HasCaffeine
+                    HasCaffeine: extraProduct.HasCaffeine,
+                    CaffeineMg: extraProduct.HasCaffeine ? extraProduct.CaffeineMg : null
                 ));
             }
         }

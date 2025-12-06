@@ -209,7 +209,8 @@ public static class ApiEndpointExtensions
                     p.ProductType,
                     p.CarbsG,
                     p.SodiumMg,
-                    p.VolumeMl
+                    p.VolumeMl,
+                    p.CaffeineMg
                 )).ToList();
             }
             else if (request.Filter != null)
@@ -225,7 +226,8 @@ public static class ApiEndpointExtensions
                     p.ProductType,
                     p.CarbsG,
                     p.SodiumMg,
-                    p.VolumeMl
+                    p.VolumeMl,
+                    p.CaffeineMg
                 )).ToList();
             }
             else
@@ -302,7 +304,8 @@ public record ProductRequest(
     string ProductType,
     double CarbsG,
     double SodiumMg,
-    double VolumeMl
+    double VolumeMl,
+    double? CaffeineMg = null
 );
 
 /// <summary>
