@@ -13,3 +13,17 @@ export function formatDuration(hours: number): string {
     return `${wholeHours} hour${wholeHours > 1 ? 's' : ''} ${minutes} minutes`;
   }
 }
+
+// Format race phase (0=Swim, 1=Bike, 2=Run)
+export function formatPhase(phase: string | number): string {
+  const phaseMap: Record<string | number, string> = {
+    '0': 'Swim',
+    '1': 'Bike',
+    '2': 'Run',
+    'Swim': 'Swim',
+    'Bike': 'Bike',
+    'Run': 'Run'
+  };
+  
+  return phaseMap[phase] || String(phase);
+}

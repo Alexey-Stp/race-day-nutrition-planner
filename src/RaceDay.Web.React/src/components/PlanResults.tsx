@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RaceNutritionPlan } from '../types';
-import { formatDuration } from '../utils';
+import { formatDuration, formatPhase } from '../utils';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
@@ -70,7 +70,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   {schedule.map((event) => (
                     <tr key={`${event.timeMin}-${event.productName}`}>
                       <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
-                      <td>{event.phase}</td>
+                      <td>{formatPhase(event.phase)}</td>
                       <td>{event.productName}</td>
                       <td>{event.action}</td>
                       <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
