@@ -20,6 +20,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
   const [minDuration, setMinDuration] = useState(0.5);
   const [maxDuration, setMaxDuration] = useState(24);
   const [currentDisplayDuration, setCurrentDisplayDuration] = useState(duration);
+  const [currentActivityId, setCurrentActivityId] = useState<string>('run');
 
   const loadActivities = useCallback(async () => {
     try {
@@ -70,8 +71,9 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             activities.map(activity => (
               <button
                 key={activity.id}
-                className={`activity-btn ${activity.sportType === (activities.find(a => a.sportType)?.sportType) ? 'active' : ''}`}
+                className={`activity-btn ${currentActivityId === activity.id ? 'active' : ''}`}
                 onClick={() => {
+                  setCurrentActivityId(activity.id);
                   setMinDuration(activity.minDurationHours);
                   setMaxDuration(activity.maxDurationHours);
                   onDurationChange(activity.bestTimeHours);
