@@ -1,4 +1,6 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Services;
+using RaceDay.Core.Models;
+using RaceDay.Core.Repositories;
 
 /// <summary>
 /// Service for generating nutrition plans with validation and error handling

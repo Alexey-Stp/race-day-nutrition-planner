@@ -1,7 +1,8 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Repositories;
 
 using System.Reflection;
 using System.Text.Json;
+using RaceDay.Core.Models;
 
 /// <summary>
 /// Repository for managing supported activities and their characteristics

@@ -1,7 +1,8 @@
 using System.Reflection;
 using System.Text.Json;
+using RaceDay.Core.Models;
 
-namespace RaceDay.Core;
+namespace RaceDay.Core.Repositories;
 
 /// <summary>
 /// Repository for loading and accessing nutrition product information from embedded JSON files

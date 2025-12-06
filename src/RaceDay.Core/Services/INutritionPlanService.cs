@@ -1,4 +1,5 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Services;
+using RaceDay.Core.Models;
 
 /// <summary>
 /// Service interface for generating nutrition plans

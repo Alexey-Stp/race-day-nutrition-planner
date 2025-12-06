@@ -1,4 +1,8 @@
 namespace RaceDay.Core.Tests;
+using RaceDay.Core.Models;
+using RaceDay.Core.Services;
+using RaceDay.Core.Repositories;
+using RaceDay.Core.Exceptions;
 
 public class PlanGeneratorTests
 {

@@ -1,4 +1,4 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Constants;
 
 /// <summary>
 /// Contains nutritional calculation constants and thresholds

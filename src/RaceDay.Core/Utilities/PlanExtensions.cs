@@ -1,4 +1,5 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Utilities;
+using RaceDay.Core.Models;
 
 /// <summary>
 /// Extension methods for nutrition plans

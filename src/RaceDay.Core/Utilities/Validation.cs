@@ -1,4 +1,6 @@
-namespace RaceDay.Core;
+namespace RaceDay.Core.Utilities;
+using RaceDay.Core.Models;
+using RaceDay.Core.Exceptions;
 
 /// <summary>
 /// Provides validation methods for input data
