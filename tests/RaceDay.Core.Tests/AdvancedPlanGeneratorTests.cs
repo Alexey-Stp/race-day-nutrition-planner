@@ -290,4 +290,18 @@ public class AdvancedPlanGeneratorTests
             new("Sports Drink", CarbsG: 30, Texture: ProductTexture.Drink, HasCaffeine: false, CaffeineMg: 0, VolumeMl: 500, ProductType: "Energy")
         };
     }
+
+    private List<ProductEnhanced> CreateTriathlonProducts()
+    {
+        return new List<ProductEnhanced>
+        {
+            new("Gel Light", CarbsG: 20, Texture: ProductTexture.LightGel, HasCaffeine: false, CaffeineMg: 0),
+            new("SiS Beta Fuel Gel", CarbsG: 40, Texture: ProductTexture.Gel, HasCaffeine: true, CaffeineMg: 75),
+            new("SiS Beta Fuel Nootropics", CarbsG: 40, Texture: ProductTexture.Gel, HasCaffeine: false, CaffeineMg: 0),
+            new("Energy Bar", CarbsG: 40, Texture: ProductTexture.Bake, HasCaffeine: false, CaffeineMg: 0),
+            new("Electrolyte Drink", CarbsG: 15, Texture: ProductTexture.Drink, HasCaffeine: false, CaffeineMg: 0, VolumeMl: 100, ProductType: "Electrolyte"),
+            new("Energy Drink", CarbsG: 30, Texture: ProductTexture.Drink, HasCaffeine: false, CaffeineMg: 0, VolumeMl: 500, ProductType: "Energy"),
+            new("Chew Mix", CarbsG: 22, Texture: ProductTexture.Chew, HasCaffeine: false, CaffeineMg: 0)
+        };
+    }
 }
