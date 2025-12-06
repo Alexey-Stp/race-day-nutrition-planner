@@ -1,12 +1,49 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { RaceNutritionPlan } from '../types';
 import { formatDuration, formatPhase } from '../utils';
+import { api } from '../api';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
 }
 
+interface NutritionTargets {
+  carbsGPerHour: number;
+  fluidsMlPerHour: number;
+  sodiumMgPerHour: number;
+  totalCarbsG: number;
+  totalFluidsML: number;
+  totalSodiumMg: number;
+}
+
 export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
+  const [targets, setTargets] = useState<NutritionTargets | null>(null);
+  const [loadingTargets, setLoadingTargets] = useState(false);
+
+  useEffect(() => {
+    const fetchTargets = async () => {
+      if (!plan || !plan.race || !plan.athlete) return;
+
+      setLoadingTargets(true);
+      try {
+        const calculatedTargets = await api.calculateNutritionTargets(
+          plan.athlete.weightKg,
+          plan.race.sportType,
+          plan.race.durationHours,
+          plan.race.temperature,
+          plan.race.intensity
+        );
+        setTargets(calculatedTargets);
+      } catch (error) {
+        console.error('Error fetching nutrition targets:', error);
+      } finally {
+        setLoadingTargets(false);
+      }
+    };
+
+    fetchTargets();
+  }, [plan]);
+
   if (!plan?.nutritionSchedule) {
     return null;
   }
@@ -18,22 +55,10 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
   const duration = plan.race?.durationHours || 0;
-  const intensity = plan.race?.intensity || 'Moderate';
-  const athleteWeight = plan.athlete?.weightKg || 75;
 
-  // Calculate target carbs based on intensity and weight
-  const intensityCarbsMap: Record<string, number> = {
-    Easy: 50,      // g/hour
-    Moderate: 70,  // g/hour
-    Hard: 90       // g/hour
-  };
-  const carbsPerHour = intensityCarbsMap[intensity] || 70;
-  const targetTotalCarbs = carbsPerHour * duration;
-  const carbsPercentage = totalCarbs > 0 ? (totalCarbs / targetTotalCarbs) * 100 : 0;
-
-  // Caffeine targets - typically 1.3mg per kg body weight at 1.5 hour mark, max ~200-300mg
-  const maxCaffeineTarget = Math.min(athleteWeight * 2, 300); // Conservative estimate
-  const caffeinePercentage = totalCaffeine > 0 ? (totalCaffeine / maxCaffeineTarget) * 100 : 0;
+  // Calculate percentages based on loaded targets
+  const carbsPercentage = targets && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
+  const caffeinePercentage = targets && targets.totalCarbsG > 0 ? (totalCaffeine / 300) * 100 : 0; // 300mg conservative max
 
   // Create a unique key based on plan content to force re-render on plan changes
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
@@ -76,28 +101,34 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
             {/* Targets Section */}
             <div className="targets-section">
               <h3>Targets</h3>
-              <div className="targets-container">
-                <div className="target-info">
-                  <div className="info-item">
-                    <span className="info-label">Target Carbs (per hour):</span>
-                    <span className="info-value">{carbsPerHour}g/h × {duration.toFixed(1)}h = {targetTotalCarbs.toFixed(0)}g</span>
+              {loadingTargets ? (
+                <p className="loading">Loading nutrition targets...</p>
+              ) : targets ? (
+                <div className="targets-container">
+                  <div className="target-info">
+                    <div className="info-item">
+                      <span className="info-label">Target Carbs (per hour):</span>
+                      <span className="info-value">{targets.carbsGPerHour.toFixed(0)}g/h × {duration.toFixed(1)}h = {targets.totalCarbsG.toFixed(0)}g</span>
+                    </div>
                   </div>
+                  
+                  <ProgressBar 
+                    value={totalCarbs}
+                    max={targets.totalCarbsG}
+                    percentage={carbsPercentage}
+                    label="Plan Carbs vs Target"
+                  />
+                  
+                  <ProgressBar 
+                    value={totalCaffeine}
+                    max={300}
+                    percentage={caffeinePercentage}
+                    label="Plan Caffeine vs Target"
+                  />
                 </div>
-                
-                <ProgressBar 
-                  value={totalCarbs}
-                  max={targetTotalCarbs}
-                  percentage={carbsPercentage}
-                  label="Plan Carbs vs Target"
-                />
-                
-                <ProgressBar 
-                  value={totalCaffeine}
-                  max={maxCaffeineTarget}
-                  percentage={caffeinePercentage}
-                  label="Plan Caffeine vs Target"
-                />
-              </div>
+              ) : (
+                <p className="error">Failed to load nutrition targets</p>
+              )}
             </div>
 
             <div className="schedule-table">

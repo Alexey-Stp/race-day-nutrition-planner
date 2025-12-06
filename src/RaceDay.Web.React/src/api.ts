@@ -147,4 +147,37 @@ export const api = {
     }
     return response.json();
   },
+
+  async calculateNutritionTargets(
+    athleteWeightKg: number,
+    sportType: string,
+    durationHours: number,
+    temperature: string,
+    intensity: string
+  ): Promise<{
+    carbsGPerHour: number;
+    fluidsMlPerHour: number;
+    sodiumMgPerHour: number;
+    totalCarbsG: number;
+    totalFluidsML: number;
+    totalSodiumMg: number;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/api/metadata/targets`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        athleteWeightKg,
+        sportType,
+        durationHours,
+        temperature,
+        intensity,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to calculate nutrition targets');
+    }
+    return response.json();
+  },
 };

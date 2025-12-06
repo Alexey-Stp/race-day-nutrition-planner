@@ -101,6 +101,10 @@ public static class ApiEndpointExtensions
         group.MapGet("/configuration", GetConfigurationMetadata)
             .WithName("GetConfigurationMetadata")
             .WithDescription("Get all nutrition configuration including sport-specific parameters, thresholds, and descriptions");
+
+        group.MapPost("/targets", CalculateNutritionTargets)
+            .WithName("CalculateNutritionTargets")
+            .WithDescription("Calculate nutrition targets for a specific athlete and race parameters");
     }
 
     // Product Handlers
@@ -380,7 +384,46 @@ public static class ApiEndpointExtensions
             return Results.Problem($"Error loading configuration metadata: {ex.Message}");
         }
     }
+
+    private static IResult CalculateNutritionTargets(TargetsRequest request)
+    {
+        try
+        {
+            var athlete = new AthleteProfile(WeightKg: request.AthleteWeightKg);
+            var race = new RaceProfile(
+                SportType: request.SportType,
+                DurationHours: request.DurationHours,
+                Temperature: request.Temperature,
+                Intensity: request.Intensity
+            );
+            
+            var targets = NutritionCalculator.CalculateTargets(race, athlete);
+            
+            return Results.Ok(new
+            {
+                targets.CarbsGPerHour,
+                targets.FluidsMlPerHour,
+                targets.SodiumMgPerHour,
+                TotalCarbsG = targets.CarbsGPerHour * race.DurationHours,
+                TotalFluidsML = targets.FluidsMlPerHour * race.DurationHours,
+                TotalSodiumMg = targets.SodiumMgPerHour * race.DurationHours
+            });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error calculating nutrition targets: {ex.Message}");
+        }
+    }
 }
+
+public record TargetsRequest(
+    double AthleteWeightKg,
+    SportType SportType,
+    double DurationHours,
+    TemperatureCondition Temperature,
+    IntensityLevel Intensity
+);
+
 public record PlanGenerationRequest(
     double AthleteWeightKg,
     SportType SportType,
