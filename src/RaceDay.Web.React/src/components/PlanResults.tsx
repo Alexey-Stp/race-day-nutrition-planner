@@ -23,6 +23,9 @@ interface ProgressBarProps {
   label: string;
 }
 
+// Conservative maximum caffeine intake in milligrams
+const MAX_CAFFEINE_MG = 300;
+
 const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label }) => {
   const isOptimal = percentage >= 95 && percentage <= 105;
   const isHigh = percentage > 105;
@@ -109,7 +112,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
 
   // Calculate percentages based on loaded targets
   const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
-  const caffeinePercentage = (totalCaffeine / 300) * 100; // 300mg conservative max
+  const caffeinePercentage = (totalCaffeine / MAX_CAFFEINE_MG) * 100;
 
   // Create a unique key based on plan content to force re-render on plan changes
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
@@ -146,7 +149,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   
                   <ProgressBar 
                     value={totalCaffeine}
-                    max={300}
+                    max={MAX_CAFFEINE_MG}
                     percentage={caffeinePercentage}
                     label="Plan Caffeine vs Target"
                   />

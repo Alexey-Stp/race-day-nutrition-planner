@@ -1750,7 +1750,7 @@ html, body {
     flex-shrink: 0;
 }
 
-/* Products Table in Modal */
+/* Products Table in Modal - extends base .products-table styles defined at line 216 */
 .products-table td.product-name {
     font-weight: 500;
 }
