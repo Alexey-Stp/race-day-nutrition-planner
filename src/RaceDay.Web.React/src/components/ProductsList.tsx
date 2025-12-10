@@ -40,8 +40,8 @@ export const ProductsList: React.FC<ProductsListProps> = ({ onProductSelected })
   });
 
   // Get unique types and brands for filters
-  const types = Array.from(new Set(products.map(p => p.productType))).sort();
-  const brands = Array.from(new Set(products.map(p => p.brand))).sort();
+  const types = Array.from(new Set(products.map(p => p.productType))).sort((a, b) => a.localeCompare(b));
+  const brands = Array.from(new Set(products.map(p => p.brand))).sort((a, b) => a.localeCompare(b));
 
   if (loading) {
     return <div className="products-list-container"><p>Loading products...</p></div>;
@@ -57,8 +57,8 @@ export const ProductsList: React.FC<ProductsListProps> = ({ onProductSelected })
       
       <div className="products-filters">
         <div className="filter-group">
-          <label>Product Type:</label>
-          <select value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
+          <label htmlFor="product-type-filter">Product Type:</label>
+          <select id="product-type-filter" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
             <option value="">All Types</option>
             {types.map(type => (
               <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
@@ -67,8 +67,8 @@ export const ProductsList: React.FC<ProductsListProps> = ({ onProductSelected })
         </div>
         
         <div className="filter-group">
-          <label>Brand:</label>
-          <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+          <label htmlFor="brand-filter">Brand:</label>
+          <select id="brand-filter" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
             <option value="">All Brands</option>
             {brands.map(brand => (
               <option key={brand} value={brand}>{brand}</option>
