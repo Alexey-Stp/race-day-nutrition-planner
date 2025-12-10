@@ -32,6 +32,7 @@ API_URL="http://localhost:5208/api/plan/generate"
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Function to print section header
@@ -43,7 +44,8 @@ print_header() {
 
 # Function to check if API is running
 check_api() {
-    if ! curl -s -f -o /dev/null "$API_URL" -X POST -H "Content-Type: application/json" -d '{}' 2>/dev/null; then
+    # Try to reach the API's products endpoint as a simple health check
+    if ! curl -s -f -o /dev/null "http://localhost:5208/api/products" 2>/dev/null; then
         echo -e "${YELLOW}Warning: API might not be running on http://localhost:5208${NC}"
         echo -e "${YELLOW}Start the API with: dotnet run --project src/RaceDay.API/RaceDay.API.csproj${NC}\n"
     fi
