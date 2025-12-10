@@ -1750,45 +1750,7 @@ html, body {
     flex-shrink: 0;
 }
 
-/* Products Table in Modal */
-.products-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-}
-
-.products-table thead {
-    background-color: var(--light);
-    border-bottom: 2px solid var(--border-color);
-}
-
-.products-table th {
-    padding: 12px 8px;
-    text-align: left;
-    font-weight: 600;
-    color: var(--text-primary);
-    vertical-align: middle;
-}
-
-.products-table th.text-right {
-    text-align: right;
-}
-
-.products-table tbody tr {
-    border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
-}
-
-.products-table tbody tr:hover {
-    background-color: var(--light);
-}
-
-.products-table td {
-    padding: 10px 8px;
-    vertical-align: middle;
-    color: var(--text-primary);
-}
-
+/* Products Table in Modal - extends base .products-table styles defined at line 216 */
 .products-table td.product-name {
     font-weight: 500;
 }
@@ -2017,19 +1979,6 @@ html, body {
     flex-wrap: wrap;
 }
 
-.filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 200px;
-}
-
-.filter-group label {
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 0.875rem;
-}
-
 .filter-group select {
     padding: 8px 12px;
     border: 1px solid var(--border-color);
@@ -2102,24 +2051,6 @@ html, body {
     text-align: right;
     color: var(--text-secondary);
     font-size: 0.875rem;
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-}
-
-.btn-primary {
-    background: var(--primary);
-    color: white;
-}
-
-.btn-primary:hover {
-    opacity: 0.9;
 }
 
 /* Product Selector Tabs */

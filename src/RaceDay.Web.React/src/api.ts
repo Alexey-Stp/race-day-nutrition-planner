@@ -30,7 +30,7 @@ export const api = {
 
   async getBrands(): Promise<string[]> {
     const products = await this.getProducts();
-    const brands = Array.from(new Set(products.map(p => p.brand))).sort();
+    const brands = Array.from(new Set(products.map(p => p.brand))).sort((a, b) => a.localeCompare(b));
     return brands;
   },
 

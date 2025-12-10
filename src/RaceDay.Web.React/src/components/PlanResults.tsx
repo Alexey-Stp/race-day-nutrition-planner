@@ -16,6 +16,60 @@ interface NutritionTargets {
   totalSodiumMg: number;
 }
 
+interface ProgressBarProps {
+  value: number;
+  max: number;
+  percentage: number;
+  label: string;
+}
+
+// Conservative maximum caffeine intake in milligrams
+const MAX_CAFFEINE_MG = 300;
+
+const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label }) => {
+  const isOptimal = percentage >= 95 && percentage <= 105;
+  const isHigh = percentage > 105;
+  const isLow = percentage < 95;
+  
+  let fillClassName = 'progress-fill';
+  if (isOptimal) {
+    fillClassName += ' optimal';
+  } else if (isHigh) {
+    fillClassName += ' high';
+  } else if (isLow) {
+    fillClassName += ' low';
+  }
+  
+  let percentClassName = 'progress-percent';
+  if (isOptimal) {
+    percentClassName += ' optimal';
+  } else if (isHigh) {
+    percentClassName += ' high';
+  } else if (isLow) {
+    percentClassName += ' low';
+  }
+  
+  return (
+    <div className="progress-item">
+      <div className="progress-header">
+        <span className="progress-label">{label}</span>
+        <span className="progress-value">{value.toFixed(0)} / {max.toFixed(0)}</span>
+      </div>
+      <div className="progress-bar-container">
+        <div className="progress-bar">
+          <div 
+            className={fillClassName}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          />
+        </div>
+        <span className={percentClassName}>
+          {percentage.toFixed(0)}%
+        </span>
+      </div>
+    </div>
+  );
+};
+
 export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   const [targets, setTargets] = useState<NutritionTargets | null>(null);
   const [loadingTargets, setLoadingTargets] = useState(false);
@@ -57,37 +111,11 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   const duration = plan.race?.durationHours || 0;
 
   // Calculate percentages based on loaded targets
-  const carbsPercentage = targets && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
-  const caffeinePercentage = targets && targets.totalCarbsG > 0 ? (totalCaffeine / 300) * 100 : 0; // 300mg conservative max
+  const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
+  const caffeinePercentage = (totalCaffeine / MAX_CAFFEINE_MG) * 100;
 
   // Create a unique key based on plan content to force re-render on plan changes
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
-
-  const ProgressBar: React.FC<{ value: number; max: number; percentage: number; label: string }> = ({ value, max, percentage, label }) => {
-    const isOptimal = percentage >= 95 && percentage <= 105;
-    const isHigh = percentage > 105;
-    const isLow = percentage < 95;
-    
-    return (
-      <div className="progress-item">
-        <div className="progress-header">
-          <span className="progress-label">{label}</span>
-          <span className="progress-value">{value.toFixed(0)} / {max.toFixed(0)}</span>
-        </div>
-        <div className="progress-bar-container">
-          <div className="progress-bar">
-            <div 
-              className={`progress-fill ${isOptimal ? 'optimal' : isHigh ? 'high' : isLow ? 'low' : ''}`}
-              style={{ width: `${Math.min(percentage, 100)}%` }}
-            />
-          </div>
-          <span className={`progress-percent ${isOptimal ? 'optimal' : isHigh ? 'high' : isLow ? 'low' : ''}`}>
-            {percentage.toFixed(0)}%
-          </span>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="results-section" key={planKey}>
@@ -121,7 +149,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   
                   <ProgressBar 
                     value={totalCaffeine}
-                    max={300}
+                    max={MAX_CAFFEINE_MG}
                     percentage={caffeinePercentage}
                     label="Plan Caffeine vs Target"
                   />
