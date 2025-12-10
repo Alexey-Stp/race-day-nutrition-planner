@@ -1,5 +1,7 @@
-import React from 'react';
-import { TemperatureCondition, TemperatureDescriptions } from '../types';
+import React, { useEffect, useState } from 'react';
+import { TemperatureCondition } from '../types';
+import { api } from '../api';
+import type { TemperatureMetadata } from '../types';
 
 interface TemperatureSelectorProps {
   temperature: TemperatureCondition;
@@ -10,37 +12,55 @@ export const TemperatureSelector: React.FC<TemperatureSelectorProps> = ({
   temperature,
   onTemperatureChange
 }) => {
-  const temperatureOptions = [
-    TemperatureCondition.Cold,
-    TemperatureCondition.Moderate,
-    TemperatureCondition.Hot
-  ] as const;
+  const [metadata, setMetadata] = useState<TemperatureMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadMetadata = async () => {
+      try {
+        const data = await api.getTemperatureMetadata();
+        setMetadata(data);
+      } catch (error) {
+        console.error('Error loading temperature metadata:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMetadata();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="form-card">
+        <div className="form-group inline-group">
+          <label htmlFor="temperature-buttons">Temperature</label>
+          <p className="loading">Loading temperature options...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="form-card">
       <div className="form-group inline-group">
         <label htmlFor="temperature-buttons">Temperature</label>
         <div id="temperature-buttons" className="temperature-buttons">
-          {temperatureOptions.map((option) => {
-            const description = TemperatureDescriptions[option];
-            const isSelected = temperature === option;
+          {metadata.map((meta) => {
+            const isSelected = temperature === meta.condition;
             
             return (
               <button
-                key={option}
+                key={meta.condition}
                 className={`temp-btn ${isSelected ? 'active' : ''}`}
-                onClick={() => onTemperatureChange(option)}
-                title={description.effects.join(', ')}
+                onClick={() => onTemperatureChange(meta.condition)}
+                title={meta.effects.join(', ')}
               >
-                {option}
+                <div>{meta.condition}</div>
+                <div className="btn-range">{meta.range}</div>
               </button>
             );
           })}
         </div>
-      </div>
-      {/* Show selected temp details on hover */}
-      <div className="temperature-details">
-        <span className="temp-range">{TemperatureDescriptions[temperature].range}</span>
       </div>
     </div>
   );

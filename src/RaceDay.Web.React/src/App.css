@@ -115,7 +115,8 @@ html, body {
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    width: 100%;
 }
 
 .form-group.inline-group label {
@@ -127,9 +128,11 @@ html, body {
 }
 
 .form-group.inline-group .form-control,
-.form-group.inline-group .input-group {
+.form-group.inline-group .input-group,
+.form-group.inline-group .intensity-buttons {
     flex: 1;
     margin-bottom: 0;
+    width: 100%;
 }
 
 .form-group.inline-group .duration-display {
@@ -366,6 +369,25 @@ html, body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: capitalize;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.temp-btn .btn-range {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    opacity: 0.8;
+}
+
+.temp-btn:hover .btn-range {
+    color: var(--text-primary);
+}
+
+.temp-btn.active .btn-range {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .temp-btn:hover {
@@ -393,16 +415,18 @@ html, body {
     display: inline-block;
 }
 
-/* Intensity Buttons - Matching Temperature Design */
-.intensity-buttons {
+/* Activity Buttons - Sport Type Selection */
+.activity-buttons {
     display: flex;
-    gap: 6px;
-    flex: 1;
+    gap: 8px;
+    flex-wrap: wrap;
+    width: 100%;
 }
 
-.intensity-btn {
+.activity-btn {
     flex: 1;
-    padding: 8px 10px;
+    min-width: 80px;
+    padding: 10px 12px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--background);
@@ -412,6 +436,70 @@ html, body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-transform: capitalize;
+}
+
+.activity-btn:hover {
+    border-color: var(--primary);
+    background: var(--light);
+}
+
+.activity-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* Intensity Buttons - Matching Temperature Design */
+.intensity-buttons {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    width: 100%;
+    justify-content: space-between;
+}
+
+.intensity-btn {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: capitalize;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.intensity-btn .intensity-icon {
+    font-size: 1.2rem;
+}
+
+.intensity-btn .btn-carbs {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.intensity-btn .btn-hr {
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.intensity-btn:hover .btn-carbs,
+.intensity-btn:hover .btn-hr {
+    color: var(--text-primary);
+}
+
+.intensity-btn.active .btn-carbs,
+.intensity-btn.active .btn-hr {
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .intensity-btn:hover {
@@ -917,6 +1005,13 @@ html, body {
     padding: 8px 10px;
     border-bottom: 1px solid var(--border-color);
     font-size: 0.8125rem;
+}
+
+.schedule-table td.phase-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    max-width: 200px;
+    word-wrap: break-word;
 }
 
 .schedule-table tbody tr:hover {
@@ -1655,6 +1750,16 @@ html, body {
     flex-shrink: 0;
 }
 
+/* Products Table in Modal - extends base .products-table styles defined at line 216 */
+.products-table td.product-name {
+    font-weight: 500;
+}
+
+.products-table td.text-right {
+    text-align: right;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
 @media (max-width: 768px) {
     .targets-grid {
         grid-template-columns: 1fr;
@@ -1674,6 +1779,113 @@ html, body {
     margin-bottom: 12px;
     font-weight: 600;
     letter-spacing: -0.3px;
+}
+
+.targets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.target-info {
+    background: var(--light);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 0.8125rem;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.progress-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8125rem;
+}
+
+.progress-label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.progress-value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 20px;
+    background: var(--light);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+    transition: width 0.3s ease;
+    border-radius: 9px;
+}
+
+.progress-fill.optimal {
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+}
+
+.progress-fill.high {
+    background: linear-gradient(90deg, #ff9800, #f57c00);
+}
+
+.progress-fill.low {
+    background: linear-gradient(90deg, #2196F3, #1976D2);
+}
+
+.progress-percent {
+    font-size: 0.75rem;
+    font-weight: 600;
+    min-width: 35px;
+    text-align: right;
+    color: var(--text-secondary);
+}
+
+.progress-percent.optimal {
+    color: #4CAF50;
+}
+
+.progress-percent.high {
+    color: #ff9800;
+}
+
+.progress-percent.low {
+    color: #2196F3;
 }
 
 .targets-table {
@@ -1743,3 +1955,130 @@ html, body {
     font-weight: 600;
     color: var(--primary);
 }
+
+/* Products List */
+.products-list-container {
+    background: var(--background);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.products-list-container h2 {
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.products-filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-group select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.products-list-wrapper {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.products-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--background);
+}
+
+.products-list-table thead {
+    background: var(--light);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.products-list-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.products-list-table td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.products-list-table tbody tr:hover {
+    background: var(--light);
+}
+
+.products-list-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.products-list-table .text-right {
+    text-align: right;
+    font-weight: 500;
+}
+
+.products-list-table .product-name {
+    font-weight: 500;
+}
+
+.no-products {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.products-list-summary {
+    text-align: right;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* Product Selector Tabs */
+.product-selector-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+

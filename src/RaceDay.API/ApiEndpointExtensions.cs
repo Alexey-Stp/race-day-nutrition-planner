@@ -74,6 +74,39 @@ public static class ApiEndpointExtensions
             .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products");
     }
 
+    /// <summary>
+    /// Map UI metadata API endpoints (descriptions, ranges, etc. for frontend)
+    /// </summary>
+    public static void MapMetadataEndpoints(this WebApplication app)
+    {
+        var group = app.MapGroup("/api/metadata")
+            .WithTags("Metadata");
+
+        group.MapGet("/", GetUIMetadata)
+            .WithName("GetUIMetadata")
+            .WithDescription("Get all UI metadata including temperature, intensity, and default activity information");
+
+        group.MapGet("/temperatures", GetTemperatureMetadata)
+            .WithName("GetTemperatureMetadata")
+            .WithDescription("Get temperature condition metadata with ranges and effects");
+
+        group.MapGet("/intensities", GetIntensityMetadata)
+            .WithName("GetIntensityMetadata")
+            .WithDescription("Get intensity level metadata with icons, carb ranges, and effects");
+
+        group.MapGet("/defaults", GetDefaults)
+            .WithName("GetDefaults")
+            .WithDescription("Get default values for the application");
+
+        group.MapGet("/configuration", GetConfigurationMetadata)
+            .WithName("GetConfigurationMetadata")
+            .WithDescription("Get all nutrition configuration including sport-specific parameters, thresholds, and descriptions");
+
+        group.MapPost("/targets", CalculateNutritionTargets)
+            .WithName("CalculateNutritionTargets")
+            .WithDescription("Calculate nutrition targets for a specific athlete and race parameters");
+    }
+
     // Product Handlers
     private static async Task<IResult> GetAllProducts(IProductRepository repository, CancellationToken cancellationToken)
     {
@@ -209,7 +242,8 @@ public static class ApiEndpointExtensions
                     p.ProductType,
                     p.CarbsG,
                     p.SodiumMg,
-                    p.VolumeMl
+                    p.VolumeMl,
+                    p.CaffeineMg
                 )).ToList();
             }
             else if (request.Filter != null)
@@ -225,7 +259,8 @@ public static class ApiEndpointExtensions
                     p.ProductType,
                     p.CarbsG,
                     p.SodiumMg,
-                    p.VolumeMl
+                    p.VolumeMl,
+                    p.CaffeineMg
                 )).ToList();
             }
             else
@@ -283,9 +318,112 @@ public static class ApiEndpointExtensions
             return Results.Problem($"Error generating plan: {ex.Message}");
         }
     }
+
+    // Metadata Handlers
+    private static IResult GetUIMetadata()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetUIMetadata();
+            return Results.Ok(metadata);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult GetTemperatureMetadata()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetTemperatureMetadata();
+            return Results.Ok(metadata);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading temperature metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult GetIntensityMetadata()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetIntensityMetadata();
+            return Results.Ok(metadata);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading intensity metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult GetDefaults()
+    {
+        try
+        {
+            var metadata = UIMetadataService.GetUIMetadata();
+            return Results.Ok(new { defaultActivityId = metadata.DefaultActivityId });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading defaults: {ex.Message}");
+        }
+    }
+
+    private static IResult GetConfigurationMetadata()
+    {
+        try
+        {
+            var config = ConfigurationMetadataService.GetConfigurationMetadata();
+            return Results.Ok(config);
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error loading configuration metadata: {ex.Message}");
+        }
+    }
+
+    private static IResult CalculateNutritionTargets(TargetsRequest request)
+    {
+        try
+        {
+            var athlete = new AthleteProfile(WeightKg: request.AthleteWeightKg);
+            var race = new RaceProfile(
+                SportType: request.SportType,
+                DurationHours: request.DurationHours,
+                Temperature: request.Temperature,
+                Intensity: request.Intensity
+            );
+            
+            var targets = NutritionCalculator.CalculateTargets(race, athlete);
+            
+            return Results.Ok(new
+            {
+                targets.CarbsGPerHour,
+                targets.FluidsMlPerHour,
+                targets.SodiumMgPerHour,
+                TotalCarbsG = targets.CarbsGPerHour * race.DurationHours,
+                TotalFluidsML = targets.FluidsMlPerHour * race.DurationHours,
+                TotalSodiumMg = targets.SodiumMgPerHour * race.DurationHours
+            });
+        }
+        catch (Exception ex)
+        {
+            return Results.Problem($"Error calculating nutrition targets: {ex.Message}");
+        }
+    }
 }
 
-// Request models for plan generation
+public record TargetsRequest(
+    double AthleteWeightKg,
+    SportType SportType,
+    double DurationHours,
+    TemperatureCondition Temperature,
+    IntensityLevel Intensity
+);
+
 public record PlanGenerationRequest(
     double AthleteWeightKg,
     SportType SportType,
@@ -302,7 +440,8 @@ public record ProductRequest(
     string ProductType,
     double CarbsG,
     double SodiumMg,
-    double VolumeMl
+    double VolumeMl,
+    double? CaffeineMg = null
 );
 
 /// <summary>

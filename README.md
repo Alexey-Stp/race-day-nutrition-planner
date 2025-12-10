@@ -14,7 +14,7 @@ The application generates a time-based schedule showing when and how much of eac
 ## Features
 
 - **Interactive Web UI**: User-friendly React web interface for creating nutrition plans
-- **Activity Presets**: 9 predefined endurance activities (Sprint Tri, Olympic Tri, Half/Full Ironman, Marathon, etc.)
+- **Activity Presets**: 3 core endurance activities (Run, Bike, Triathlon) with customizable durations
 - **Personalized Calculations**: Adjusts nutrition targets based on athlete weight, race intensity, duration, and temperature
 - **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars) from multiple brands
 - **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan with 20-minute intervals
@@ -22,6 +22,7 @@ The application generates a time-based schedule showing when and how much of eac
   - Increases carb intake for harder efforts and longer durations (5+ hours)
   - Adjusts fluid needs based on temperature and athlete weight
   - Optimizes sodium intake for hot conditions and heavier athletes
+  - Tracks caffeine intake and displays caffeine content from selected products
 - **REST API**: Full programmatic access via REST endpoints with Swagger documentation
 
 ## Architecture

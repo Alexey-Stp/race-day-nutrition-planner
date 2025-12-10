@@ -1,12 +1,19 @@
 using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.API;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// Configure JSON serialization to use string values for enums instead of numeric
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 // Configure CORS to allow access from any origin
 // This is intentional for a public API designed to be consumed by any client
 // The API does not handle sensitive data or authentication
@@ -46,5 +53,6 @@ app.UseCors("AllowAll");
 app.MapProductEndpoints();
 app.MapActivityEndpoints();
 app.MapPlanEndpoints();
+app.MapMetadataEndpoints();
 
 app.Run();

@@ -55,6 +55,9 @@ public class AdvancedPlanGenerator
 
         var plan = new List<NutritionEvent>();
 
+        // Get the main race phase for pre-race event
+        var mainPhase = phases.FirstOrDefault()?.Phase ?? RacePhase.Run;
+
         // Pre-race intake (15 min before)
         var preRaceProduct = products.FirstOrDefault(p => p.Texture == ProductTexture.Bake);
         if (preRaceProduct != null)
@@ -62,18 +65,16 @@ public class AdvancedPlanGenerator
             state.TotalCarbs += preRaceProduct.CarbsG;
             plan.Add(new NutritionEvent(
                 TimeMin: -15,
-                Phase: RacePhase.Swim, // Generic phase for pre-race
+                Phase: mainPhase,
+                PhaseDescription: GetPhaseDescription(mainPhase),
                 ProductName: preRaceProduct.Name,
                 AmountPortions: 1,
                 Action: "Eat",
                 TotalCarbsSoFar: state.TotalCarbs,
-                HasCaffeine: false
+                HasCaffeine: false,
+                CaffeineMg: null
             ));
         }
-
-        // Run phase detection for better product selection
-        var runSegment = phases.FirstOrDefault(p => p.Phase == RacePhase.Run);
-        var bikeSegment = phases.FirstOrDefault(p => p.Phase == RacePhase.Bike);
 
         // Main race schedule
         foreach (var slot in slots)
@@ -121,11 +122,13 @@ public class AdvancedPlanGenerator
             plan.Add(new NutritionEvent(
                 TimeMin: slot.TimeMin,
                 Phase: slot.Phase,
+                PhaseDescription: GetPhaseDescription(slot.Phase),
                 ProductName: product.Name,
                 AmountPortions: 1,
                 Action: GetAction(product.Texture),
                 TotalCarbsSoFar: state.TotalCarbs,
-                HasCaffeine: product.HasCaffeine
+                HasCaffeine: product.HasCaffeine,
+                CaffeineMg: product.HasCaffeine ? product.CaffeineMg : null
             ));
         }
 
@@ -136,14 +139,17 @@ public class AdvancedPlanGenerator
             if (extraProduct != null)
             {
                 state.TotalCarbs += extraProduct.CarbsG;
+                var finalPhase = raceMode == RaceMode.Cycling ? RacePhase.Bike : RacePhase.Run;
                 plan.Add(new NutritionEvent(
                     TimeMin: durationMinutes,
-                    Phase: raceMode == RaceMode.Cycling ? RacePhase.Bike : RacePhase.Run,
+                    Phase: finalPhase,
+                    PhaseDescription: GetPhaseDescription(finalPhase),
                     ProductName: extraProduct.Name,
                     AmountPortions: 1,
                     Action: GetAction(extraProduct.Texture),
                     TotalCarbsSoFar: state.TotalCarbs,
-                    HasCaffeine: extraProduct.HasCaffeine
+                    HasCaffeine: extraProduct.HasCaffeine,
+                    CaffeineMg: extraProduct.HasCaffeine ? extraProduct.CaffeineMg : null
                 ));
             }
         }
@@ -154,6 +160,18 @@ public class AdvancedPlanGenerator
     #region Helper Methods
 
     private enum RaceMode { Running, Cycling, TriathlonHalf, TriathlonFull }
+
+    /// <summary>
+    /// Get human-friendly description for a race phase
+    /// </summary>
+    private static string GetPhaseDescription(RacePhase phase) =>
+        phase switch
+        {
+            RacePhase.Swim => "Swim - Lower intensity nutrition due to difficulty of consuming during water",
+            RacePhase.Bike => "Bike - Optimal for consuming nutrition, easier digestion",
+            RacePhase.Run => "Run - Stomach more sensitive, prefer gels and drinks",
+            _ => "Race Phase"
+        };
 
     private static RaceMode DetermineRaceMode(SportType sportType) =>
         sportType switch

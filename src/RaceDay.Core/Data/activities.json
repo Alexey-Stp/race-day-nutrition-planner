@@ -1,74 +1,29 @@
 [
   {
-    "id": "sprint-triathlon",
-    "name": "Sprint Triathlon",
-    "sportType": "Triathlon",
-    "description": "Sprint distance triathlon: 750m swim, 20km bike, 5km run",
-    "minDurationHours": 1.0,
-    "maxDurationHours": 2.5,
-    "bestTimeHours": 1.25
-  },
-  {
-    "id": "olympic-triathlon",
-    "name": "Olympic Triathlon",
-    "sportType": "Triathlon",
-    "description": "Olympic distance triathlon: 1.5km swim, 40km bike, 10km run",
-    "minDurationHours": 2.0,
-    "maxDurationHours": 4.0,
-    "bestTimeHours": 1.85
-  },
-  {
-    "id": "half-ironman",
-    "name": "Half Ironman (70.3)",
-    "sportType": "Triathlon",
-    "description": "Half Ironman distance: 1.9km swim, 90km bike, 21.1km run",
-    "minDurationHours": 4.5,
-    "maxDurationHours": 8.0,
-    "bestTimeHours": 3.75
-  },
-  {
-    "id": "ironman",
-    "name": "Ironman",
-    "sportType": "Triathlon",
-    "description": "Full Ironman distance: 3.8km swim, 180km bike, 42.2km run",
-    "minDurationHours": 10.0,
-    "maxDurationHours": 17.0,
-    "bestTimeHours": 8.0
-  },
-  {
-    "id": "10k-run",
-    "name": "10K Run",
+    "id": "run",
+    "name": "Run",
     "sportType": "Run",
-    "description": "Running: 10km (6.2 miles)",
+    "description": "Running event",
     "minDurationHours": 0.5,
-    "maxDurationHours": 1.5,
-    "bestTimeHours": 0.583
-  },
-  {
-    "id": "half-marathon",
-    "name": "Half Marathon",
-    "sportType": "Run",
-    "description": "Running: 21.1km (13.1 miles)",
-    "minDurationHours": 1.5,
-    "maxDurationHours": 4.0,
-    "bestTimeHours": 1.75
-  },
-  {
-    "id": "marathon",
-    "name": "Marathon",
-    "sportType": "Run",
-    "description": "Running: 42.2km (26.2 miles)",
-    "minDurationHours": 3.0,
     "maxDurationHours": 7.0,
-    "bestTimeHours": 3.5
+    "bestTimeHours": 1.5
   },
   {
-    "id": "long-cycling-race",
-    "name": "Long Distance Cycling Race",
+    "id": "bike",
+    "name": "Bike",
     "sportType": "Bike",
-    "description": "Cycling: Long distance race (100-200km)",
-    "minDurationHours": 1.0,
+    "description": "Cycling event",
+    "minDurationHours": 0.5,
     "maxDurationHours": 12.0,
-    "bestTimeHours": 6.0
+    "bestTimeHours": 3.0
+  },
+  {
+    "id": "triathlon",
+    "name": "Triathlon",
+    "sportType": "Triathlon",
+    "description": "Multi-sport event with swimming, cycling, and running",
+    "minDurationHours": 1.0,
+    "maxDurationHours": 17.0,
+    "bestTimeHours": 2.0
   }
 ]

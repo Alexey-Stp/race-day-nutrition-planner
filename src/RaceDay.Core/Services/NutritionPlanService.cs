@@ -23,8 +23,8 @@ public class NutritionPlanService : INutritionPlanService
             Name: p.Name,
             CarbsG: p.CarbsG,
             Texture: DetermineTexture(p.ProductType),
-            HasCaffeine: DetermineCaffeine(p.Name),
-            CaffeineMg: ExtractCaffeineMg(p.Name),
+            HasCaffeine: p.CaffeineMg.HasValue && p.CaffeineMg > 0,
+            CaffeineMg: p.CaffeineMg ?? 0,
             VolumeMl: p.VolumeMl,
             ProductType: p.ProductType
         )).ToList();
@@ -45,30 +45,4 @@ public class NutritionPlanService : INutritionPlanService
             "chew" or "chews" => ProductTexture.Chew,
             _ => ProductTexture.Gel
         };
-
-    /// <summary>
-    /// Determine if product contains caffeine (simple heuristic)
-    /// </summary>
-    private static bool DetermineCaffeine(string productName) =>
-        productName.Contains("caffeine", StringComparison.OrdinalIgnoreCase) ||
-        productName.Contains("espresso", StringComparison.OrdinalIgnoreCase) ||
-        productName.Contains("cola", StringComparison.OrdinalIgnoreCase);
-
-    /// <summary>
-    /// Extract caffeine amount from product name (simple extraction)
-    /// </summary>
-    private static double ExtractCaffeineMg(string productName)
-    {
-        // If product name contains caffeine indicator, estimate typical amount
-        if (productName.Contains("caffeine", StringComparison.OrdinalIgnoreCase))
-            return 50; // Typical caffeine gel
-        
-        if (productName.Contains("espresso", StringComparison.OrdinalIgnoreCase))
-            return 100; // Typical espresso product
-        
-        if (productName.Contains("cola", StringComparison.OrdinalIgnoreCase))
-            return 35; // Typical cola drink
-        
-        return 0;
-    }
 }

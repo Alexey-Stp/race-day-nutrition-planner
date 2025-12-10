@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SportType, IntensityLevel, TemperatureCondition, type ProductInfo, type RaceNutritionPlan } from './types';
+import { SportType, IntensityLevel, TemperatureCondition, type RaceNutritionPlan } from './types';
 import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
@@ -12,12 +12,12 @@ import './App.css';
 
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
-  const [sportType, setSportType] = useState<SportType>(SportType.Triathlon);
-  const [duration, setDuration] = useState(2);
+  const [sportType, setSportType] = useState<SportType>(SportType.Run);
+  const [duration, setDuration] = useState(1.5);
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
 
-  const [selectedProducts, setSelectedProducts] = useState<ProductInfo[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

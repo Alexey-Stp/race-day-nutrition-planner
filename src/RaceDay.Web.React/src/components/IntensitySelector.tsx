@@ -1,5 +1,7 @@
-import React from 'react';
-import { IntensityLevel, IntensityDescriptions } from '../types';
+import React, { useEffect, useState } from 'react';
+import { IntensityLevel } from '../types';
+import { api } from '../api';
+import type { IntensityMetadata } from '../types';
 
 interface IntensitySelectorProps {
   intensity: IntensityLevel;
@@ -10,50 +12,56 @@ export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
   intensity,
   onIntensityChange
 }) => {
-  const intensityOptions = [
-    IntensityLevel.Easy,
-    IntensityLevel.Moderate,
-    IntensityLevel.Hard
-  ] as const;
+  const [metadata, setMetadata] = useState<IntensityMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadMetadata = async () => {
+      try {
+        const data = await api.getIntensityMetadata();
+        setMetadata(data);
+      } catch (error) {
+        console.error('Error loading intensity metadata:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMetadata();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="form-card">
+        <div className="form-group inline-group">
+          <label htmlFor="intensity-buttons">Intensity</label>
+          <p className="loading">Loading intensity options...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="form-card">
       <div className="form-group inline-group">
         <label htmlFor="intensity-buttons">Intensity</label>
         <div id="intensity-buttons" className="intensity-buttons">
-          {intensityOptions.map((option) => {
-            const description = IntensityDescriptions[option];
-            const isSelected = intensity === option;
+          {metadata.map((meta) => {
+            const isSelected = intensity === meta.level;
             
             return (
               <button
-                key={option}
+                key={meta.level}
                 className={`intensity-btn ${isSelected ? 'active' : ''}`}
-                onClick={() => onIntensityChange(option)}
-                title={description.effects.join(', ')}
+                onClick={() => onIntensityChange(meta.level)}
+                title={meta.effects.join(', ')}
               >
-                <span className="intensity-icon">{description.icon}</span>
-                <span className="intensity-label">{option}</span>
+                <div className="intensity-icon">{meta.icon}</div>
+                <div>{meta.level}</div>
+                <div className="btn-carbs">{meta.carbRange}</div>
+                <div className="btn-hr">{meta.heartRateZone}</div>
               </button>
             );
           })}
-        </div>
-      </div>
-      {/* Show selected intensity details */}
-      <div className="intensity-details">
-        <div className="carb-range">
-          <strong>Carbs:</strong> {IntensityDescriptions[intensity].carbRange}
-        </div>
-        <div className="heart-rate-zone">
-          <strong>Heart Rate:</strong> {IntensityDescriptions[intensity].heartRateZone}
-        </div>
-        <div className="effects-list">
-          {IntensityDescriptions[intensity].effects.map((effect) => (
-            <div key={effect} className="effect-item">
-              <span className="bullet">•</span>
-              <span>{effect}</span>
-            </div>
-          ))}
         </div>
       </div>
     </div>

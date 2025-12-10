@@ -69,10 +69,9 @@ public class ActivityRepositoryTests
         var activityIds = activities.Select(a => a.Id).ToList();
 
         // Assert - verify some known activities exist
-        Assert.Contains("sprint-triathlon", activityIds);
-        Assert.Contains("olympic-triathlon", activityIds);
-        Assert.Contains("half-marathon", activityIds);
-        Assert.Contains("marathon", activityIds);
+        Assert.Contains("run", activityIds);
+        Assert.Contains("bike", activityIds);
+        Assert.Contains("triathlon", activityIds);
     }
 
     [Fact]
@@ -121,11 +120,11 @@ public class ActivityRepositoryTests
     public async Task GetActivityByIdAsync_WithValidId_ReturnsActivity()
     {
         // Act
-        var activity = await ActivityRepository.GetActivityByIdAsync("marathon");
+        var activity = await ActivityRepository.GetActivityByIdAsync("run");
 
         // Assert
         Assert.NotNull(activity);
-        Assert.Equal("marathon", activity.Id);
+        Assert.Equal("run", activity.Id);
     }
 
     [Fact]
@@ -142,8 +141,8 @@ public class ActivityRepositoryTests
     public async Task GetActivityByIdAsync_IsCase_Sensitive()
     {
         // Act
-        var lowerCase = await ActivityRepository.GetActivityByIdAsync("marathon");
-        var upperCase = await ActivityRepository.GetActivityByIdAsync("MARATHON");
+        var lowerCase = await ActivityRepository.GetActivityByIdAsync("run");
+        var upperCase = await ActivityRepository.GetActivityByIdAsync("RUN");
 
         // Assert
         Assert.NotNull(lowerCase);
@@ -195,7 +194,7 @@ public class ActivityRepositoryTests
     public async Task SearchActivitiesAsync_WithValidQuery_ReturnsMatchingActivities()
     {
         // Act
-        var results = await ActivityRepository.SearchActivitiesAsync("marathon");
+        var results = await ActivityRepository.SearchActivitiesAsync("run");
 
         // Assert
         Assert.NotNull(results);
@@ -216,9 +215,9 @@ public class ActivityRepositoryTests
     public async Task SearchActivitiesAsync_IsCase_Insensitive()
     {
         // Act
-        var lowerCase = await ActivityRepository.SearchActivitiesAsync("marathon");
-        var upperCase = await ActivityRepository.SearchActivitiesAsync("MARATHON");
-        var mixedCase = await ActivityRepository.SearchActivitiesAsync("MarAtHoN");
+        var lowerCase = await ActivityRepository.SearchActivitiesAsync("run");
+        var upperCase = await ActivityRepository.SearchActivitiesAsync("RUN");
+        var mixedCase = await ActivityRepository.SearchActivitiesAsync("RuN");
 
         // Assert
         Assert.Equal(lowerCase.Count, upperCase.Count);
