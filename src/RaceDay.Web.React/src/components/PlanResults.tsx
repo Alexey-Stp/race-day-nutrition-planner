@@ -109,7 +109,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
 
   // Calculate percentages based on loaded targets
   const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
-  const caffeinePercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCaffeine / 300) * 100 : 0; // 300mg conservative max
+  const caffeinePercentage = totalCaffeine > 0 ? (totalCaffeine / 300) * 100 : 0; // 300mg conservative max
 
   // Create a unique key based on plan content to force re-render on plan changes
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
