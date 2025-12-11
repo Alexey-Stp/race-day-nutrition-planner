@@ -380,6 +380,23 @@ The response includes a `productSummaries` array with the shopping list:
 }
 ```
 
+## Quick API Testing
+
+For easy API testing with predefined scenarios (half/full triathlon, marathons, bike rides), see **[TESTING.md](TESTING.md)** which includes:
+
+- **Quick test script**: `./test-nutrition-plan.sh [scenario]`
+- **HTTP test file**: `src/RaceDay.API/RaceDay.API.http` (use with VS Code REST Client)
+- **Comprehensive documentation** for testing and validation workflow
+
+Example:
+```bash
+# Start the API
+dotnet run --project src/RaceDay.API/RaceDay.API.csproj
+
+# Run a test scenario
+./test-nutrition-plan.sh half-triathlon
+```
+
 ## Usage
 
 ### Web Application Usage
