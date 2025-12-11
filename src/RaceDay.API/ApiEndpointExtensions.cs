@@ -71,7 +71,8 @@ public static class ApiEndpointExtensions
 
         group.MapPost("/generate", GeneratePlan)
             .WithName("GeneratePlan")
-            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products");
+            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products. " +
+                           "When using a filter with Run sport, drinks and recovery products are automatically excluded.");
     }
 
     /// <summary>
