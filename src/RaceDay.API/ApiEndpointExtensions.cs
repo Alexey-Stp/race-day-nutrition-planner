@@ -12,6 +12,10 @@ namespace RaceDay.API;
 public static class ApiEndpointExtensions
 {
     /// <summary>
+    /// Product types to exclude for running activities (runners typically don't carry bottles)
+    /// </summary>
+    private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
+    /// <summary>
     /// Map product-related API endpoints
     /// </summary>
     public static void MapProductEndpoints(this WebApplication app)
@@ -256,9 +260,8 @@ public static class ApiEndpointExtensions
                 if (request.SportType == SportType.Run)
                 {
                     var excludeTypes = filter.ExcludeTypes?.ToList() ?? new List<string>();
-                    var typesToExclude = new[] { "drink", "recovery" };
                     
-                    foreach (var typeToExclude in typesToExclude)
+                    foreach (var typeToExclude in RunExcludedProductTypes)
                     {
                         if (!excludeTypes.Any(t => t.Equals(typeToExclude, StringComparison.OrdinalIgnoreCase)))
                         {
