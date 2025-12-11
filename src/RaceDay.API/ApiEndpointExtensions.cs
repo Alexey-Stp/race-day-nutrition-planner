@@ -12,6 +12,10 @@ namespace RaceDay.API;
 public static class ApiEndpointExtensions
 {
     /// <summary>
+    /// Product types to exclude for running activities (runners typically don't carry bottles)
+    /// </summary>
+    private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
+    /// <summary>
     /// Map product-related API endpoints
     /// </summary>
     public static void MapProductEndpoints(this WebApplication app)
@@ -71,7 +75,8 @@ public static class ApiEndpointExtensions
 
         group.MapPost("/generate", GeneratePlan)
             .WithName("GeneratePlan")
-            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products");
+            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products. " +
+                           "When using a filter with Run sport, drinks and recovery products are automatically excluded.");
     }
 
     /// <summary>
@@ -248,8 +253,27 @@ public static class ApiEndpointExtensions
             }
             else if (request.Filter != null)
             {
+                // Apply sport-specific product exclusions
+                var filter = request.Filter;
+                
+                // For running, exclude drinks and recovery products (runners typically don't carry bottles)
+                if (request.SportType == SportType.Run)
+                {
+                    var excludeTypes = filter.ExcludeTypes?.ToList() ?? new List<string>();
+                    
+                    foreach (var typeToExclude in RunExcludedProductTypes)
+                    {
+                        if (!excludeTypes.Any(t => t.Equals(typeToExclude, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            excludeTypes.Add(typeToExclude);
+                        }
+                    }
+                    
+                    filter = filter with { ExcludeTypes = excludeTypes };
+                }
+                
                 // Use filtered products from repository
-                var filteredProductInfos = await repository.GetFilteredProductsAsync(request.Filter, cancellationToken);
+                var filteredProductInfos = await repository.GetFilteredProductsAsync(filter, cancellationToken);
 
                 if (filteredProductInfos.Count == 0)
                     return Results.BadRequest("No products found matching the specified filter");
