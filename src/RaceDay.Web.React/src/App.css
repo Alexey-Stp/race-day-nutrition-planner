@@ -982,16 +982,7 @@ html, body {
     border: 1px solid var(--border-color);
 }
 
-.schedule-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--background);
-}
-
-.schedule-table thead {
-    background: var(--light);
-    border-bottom: 1px solid var(--border-color);
-}
+/* .schedule-table styling moved to line 660 to avoid duplication */
 
 .schedule-table th {
     padding: 8px 10px;
@@ -1053,11 +1044,7 @@ html, body {
     font-size: 0.8125rem;
 }
 
-.total-label {
-    text-align: right;
-    font-weight: 600;
-    color: var(--text-primary);
-}
+/* .total-label styling defined at line 644 - removed duplicate */
 
 .total {
     background: var(--light);
@@ -1888,27 +1875,23 @@ html, body {
     color: #2196F3;
 }
 
-.targets-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--light);
-    border-radius: 8px;
-    overflow: hidden;
-}
+/* Responsive .targets-table styles for mobile */
+@media (max-width: 768px) {
+    .targets-table {
+        background: var(--light);
+        border-radius: 8px;
+        overflow: hidden;
+    }
 
-.targets-table tbody tr {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-bottom: 1px solid var(--border-color);
-}
+    .targets-table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
 
-.targets-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.targets-table td {
-    padding: 10px 12px;
-    font-size: 0.8125rem;
+    .targets-table td {
+        padding: 10px 12px;
+        font-size: 0.8125rem;
+    }
 }
 
 .targets-table .target-label {

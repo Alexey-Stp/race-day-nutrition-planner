@@ -63,7 +63,7 @@ public class AdvancedPlanGenerator
         var slots = BuildSlots(durationMinutes, slotInterval, phases);
         var carbsPerHour = CalculateCarbsPerHour(raceMode, weightKg);
         var totalCarbs = carbsPerHour * durationHours;
-        var state = InitPlannerState(raceMode, weightKg);
+        var state = InitPlannerState(raceMode);
         var random = new Random(ReproducibleRandomSeed);
 
         return new PlanningContext(
@@ -156,7 +156,7 @@ public class AdvancedPlanGenerator
     /// <summary>
     /// Select and validate product for a slot, handling caffeine limits
     /// </summary>
-    private ProductEnhanced? TrySelectAndValidateProduct(
+    private static ProductEnhanced? TrySelectAndValidateProduct(
         PlanningContext context,
         Slot slot,
         List<ProductEnhanced> products)
@@ -186,7 +186,7 @@ public class AdvancedPlanGenerator
     /// <summary>
     /// Update planner state after consuming a product
     /// </summary>
-    private void UpdateStateWithProduct(PlanningContext context, int timeMin, ProductEnhanced product)
+    private static void UpdateStateWithProduct(PlanningContext context, int timeMin, ProductEnhanced product)
     {
         context.State.TotalCarbs += product.CarbsG;
 
@@ -201,7 +201,7 @@ public class AdvancedPlanGenerator
     /// <summary>
     /// Create a nutrition event with consistent structure
     /// </summary>
-    private NutritionEvent CreateNutritionEvent(
+    private static NutritionEvent CreateNutritionEvent(
         int timeMin,
         RacePhase phase,
         ProductEnhanced product,
@@ -356,7 +356,7 @@ public class AdvancedPlanGenerator
         return slots;
     }
 
-    private PlannerState InitPlannerState(RaceMode mode, double weightKg)
+    private PlannerState InitPlannerState(RaceMode mode)
     {
         double startHour = mode switch
         {
@@ -437,9 +437,6 @@ public class AdvancedPlanGenerator
     {
         if (!isEndPhase)
             return SelectLightGelsOrFallbackToRegular(products);
-
-        if (isEndPhase)
-            return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
 
         return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
     }

@@ -4,7 +4,6 @@ import { api } from '../api';
 import { formatDuration } from '../utils';
 
 interface RaceDetailsFormProps {
-  sportType: SportType;
   duration: number;
   onSportTypeChange: (sport: SportType) => void;
   onDurationChange: (duration: number) => void;

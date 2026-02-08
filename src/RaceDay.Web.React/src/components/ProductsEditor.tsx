@@ -67,7 +67,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
               </thead>
               <tbody>
                 {gels.map((gel, index) => (
-                  <tr key={index}>
+                  <tr key={`gel-${index}-${gel.name}`}>
                     <td>
                       <input
                         type="text"
@@ -136,7 +136,7 @@ export const ProductsEditor: React.FC<ProductsEditorProps> = ({
               </thead>
               <tbody>
                 {drinks.map((drink, index) => (
-                  <tr key={index}>
+                  <tr key={`drink-${index}-${drink.name}`}>
                     <td>
                       <input
                         type="text"
