@@ -111,11 +111,14 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
         </div>
       </div>
 
-      {loading ? (
-        <p className="loading">Loading products...</p>
-      ) : products.length === 0 ? (
-        <p className="no-products">No products found</p>
-      ) : (
+      {(() => {
+        if (loading) {
+          return <p className="loading">Loading products...</p>;
+        }
+        if (products.length === 0) {
+          return <p className="no-products">No products found</p>;
+        }
+        return (
         <div className="products-grid">
           {products.map(product => (
             <div key={product.id} className="product-card">
@@ -148,7 +151,8 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

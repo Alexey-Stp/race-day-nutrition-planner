@@ -76,7 +76,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
 
   useEffect(() => {
     const fetchTargets = async () => {
-      if (!plan || !plan.race || !plan.athlete) return;
+      if (!(plan?.race && plan?.athlete)) return;
 
       setLoadingTargets(true);
       try {
@@ -106,7 +106,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   const schedule = plan.nutritionSchedule;
 
   // Calculate totals
-  const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
+  const totalCarbs = schedule.length > 0 ? schedule.at(-1)!.totalCarbsSoFar : 0;
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
   const duration = plan.race?.durationHours ?? 0;
 

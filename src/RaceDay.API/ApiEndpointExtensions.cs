@@ -282,7 +282,7 @@ public static class ApiEndpointExtensions
         IProductRepository repository,
         CancellationToken cancellationToken)
     {
-        if (HasExplicitProducts(request))
+        if (request.Products != null && request.Products.Count > 0)
         {
             var products = request.Products
                 .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
@@ -290,7 +290,7 @@ public static class ApiEndpointExtensions
             return new ProductLoadResult(products, null);
         }
 
-        if (HasProductFilter(request))
+        if (request.Filter != null)
         {
             var filter = ApplySportSpecificFiltering(request.Filter, request.SportType);
             var productInfos = await repository.GetFilteredProductsAsync(filter, cancellationToken);
@@ -385,12 +385,6 @@ public static class ApiEndpointExtensions
     {
         public static ProductLoadResult WithError(IResult error) => new(null, error);
     }
-
-    private static bool HasExplicitProducts(PlanGenerationRequest request) =>
-        request.Products != null && request.Products.Count > 0;
-
-    private static bool HasProductFilter(PlanGenerationRequest request) =>
-        request.Filter != null;
 
     // Metadata Handlers
     private static IResult GetUIMetadata()
