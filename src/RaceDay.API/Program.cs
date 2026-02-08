@@ -17,6 +17,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // Configure CORS to allow access from any origin
 // This is intentional for a public API designed to be consumed by any client
 // The API does not handle sensitive data or authentication
+// S5122: Permissive CORS is acceptable for this public, read-only nutrition planning API
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -55,4 +56,4 @@ app.MapActivityEndpoints();
 app.MapPlanEndpoints();
 app.MapMetadataEndpoints();
 
-app.Run();
+await app.RunAsync();

@@ -12,6 +12,10 @@ namespace RaceDay.API;
 public static class ApiEndpointExtensions
 {
     /// <summary>
+    /// Product types to exclude for running activities (runners typically don't carry bottles)
+    /// </summary>
+    private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
+    /// <summary>
     /// Map product-related API endpoints
     /// </summary>
     public static void MapProductEndpoints(this WebApplication app)
@@ -19,19 +23,19 @@ public static class ApiEndpointExtensions
         var group = app.MapGroup("/api/products")
             .WithTags("Products");
 
-        group.MapGet("/", GetAllProducts)
+        group.MapGet("/", GetAllProductsAsync)
             .WithName("GetAllProducts")
             .WithDescription("Retrieve all available products");
 
-        group.MapGet("/{id}", GetProductById)
+        group.MapGet("/{id}", GetProductByIdAsync)
             .WithName("GetProductById")
             .WithDescription("Get a specific product by ID");
 
-        group.MapGet("/type/{type}", GetProductsByType)
+        group.MapGet("/type/{type}", GetProductsByTypeAsync)
             .WithName("GetProductsByType")
             .WithDescription("Filter products by type (gel, drink, bar)");
 
-        group.MapGet("/search", SearchProducts)
+        group.MapGet("/search", SearchProductsAsync)
             .WithName("SearchProducts")
             .WithDescription("Search products by name or brand");
     }
@@ -44,19 +48,19 @@ public static class ApiEndpointExtensions
         var group = app.MapGroup("/api/activities")
             .WithTags("Activities");
 
-        group.MapGet("/", GetAllActivities)
+        group.MapGet("/", GetAllActivitiesAsync)
             .WithName("GetAllActivities")
             .WithDescription("Retrieve all predefined activities");
 
-        group.MapGet("/{id}", GetActivityById)
+        group.MapGet("/{id}", GetActivityByIdAsync)
             .WithName("GetActivityById")
             .WithDescription("Get a specific activity by ID");
 
-        group.MapGet("/type/{sportType}", GetActivitiesByType)
+        group.MapGet("/type/{sportType}", GetActivitiesByTypeAsync)
             .WithName("GetActivitiesByType")
             .WithDescription("Filter activities by sport type (Run, Bike, Triathlon)");
 
-        group.MapGet("/search", SearchActivities)
+        group.MapGet("/search", SearchActivitiesAsync)
             .WithName("SearchActivities")
             .WithDescription("Search activities by name or description");
     }
@@ -69,9 +73,10 @@ public static class ApiEndpointExtensions
         var group = app.MapGroup("/api/plan")
             .WithTags("Nutrition Plan");
 
-        group.MapPost("/generate", GeneratePlan)
+        group.MapPost("/generate", GeneratePlanAsync)
             .WithName("GeneratePlan")
-            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products");
+            .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products. " +
+                           "When using a filter with Run sport, drinks and recovery products are automatically excluded.");
     }
 
     /// <summary>
@@ -108,7 +113,7 @@ public static class ApiEndpointExtensions
     }
 
     // Product Handlers
-    private static async Task<IResult> GetAllProducts(IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
@@ -121,7 +126,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetProductById(string id, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
@@ -134,7 +139,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetProductsByType(string type, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
@@ -147,7 +152,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> SearchProducts(string query, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -164,7 +169,7 @@ public static class ApiEndpointExtensions
     }
 
     // Activity Handlers
-    private static async Task<IResult> GetAllActivities(CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllActivitiesAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -177,7 +182,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetActivityById(string id, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivityByIdAsync(string id, CancellationToken cancellationToken)
     {
         try
         {
@@ -190,7 +195,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetActivitiesByType(string sportType, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, CancellationToken cancellationToken)
     {
         try
         {
@@ -206,7 +211,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> SearchActivities(string query, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchActivitiesAsync(string query, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -223,85 +228,21 @@ public static class ApiEndpointExtensions
     }
 
     // Plan Generation Handlers
-    private static async Task<IResult> GeneratePlan(PlanGenerationRequest request, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GeneratePlanAsync(PlanGenerationRequest request, IProductRepository repository, CancellationToken cancellationToken)
     {
         try
         {
-            // Validate request
-            if (request == null)
-                return Results.BadRequest("Request body is required");
+            var validationError = ValidateRequest(request);
+            if (validationError != null)
+                return validationError;
 
-            List<Product> products;
+            var productsResult = await LoadProductsAsync(request, repository, cancellationToken);
+            if (productsResult.Error != null)
+                return productsResult.Error;
 
-            // Get products either from explicit list or from filter
-            if (request.Products != null && request.Products.Count > 0)
-            {
-                // Use provided products
-                products = request.Products.Select(p => new Product(
-                    p.Name,
-                    p.ProductType,
-                    p.CarbsG,
-                    p.SodiumMg,
-                    p.VolumeMl,
-                    p.CaffeineMg
-                )).ToList();
-            }
-            else if (request.Filter != null)
-            {
-                // Use filtered products from repository
-                var filteredProductInfos = await repository.GetFilteredProductsAsync(request.Filter, cancellationToken);
-
-                if (filteredProductInfos.Count == 0)
-                    return Results.BadRequest("No products found matching the specified filter");
-
-                products = filteredProductInfos.Select(p => new Product(
-                    p.Name,
-                    p.ProductType,
-                    p.CarbsG,
-                    p.SodiumMg,
-                    p.VolumeMl,
-                    p.CaffeineMg
-                )).ToList();
-            }
-            else
-            {
-                return Results.BadRequest("Either 'products' or 'filter' must be provided");
-            }
-
-            if (products.Count == 0)
-                return Results.BadRequest("At least one product is required");
-
-            // Convert temperature Celsius to TemperatureCondition enum
-            var temperatureCondition = request.TemperatureC switch
-            {
-                <= 5 => TemperatureCondition.Cold,
-                >= 25 => TemperatureCondition.Hot,
-                _ => TemperatureCondition.Moderate
-            };
-
-            // Create profiles
-            var athlete = new AthleteProfile(request.AthleteWeightKg);
-            var race = new RaceProfile(
-                request.SportType,
-                request.DurationHours,
-                temperatureCondition,
-                request.Intensity
-            );
-
-            // Generate advanced plan using the service
-            var service = new NutritionPlanService();
-            var nutritionEvents = service.GeneratePlan(race, athlete, products);
-
-            // Calculate shopping summary using extension
-            var shoppingSummary = nutritionEvents.CalculateShoppingList();
-
-            // Create response with advanced plan data and shopping summary
-            var response = new AdvancedPlanResponse(
-                race,
-                athlete,
-                nutritionEvents,
-                shoppingSummary
-            );
+            var profiles = CreateProfiles(request);
+            var nutritionPlan = GenerateNutritionPlan(profiles.athlete, profiles.race, productsResult.Products!);
+            var response = BuildResponse(profiles.athlete, profiles.race, nutritionPlan);
 
             return Results.Ok(response);
         }
@@ -317,6 +258,132 @@ public static class ApiEndpointExtensions
         {
             return Results.Problem($"Error generating plan: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Validate the plan generation request
+    /// </summary>
+    private static IResult? ValidateRequest(PlanGenerationRequest request)
+    {
+        if (request == null)
+            return Results.BadRequest("Request body is required");
+
+        if (request.Products == null && request.Filter == null)
+            return Results.BadRequest("Either 'products' or 'filter' must be provided");
+
+        return null;
+    }
+
+    /// <summary>
+    /// Load products either from explicit list or filtered repository
+    /// </summary>
+    private static async Task<ProductLoadResult> LoadProductsAsync(
+        PlanGenerationRequest request,
+        IProductRepository repository,
+        CancellationToken cancellationToken)
+    {
+        if (request.Products != null && request.Products.Count > 0)
+        {
+            var products = request.Products
+                .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
+                .ToList();
+            return new ProductLoadResult(products, null);
+        }
+
+        if (request.Filter != null)
+        {
+            var filter = ApplySportSpecificFiltering(request.Filter, request.SportType);
+            var productInfos = await repository.GetFilteredProductsAsync(filter, cancellationToken);
+
+            if (productInfos.Count == 0)
+                return ProductLoadResult.WithError(Results.BadRequest("No products found matching the specified filter"));
+
+            var products = productInfos
+                .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
+                .ToList();
+            return new ProductLoadResult(products, null);
+        }
+
+        return ProductLoadResult.WithError(Results.BadRequest("At least one product is required"));
+    }
+
+    /// <summary>
+    /// Apply sport-specific product filtering rules
+    /// </summary>
+    private static ProductFilter ApplySportSpecificFiltering(ProductFilter filter, SportType sportType)
+    {
+        if (sportType != SportType.Run)
+            return filter;
+
+        var excludeTypes = filter.ExcludeTypes?.ToList() ?? new List<string>();
+
+        var typesToAdd = RunExcludedProductTypes
+            .Where(typeToExclude => !excludeTypes.Any(t => t.Equals(typeToExclude, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        excludeTypes.AddRange(typesToAdd);
+
+        return filter with { ExcludeTypes = excludeTypes };
+    }
+
+    /// <summary>
+    /// Create athlete and race profiles from request
+    /// </summary>
+    private static (AthleteProfile athlete, RaceProfile race) CreateProfiles(PlanGenerationRequest request)
+    {
+        var temperatureCondition = MapTemperature(request.TemperatureC);
+        var athlete = new AthleteProfile(request.AthleteWeightKg);
+        var race = new RaceProfile(
+            request.SportType,
+            request.DurationHours,
+            temperatureCondition,
+            request.Intensity
+        );
+
+        return (athlete, race);
+    }
+
+    /// <summary>
+    /// Map temperature in Celsius to condition enum
+    /// </summary>
+    private static TemperatureCondition MapTemperature(double temperatureC) =>
+        temperatureC switch
+        {
+            <= 5 => TemperatureCondition.Cold,
+            >= 25 => TemperatureCondition.Hot,
+            _ => TemperatureCondition.Moderate
+        };
+
+    /// <summary>
+    /// Generate the nutrition plan using the service
+    /// </summary>
+    private static List<NutritionEvent> GenerateNutritionPlan(
+        AthleteProfile athlete,
+        RaceProfile race,
+        List<Product> products)
+    {
+        var service = new NutritionPlanService();
+        return service.GeneratePlan(race, athlete, products);
+    }
+
+    /// <summary>
+    /// Build the API response with plan and shopping summary
+    /// </summary>
+    private static AdvancedPlanResponse BuildResponse(
+        AthleteProfile athlete,
+        RaceProfile race,
+        List<NutritionEvent> nutritionEvents)
+    {
+        var shoppingSummary = nutritionEvents.CalculateShoppingList();
+        return new AdvancedPlanResponse(race, athlete, nutritionEvents, shoppingSummary);
+    }
+
+    /// <summary>
+    /// Result object for product loading operations
+    /// </summary>
+    private sealed record ProductLoadResult(List<Product>? Products, IResult? Error)
+    {
+        public static ProductLoadResult WithError(IResult error) => new(null, error);
     }
 
     // Metadata Handlers

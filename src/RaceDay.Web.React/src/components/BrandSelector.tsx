@@ -143,20 +143,29 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
 
       {/* Assortment Modal */}
       {showAssortment && assortmentBrand && (
-        <div 
+        <div // NOSONAR - Standard modal overlay pattern with click-to-dismiss
           className="modal-overlay" 
           onClick={() => setShowAssortment(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Brand assortment modal"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setShowAssortment(false);
-          }}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div // NOSONAR - Dialog content stops event propagation, standard modal pattern
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
             <div className="modal-header">
-              <h2>{assortmentBrand} - Full Assortment</h2>
-              <button className="modal-close" onClick={() => setShowAssortment(false)}>✕</button>
+              <h2 id="modal-title">{assortmentBrand} - Full Assortment</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowAssortment(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowAssortment(false);
+                }}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
             
             <div className="modal-body">

@@ -8,7 +8,7 @@ using RaceDay.Core.Models;
 /// Repository for managing supported activities and their characteristics
 /// Loads activities from embedded JSON resource
 /// </summary>
-public class ActivityRepository
+public static class ActivityRepository
 {
     private static List<ActivityInfo>? _activities;
 

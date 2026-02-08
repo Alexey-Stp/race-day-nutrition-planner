@@ -11,6 +11,7 @@ interface RaceDetailsFormProps {
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
+  sportType: _sportType,  // Passed from parent but managed internally via callbacks
   duration,
   onSportTypeChange,
   onDurationChange
