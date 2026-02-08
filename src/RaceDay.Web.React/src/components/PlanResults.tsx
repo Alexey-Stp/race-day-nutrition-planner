@@ -91,7 +91,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
 
   useEffect(() => {
     const fetchTargets = async () => {
-      if (!plan || !plan.race || !plan.athlete) return;
+      if (!(plan?.race && plan?.athlete)) return;
 
       setLoadingTargets(true);
       try {
@@ -123,9 +123,9 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
     : plan.nutritionSchedule.filter(event => !event.hasCaffeine);
 
   // Calculate totals  
-  const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
+  const totalCarbs = schedule.length > 0 ? schedule.at(-1)!.totalCarbsSoFar : 0;
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
-  const raceDuration = plan.race?.durationHours || 0;
+  const raceDuration = plan.race?.durationHours ?? 0;
 
   // Format title with race and athlete info
   const getSportTypeDisplay = (type: string) => {
@@ -245,9 +245,8 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
             {/* Targets Section */}
             <div className="targets-section">
               <h3>Targets</h3>
-              {loadingTargets ? (
-                <p className="loading">Loading nutrition targets...</p>
-              ) : targets ? (
+              {loadingTargets && <p className="loading">Loading nutrition targets...</p>}
+              {!loadingTargets && targets && (
                 <div className="targets-container">
                   <div className="target-info">
                     <div className="info-item">
@@ -270,7 +269,8 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
                     label="Plan Caffeine vs Target"
                   />
                 </div>
-              ) : (
+              )}
+              {!loadingTargets && !targets && (
                 <p className="error">Failed to load nutrition targets</p>
               )}
             </div>
