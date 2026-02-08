@@ -33,7 +33,7 @@ public class AdvancedPlanGenerator
         List<ProductEnhanced> products,
         int intervalMinutes = 22)
     {
-        var raceMode = DetermineRaceMode(race.SportType);
+        var raceMode = DetermineRaceMode(race.SportType, race.DurationHours);
         var slotInterval = GetSlotInterval(raceMode);
         var durationHours = race.DurationHours;
         var durationMinutes = (int)(durationHours * 60);
@@ -173,11 +173,13 @@ public class AdvancedPlanGenerator
             _ => "Race Phase"
         };
 
-    private static RaceMode DetermineRaceMode(SportType sportType) =>
+    private static RaceMode DetermineRaceMode(SportType sportType, double durationHours) =>
         sportType switch
         {
             SportType.Bike => RaceMode.Cycling,
-            _ => RaceMode.Running // Triathlon support would come from duration/context
+            SportType.Triathlon when durationHours >= 6 => RaceMode.TriathlonFull,
+            SportType.Triathlon => RaceMode.TriathlonHalf,
+            _ => RaceMode.Running
         };
 
     private static int GetSlotInterval(RaceMode mode) =>
@@ -209,9 +211,25 @@ public class AdvancedPlanGenerator
 
     private static List<PhaseSegment> BuildPhaseTimeline(RaceMode mode, double totalHours)
     {
-        // Currently supporting simple modes; triathlon logic can be added
-        var phase = mode == RaceMode.Cycling ? RacePhase.Bike : RacePhase.Run;
-        return new List<PhaseSegment> { new(phase, 0, totalHours) };
+        return mode switch
+        {
+            RaceMode.TriathlonHalf => new List<PhaseSegment>
+            {
+                // Half triathlon: ~10% swim, 50% bike, 40% run
+                new(RacePhase.Swim, 0, totalHours * 0.10),
+                new(RacePhase.Bike, totalHours * 0.10, totalHours * 0.60),
+                new(RacePhase.Run, totalHours * 0.60, totalHours)
+            },
+            RaceMode.TriathlonFull => new List<PhaseSegment>
+            {
+                // Full triathlon: ~12% swim, 55% bike, 33% run
+                new(RacePhase.Swim, 0, totalHours * 0.12),
+                new(RacePhase.Bike, totalHours * 0.12, totalHours * 0.67),
+                new(RacePhase.Run, totalHours * 0.67, totalHours)
+            },
+            RaceMode.Cycling => new List<PhaseSegment> { new(RacePhase.Bike, 0, totalHours) },
+            _ => new List<PhaseSegment> { new(RacePhase.Run, 0, totalHours) }
+        };
     }
 
     private static List<Slot> BuildSlots(int durationMinutes, int slotInterval, List<PhaseSegment> phases)
