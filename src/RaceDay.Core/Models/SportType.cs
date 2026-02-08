@@ -11,4 +11,4 @@ public enum SportType
     Bike, 
     /// <summary>Triathlon (swim/bike/run)</summary>
     Triathlon 
-}
+}       

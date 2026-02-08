@@ -334,10 +334,16 @@ public class AdvancedPlanGenerator
         List<ProductEnhanced> products)
     {
         if (!isEndPhase)
-            return products.Where(p => p.Texture == ProductTexture.LightGel);
+        {
+            // Prefer light gels, fall back to regular gels if not available
+            var lightGels = products.Where(p => p.Texture == ProductTexture.LightGel).ToList();
+            if (lightGels.Any())
+                return lightGels;
+            return products.Where(p => p.Texture == ProductTexture.Gel);
+        }
 
         if (isEndPhase)
-            return products.Where(p => p.Texture == ProductTexture.Gel);
+            return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
 
         return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
     }
