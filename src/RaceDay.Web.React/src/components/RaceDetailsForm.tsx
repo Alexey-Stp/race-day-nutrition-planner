@@ -4,12 +4,14 @@ import { api } from '../api';
 import { formatDuration } from '../utils';
 
 interface RaceDetailsFormProps {
+  sportType: SportType;
   duration: number;
   onSportTypeChange: (sport: SportType) => void;
   onDurationChange: (duration: number) => void;
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
+  sportType: _sportType,  // Passed from parent but managed internally via callbacks
   duration,
   onSportTypeChange,
   onDurationChange
