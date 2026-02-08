@@ -11,6 +11,10 @@ using RaceDay.Core.Constants;
 /// </summary>
 public class AdvancedPlanGenerator
 {
+    private const int ReproducibleRandomSeed = 42;
+    private const double CarbTargetThreshold = 0.9;
+    private const int PreRaceMinutes = -15;
+
     private sealed record PhaseSegment(RacePhase Phase, double StartHour, double EndHour);
     private sealed record Slot(int TimeMin, RacePhase Phase);
 
@@ -46,6 +50,7 @@ public class AdvancedPlanGenerator
     /// <summary>
     /// Initialize planning context with race configuration and state
     /// </summary>
+    /// <summary>
     private PlanningContext InitializePlanningContext(RaceProfile race, AthleteProfile athlete)
     {
         var raceMode = DetermineRaceMode(race.SportType, race.DurationHours);
@@ -59,15 +64,13 @@ public class AdvancedPlanGenerator
         var carbsPerHour = CalculateCarbsPerHour(raceMode, weightKg);
         var totalCarbs = carbsPerHour * durationHours;
         var state = InitPlannerState(raceMode, weightKg);
-        // Use fixed seed for reproducible results
-        var random = new Random(42);
+        var random = new Random(ReproducibleRandomSeed);
 
         return new PlanningContext(
             raceMode, durationHours, durationMinutes, weightKg,
             phases, slots, totalCarbs, state, random);
     }
 
-    /// <summary>
     /// Add pre-race nutrition event (15 minutes before start)
     /// </summary>
     private void AddPreRaceEvent(
@@ -83,7 +86,7 @@ public class AdvancedPlanGenerator
         context.State.TotalCarbs += preRaceProduct.CarbsG;
 
         var nutritionEvent = CreateNutritionEvent(
-            timeMin: -15,
+            timeMin: PreRaceMinutes,
             phase: mainPhase,
             product: preRaceProduct,
             action: "Eat",
@@ -102,8 +105,7 @@ public class AdvancedPlanGenerator
     {
         foreach (var slot in context.Slots)
         {
-            // Skip eating during swim
-            if (slot.Phase == RacePhase.Swim)
+            if (IsSwimPhase(slot))
                 continue;
 
             var product = TrySelectAndValidateProduct(context, slot, products);
@@ -131,7 +133,7 @@ public class AdvancedPlanGenerator
         List<ProductEnhanced> products,
         List<NutritionEvent> plan)
     {
-        if (context.State.TotalCarbs >= context.TotalCarbs * 0.9)
+        if (HasMetCarbTarget(context))
             return;
 
         var extraProduct = SelectExtraProduct(context.RaceMode, products);
@@ -173,18 +175,9 @@ public class AdvancedPlanGenerator
         if (product == null)
             return null;
 
-        // Validate and adjust for caffeine limits
-        if (wantsCaffeine && product.HasCaffeine)
+        if (wantsCaffeine && product.HasCaffeine && WouldExceedCaffeineLimit(context, product))
         {
-            double maxCaffeine = AdvancedNutritionConfig.MaxCaffeineMgPerKg * context.WeightKg;
-            if (context.State.TotalCaffeineMg + product.CaffeineMg > maxCaffeine)
-            {
-                // Fall back to non-caffeine version
-                product = products.FirstOrDefault(p =>
-                    !p.HasCaffeine &&
-                    p.Texture == product.Texture &&
-                    p.ProductType == product.ProductType) ?? product;
-            }
+            product = FindNonCaffeinatedAlternative(products, product) ?? product;
         }
 
         return product;
@@ -241,6 +234,25 @@ public class AdvancedPlanGenerator
         PlannerState State,
         Random Random);
 
+    private static bool IsSwimPhase(Slot slot) => slot.Phase == RacePhase.Swim;
+
+    private static bool HasMetCarbTarget(PlanningContext context) =>
+        context.State.TotalCarbs >= context.TotalCarbs * CarbTargetThreshold;
+
+    private static bool WouldExceedCaffeineLimit(PlanningContext context, ProductEnhanced product)
+    {
+        double maxCaffeine = AdvancedNutritionConfig.MaxCaffeineMgPerKg * context.WeightKg;
+        return context.State.TotalCaffeineMg + product.CaffeineMg > maxCaffeine;
+    }
+
+    private static ProductEnhanced? FindNonCaffeinatedAlternative(
+        List<ProductEnhanced> products,
+        ProductEnhanced caffeinated) =>
+        products.FirstOrDefault(p =>
+            !p.HasCaffeine &&
+            p.Texture == caffeinated.Texture &&
+            p.ProductType == caffeinated.ProductType);
+
     #region Helper Methods
 
     private enum RaceMode { Running, Cycling, TriathlonHalf, TriathlonFull }
@@ -293,23 +305,29 @@ public class AdvancedPlanGenerator
         return Math.Min(hardCap, perKg * weightKg);
     }
 
+    private static class TriathlonPhaseDistribution
+    {
+        public const double HalfSwimEnd = 0.10;
+        public const double HalfBikeEnd = 0.60;
+        public const double FullSwimEnd = 0.12;
+        public const double FullBikeEnd = 0.67;
+    }
+
     private static List<PhaseSegment> BuildPhaseTimeline(RaceMode mode, double totalHours)
     {
         return mode switch
         {
             RaceMode.TriathlonHalf => new List<PhaseSegment>
             {
-                // Half triathlon: ~10% swim, 50% bike, 40% run
-                new(RacePhase.Swim, 0, totalHours * 0.10),
-                new(RacePhase.Bike, totalHours * 0.10, totalHours * 0.60),
-                new(RacePhase.Run, totalHours * 0.60, totalHours)
+                new(RacePhase.Swim, 0, totalHours * TriathlonPhaseDistribution.HalfSwimEnd),
+                new(RacePhase.Bike, totalHours * TriathlonPhaseDistribution.HalfSwimEnd, totalHours * TriathlonPhaseDistribution.HalfBikeEnd),
+                new(RacePhase.Run, totalHours * TriathlonPhaseDistribution.HalfBikeEnd, totalHours)
             },
             RaceMode.TriathlonFull => new List<PhaseSegment>
             {
-                // Full triathlon: ~12% swim, 55% bike, 33% run
-                new(RacePhase.Swim, 0, totalHours * 0.12),
-                new(RacePhase.Bike, totalHours * 0.12, totalHours * 0.67),
-                new(RacePhase.Run, totalHours * 0.67, totalHours)
+                new(RacePhase.Swim, 0, totalHours * TriathlonPhaseDistribution.FullSwimEnd),
+                new(RacePhase.Bike, totalHours * TriathlonPhaseDistribution.FullSwimEnd, totalHours * TriathlonPhaseDistribution.FullBikeEnd),
+                new(RacePhase.Run, totalHours * TriathlonPhaseDistribution.FullBikeEnd, totalHours)
             },
             RaceMode.Cycling => new List<PhaseSegment> { new(RacePhase.Bike, 0, totalHours) },
             _ => new List<PhaseSegment> { new(RacePhase.Run, 0, totalHours) }
@@ -418,13 +436,7 @@ public class AdvancedPlanGenerator
         List<ProductEnhanced> products)
     {
         if (!isEndPhase)
-        {
-            // Prefer light gels, fall back to regular gels if not available
-            var lightGels = products.Where(p => p.Texture == ProductTexture.LightGel).ToList();
-            if (lightGels.Any())
-                return lightGels;
-            return products.Where(p => p.Texture == ProductTexture.Gel);
-        }
+            return SelectLightGelsOrFallbackToRegular(products);
 
         if (isEndPhase)
             return products.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel);
@@ -448,6 +460,12 @@ public class AdvancedPlanGenerator
             ProductTexture.Bake => "Eat",
             _ => "Consume"
         };
+
+    private static IEnumerable<ProductEnhanced> SelectLightGelsOrFallbackToRegular(List<ProductEnhanced> products)
+    {
+        var lightGels = products.Where(p => p.Texture == ProductTexture.LightGel).ToList();
+        return lightGels.Any() ? lightGels : products.Where(p => p.Texture == ProductTexture.Gel);
+    }
 
     #endregion
 }

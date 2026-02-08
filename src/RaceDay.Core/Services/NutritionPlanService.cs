@@ -18,8 +18,12 @@ public class NutritionPlanService : INutritionPlanService
         List<Product> products,
         int intervalMin = 22)
     {
-        // Convert Product to ProductEnhanced for advanced planning
-        var enhancedProducts = products.Select(p => new ProductEnhanced(
+        var enhancedProducts = ConvertToEnhancedProducts(products);
+        return _planGenerator.GeneratePlan(race, athlete, enhancedProducts, intervalMin);
+    }
+
+    private static List<ProductEnhanced> ConvertToEnhancedProducts(List<Product> products) =>
+        products.Select(p => new ProductEnhanced(
             Name: p.Name,
             CarbsG: p.CarbsG,
             Texture: DetermineTexture(p.ProductType),
@@ -28,9 +32,6 @@ public class NutritionPlanService : INutritionPlanService
             VolumeMl: p.VolumeMl,
             ProductType: p.ProductType
         )).ToList();
-
-        return _planGenerator.GeneratePlan(race, athlete, enhancedProducts, intervalMin);
-    }
 
     /// <summary>
     /// Determine product texture from product type
