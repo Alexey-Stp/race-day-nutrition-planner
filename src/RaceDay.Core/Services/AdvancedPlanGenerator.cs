@@ -64,6 +64,7 @@ public class AdvancedPlanGenerator
         var carbsPerHour = CalculateCarbsPerHour(raceMode, weightKg);
         var totalCarbs = carbsPerHour * durationHours;
         var state = InitPlannerState(raceMode);
+        // S2245: Using seeded Random for reproducible test results across runs
         var random = new Random(ReproducibleRandomSeed);
 
         return new PlanningContext(
@@ -73,7 +74,7 @@ public class AdvancedPlanGenerator
 
     /// Add pre-race nutrition event (15 minutes before start)
     /// </summary>
-    private void AddPreRaceEvent(
+    private static void AddPreRaceEvent(
         PlanningContext context,
         List<ProductEnhanced> products,
         List<NutritionEvent> plan)
@@ -98,7 +99,7 @@ public class AdvancedPlanGenerator
     /// <summary>
     /// Add main race nutrition events across all slots
     /// </summary>
-    private void AddMainRaceEvents(
+    private static void AddMainRaceEvents(
         PlanningContext context,
         List<ProductEnhanced> products,
         List<NutritionEvent> plan)
@@ -128,7 +129,7 @@ public class AdvancedPlanGenerator
     /// <summary>
     /// Add backup nutrition event if carb target not met
     /// </summary>
-    private void AddBackupEventIfNeeded(
+    private static void AddBackupEventIfNeeded(
         PlanningContext context,
         List<ProductEnhanced> products,
         List<NutritionEvent> plan)

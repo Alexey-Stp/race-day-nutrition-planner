@@ -317,13 +317,11 @@ public static class ApiEndpointExtensions
 
         var excludeTypes = filter.ExcludeTypes?.ToList() ?? new List<string>();
 
-        foreach (var typeToExclude in RunExcludedProductTypes)
-        {
-            if (!excludeTypes.Any(t => t.Equals(typeToExclude, StringComparison.OrdinalIgnoreCase)))
-            {
-                excludeTypes.Add(typeToExclude);
-            }
-        }
+        var typesToAdd = RunExcludedProductTypes
+            .Where(typeToExclude => !excludeTypes.Any(t => t.Equals(typeToExclude, StringComparison.OrdinalIgnoreCase)))
+            .ToList();
+
+        excludeTypes.AddRange(typesToAdd);
 
         return filter with { ExcludeTypes = excludeTypes };
     }
@@ -383,7 +381,7 @@ public static class ApiEndpointExtensions
     /// <summary>
     /// Result object for product loading operations
     /// </summary>
-    private record ProductLoadResult(List<Product>? Products, IResult? Error)
+    private sealed record ProductLoadResult(List<Product>? Products, IResult? Error)
     {
         public static ProductLoadResult WithError(IResult error) => new(null, error);
     }

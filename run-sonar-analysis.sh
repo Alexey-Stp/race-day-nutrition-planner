@@ -30,7 +30,7 @@ dotnet clean
 echo -e "${YELLOW}Beginning SonarCloud analysis...${NC}"
 dotnet sonarscanner begin \
   /k:"Alexey-Stp_race-day-nutrition-planner" \
-  /o:"Alexey-Stp" \
+  /o:"alexey-stp" \
   /d:sonar.host.url="https://sonarcloud.io" \
   /d:sonar.login="$SONAR_TOKEN" \
   /d:sonar.cs.opencover.reportsPaths="coverage/**/coverage.opencover.xml"

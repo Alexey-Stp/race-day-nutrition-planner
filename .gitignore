@@ -498,3 +498,9 @@ $RECYCLE.BIN/
 # Example output files from test-nutrition-plan.sh
 example-outputs/*.json
 !example-outputs/README.md
+
+# SonarCloud / SonarQube
+.sonarqube/
+.sonarlint/
+*.bak
+.vscode/settings.json
