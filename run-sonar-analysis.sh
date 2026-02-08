@@ -9,10 +9,16 @@ NC='\033[0m' # No Color
 
 echo -e "${GREEN}Starting SonarCloud Analysis...${NC}"
 
-# Check if SONAR_TOKEN is set
+# Load .env file if it exists (for local development)
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# In CI/CD, SONAR_TOKEN comes from GitHub Secrets
 if [ -z "$SONAR_TOKEN" ]; then
-    echo -e "${RED}Error: SONAR_TOKEN environment variable is not set${NC}"
-    echo "Please set it with: export SONAR_TOKEN=your_token"
+    echo -e "${RED}Error: SONAR_TOKEN is not set${NC}"
+    echo "For local development: Create a .env file with SONAR_TOKEN=your_token"
+    echo "For CI/CD: Token is provided via GitHub Secrets"
     exit 1
 fi
 

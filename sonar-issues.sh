@@ -7,8 +7,20 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Load .env file if it exists (for local development)
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# In CI/CD, SONAR_TOKEN comes from GitHub Secrets
 PROJECT_KEY="Alexey-Stp_race-day-nutrition-planner"
-SONAR_TOKEN="${SONAR_TOKEN:-47d1537cfa6d7f4de10b554650f6d3e5a038587e}"
+
+if [ -z "$SONAR_TOKEN" ]; then
+    echo -e "${RED}Error: SONAR_TOKEN is not set${NC}"
+    echo "For local development: Create a .env file with SONAR_TOKEN=your_token"
+    echo "For CI/CD: Token is provided via GitHub Secrets"
+    exit 1
+fi
 
 echo -e "${BLUE}=== SonarCloud Issues ===${NC}\n"
 
