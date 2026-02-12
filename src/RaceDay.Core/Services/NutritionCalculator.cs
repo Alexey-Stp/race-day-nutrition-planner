@@ -22,6 +22,86 @@ public static class NutritionCalculator
         return new NutritionTargets(carbs, fluids, sodium);
     }
 
+    /// <summary>
+    /// Calculates comprehensive multi-nutrient targets with segment distribution
+    /// </summary>
+    public static MultiNutrientTargets CalculateMultiNutrientTargets(
+        RaceProfile race, 
+        AthleteProfile athlete, 
+        bool caffeineEnabled = false)
+    {
+        var baseTargets = CalculateTargets(race, athlete);
+        
+        // Calculate totals
+        double totalCarbs = baseTargets.CarbsGPerHour * race.DurationHours;
+        double totalSodium = baseTargets.SodiumMgPerHour * race.DurationHours;
+        double totalFluid = baseTargets.FluidsMlPerHour * race.DurationHours;
+        
+        // Calculate caffeine target (if enabled)
+        double totalCaffeine = 0;
+        if (caffeineEnabled)
+        {
+            // 3-6 mg/kg is typical range; use 4 mg/kg as moderate target, cap at 300mg
+            totalCaffeine = Math.Min(athlete.WeightKg * 4.0, 300);
+        }
+        
+        // Calculate segment-specific targets for triathlon
+        Dictionary<RacePhase, PhaseTargets>? segmentTargets = null;
+        if (race.SportType == SportType.Triathlon)
+        {
+            segmentTargets = CalculateTriathlonSegmentTargets(
+                race.DurationHours,
+                totalCarbs,
+                totalSodium,
+                totalFluid
+            );
+        }
+        
+        return new MultiNutrientTargets(
+            CarbsG: totalCarbs,
+            SodiumMg: totalSodium,
+            FluidMl: totalFluid,
+            CaffeineMg: totalCaffeine,
+            CarbsPerHour: baseTargets.CarbsGPerHour,
+            SodiumPerHour: baseTargets.SodiumMgPerHour,
+            FluidPerHour: baseTargets.FluidsMlPerHour,
+            SegmentTargets: segmentTargets
+        );
+    }
+    
+    private static Dictionary<RacePhase, PhaseTargets> CalculateTriathlonSegmentTargets(
+        double totalHours,
+        double totalCarbs,
+        double totalSodium,
+        double totalFluid)
+    {
+        // Estimate segment durations (percentages)
+        const double swimPercent = 0.20;
+        const double bikePercent = 0.50;
+        const double runPercent = 0.30;
+        
+        double swimDuration = totalHours * swimPercent * 60; // minutes
+        double bikeDuration = totalHours * bikePercent * 60;
+        double runDuration = totalHours * runPercent * 60;
+        
+        // Distribute carbs: 70% bike, 30% run (swim has minimal nutrition)
+        double bikeCarbs = totalCarbs * SchedulingConstraints.TriathlonBikeCarbRatio;
+        double runCarbs = totalCarbs * SchedulingConstraints.TriathlonRunCarbRatio;
+        
+        // Distribute sodium and fluid proportionally to duration
+        double bikeSodium = totalSodium * bikePercent;
+        double runSodium = totalSodium * runPercent;
+        double bikeFluid = totalFluid * bikePercent;
+        double runFluid = totalFluid * runPercent;
+        
+        return new Dictionary<RacePhase, PhaseTargets>
+        {
+            [RacePhase.Swim] = new PhaseTargets(0, 0, 0, swimDuration),
+            [RacePhase.Bike] = new PhaseTargets(bikeCarbs, bikeSodium, bikeFluid, bikeDuration),
+            [RacePhase.Run] = new PhaseTargets(runCarbs, runSodium, runFluid, runDuration)
+        };
+    }
+
     private static double CalculateCarbohydrates(RaceProfile race)
     {
         double carbs = race.Intensity switch

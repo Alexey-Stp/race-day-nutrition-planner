@@ -7,7 +7,7 @@ using RaceDay.Core.Repositories;
 /// </summary>
 public class NutritionPlanService : INutritionPlanService
 {
-    private readonly AdvancedPlanGenerator _planGenerator = new();
+    private readonly PlanGenerator _planGenerator = new();
 
     /// <summary>
     /// Generates an advanced nutrition plan with sport-specific optimization
@@ -26,10 +26,36 @@ public class NutritionPlanService : INutritionPlanService
             HasCaffeine: p.CaffeineMg.HasValue && p.CaffeineMg > 0,
             CaffeineMg: p.CaffeineMg ?? 0,
             VolumeMl: p.VolumeMl,
-            ProductType: p.ProductType
+            ProductType: p.ProductType,
+            SodiumMg: p.SodiumMg
         )).ToList();
 
         return _planGenerator.GeneratePlan(race, athlete, enhancedProducts, intervalMin);
+    }
+
+    /// <summary>
+    /// Generates an advanced nutrition plan with diagnostics (warnings and errors)
+    /// </summary>
+    public PlanResult GeneratePlanWithDiagnostics(
+        RaceProfile race,
+        AthleteProfile athlete,
+        List<Product> products,
+        int intervalMin = 22,
+        bool caffeineEnabled = false)
+    {
+        // Convert Product to ProductEnhanced for advanced planning
+        var enhancedProducts = products.Select(p => new ProductEnhanced(
+            Name: p.Name,
+            CarbsG: p.CarbsG,
+            Texture: DetermineTexture(p.ProductType),
+            HasCaffeine: p.CaffeineMg.HasValue && p.CaffeineMg > 0,
+            CaffeineMg: p.CaffeineMg ?? 0,
+            VolumeMl: p.VolumeMl,
+            ProductType: p.ProductType,
+            SodiumMg: p.SodiumMg
+        )).ToList();
+
+        return _planGenerator.GeneratePlanWithDiagnostics(race, athlete, enhancedProducts, intervalMin, caffeineEnabled);
     }
 
     /// <summary>

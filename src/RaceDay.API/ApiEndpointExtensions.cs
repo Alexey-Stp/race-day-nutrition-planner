@@ -290,17 +290,19 @@ public static class ApiEndpointExtensions
 
             // Generate advanced plan using the service
             var service = new NutritionPlanService();
-            var nutritionEvents = service.GeneratePlan(race, athlete, products);
+            var planResult = service.GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled: request.CaffeineEnabled ?? false);
 
             // Calculate shopping summary using extension
-            var shoppingSummary = nutritionEvents.CalculateShoppingList();
+            var shoppingSummary = planResult.Events.CalculateShoppingList();
 
-            // Create response with advanced plan data and shopping summary
+            // Create response with advanced plan data, diagnostics, and shopping summary
             var response = new AdvancedPlanResponse(
                 race,
                 athlete,
-                nutritionEvents,
-                shoppingSummary
+                planResult.Events,
+                shoppingSummary,
+                planResult.Warnings,
+                planResult.Errors
             );
 
             return Results.Ok(response);
@@ -432,7 +434,8 @@ public record PlanGenerationRequest(
     IntensityLevel Intensity,
     List<ProductRequest>? Products = null,
     ProductFilter? Filter = null,
-    int? IntervalMin = null
+    int? IntervalMin = null,
+    bool? CaffeineEnabled = null
 );
 
 public record ProductRequest(
@@ -451,5 +454,7 @@ public record AdvancedPlanResponse(
     RaceProfile Race,
     AthleteProfile Athlete,
     List<NutritionEvent> NutritionSchedule,
-    ShoppingSummary? ShoppingSummary = null
+    ShoppingSummary? ShoppingSummary = null,
+    List<string>? Warnings = null,
+    List<string>? Errors = null
 );

@@ -12,6 +12,7 @@ namespace RaceDay.Core.Models;
 /// <param name="TotalCarbsSoFar">Cumulative carbs consumed up to this point</param>
 /// <param name="HasCaffeine">Whether this product contains caffeine</param>
 /// <param name="CaffeineMg">Amount of caffeine in milligrams</param>
+/// <param name="TotalCaffeineSoFar">Cumulative caffeine consumed up to this point</param>
 public record NutritionEvent(
     int TimeMin,
     RacePhase Phase,
@@ -21,5 +22,6 @@ public record NutritionEvent(
     string Action,
     double TotalCarbsSoFar,
     bool HasCaffeine = false,
-    double? CaffeineMg = null
+    double? CaffeineMg = null,
+    double TotalCaffeineSoFar = 0
 );

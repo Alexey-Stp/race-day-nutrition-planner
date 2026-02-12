@@ -10,6 +10,7 @@ namespace RaceDay.Core.Models;
 /// <param name="CaffeineMg">Caffeine content in milligrams (0 if no caffeine)</param>
 /// <param name="VolumeMl">Volume in milliliters (for drinks)</param>
 /// <param name="ProductType">Type category (e.g., "Electrolyte", "Energy")</param>
+/// <param name="SodiumMg">Sodium content in milligrams</param>
 public record ProductEnhanced(
     string Name,
     double CarbsG,
@@ -17,5 +18,6 @@ public record ProductEnhanced(
     bool HasCaffeine,
     double CaffeineMg,
     double VolumeMl = 0,
-    string ProductType = ""
+    string ProductType = "",
+    double SodiumMg = 0
 );

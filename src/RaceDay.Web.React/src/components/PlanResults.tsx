@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import type { RaceNutritionPlan } from '../types';
+import type { RaceNutritionPlan, SportType, TemperatureCondition, IntensityLevel } from '../types';
 import { formatDuration, formatPhase } from '../utils';
 import { api } from '../api';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
+  useCaffeine: boolean;
+  athleteWeight: number;
+  sportType: SportType;
+  duration: number;
+  temperature: TemperatureCondition;
+  intensity: IntensityLevel;
 }
 
 interface NutritionTargets {
@@ -70,9 +76,18 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label
   );
 };
 
-export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
+export const PlanResults: React.FC<PlanResultsProps> = ({ 
+  plan, 
+  useCaffeine, 
+  athleteWeight, 
+  sportType, 
+  duration, 
+  temperature, 
+  intensity 
+}) => {
   const [targets, setTargets] = useState<NutritionTargets | null>(null);
   const [loadingTargets, setLoadingTargets] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     const fetchTargets = async () => {
@@ -102,13 +117,104 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
     return null;
   }
 
-  // Group schedule items by time
-  const schedule = plan.nutritionSchedule;
+  // Filter schedule based on caffeine preference
+  const schedule = useCaffeine 
+    ? plan.nutritionSchedule 
+    : plan.nutritionSchedule.filter(event => !event.hasCaffeine);
 
-  // Calculate totals
+  // Calculate totals  
   const totalCarbs = schedule.length > 0 ? schedule[schedule.length - 1].totalCarbsSoFar : 0;
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
-  const duration = plan.race?.durationHours || 0;
+  const raceDuration = plan.race?.durationHours || 0;
+
+  // Format title with race and athlete info
+  const getSportTypeDisplay = (type: string) => {
+    switch(type) {
+      case 'Run': return '🏃';
+      case 'Bike': return '🚴';
+      case 'Triathlon': return '🏊‍♂️🚴🏃';
+      default: return type;
+    }
+  };
+
+  const getTemperatureDisplay = (temp: string) => {
+    switch(temp) {
+      case 'Cold': return '❄️ Cold';
+      case 'Moderate': return '🌤️ Moderate';
+      case 'Hot': return '🌡️ Hot';
+      default: return temp;
+    }
+  };
+
+  const planTitle = `Race Nutrition Plan: ${getSportTypeDisplay(sportType)} ${sportType} | ${athleteWeight}kg | ${duration}h | ${intensity} | ${getTemperatureDisplay(temperature)}`;
+
+  // Function to copy plan to clipboard
+  const copyPlanToClipboard = () => {
+    const planText = generatePlanText();
+    navigator.clipboard.writeText(planText).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  };
+
+  // Generate formatted text for the plan
+  const generatePlanText = () => {
+    const lines: string[] = [];
+    
+    lines.push('═══════════════════════════════════════════════');
+    lines.push('           RACE NUTRITION PLAN');
+    lines.push('═══════════════════════════════════════════════');
+    lines.push('');
+    lines.push('ATHLETE INFORMATION');
+    lines.push(`  Weight: ${athleteWeight} kg`);
+    lines.push('');
+    lines.push('RACE INFORMATION');
+    lines.push(`  Sport: ${sportType}`);
+    lines.push(`  Duration: ${duration} hours`);
+    lines.push(`  Intensity: ${intensity}`);
+    lines.push(`  Temperature: ${temperature}`);
+    lines.push('');
+    
+    if (targets) {
+      lines.push('NUTRITION TARGETS');
+      lines.push(`  Carbs Target: ${targets.carbsGPerHour.toFixed(0)}g/h × ${raceDuration.toFixed(1)}h = ${targets.totalCarbsG.toFixed(0)}g`);
+      lines.push(`  Plan Total Carbs: ${totalCarbs.toFixed(0)}g`);
+      if (useCaffeine) {
+        lines.push(`  Total Caffeine: ${totalCaffeine.toFixed(0)}mg`);
+      }
+      lines.push('');
+    }
+    
+    lines.push('NUTRITION SCHEDULE');
+    lines.push('───────────────────────────────────────────────');
+    lines.push('');
+    
+    schedule.forEach((event, index) => {
+      const timeStr = formatDuration(event.timeMin / 60);
+      const phaseStr = formatPhase(event.phase);
+      lines.push(`[${timeStr}] ${phaseStr}`);
+      lines.push(`  Product: ${event.productName}`);
+      lines.push(`  Action: ${event.action}`);
+      lines.push(`  Portions: ${event.amountPortions}`);
+      lines.push(`  Cumulative Carbs: ${event.totalCarbsSoFar.toFixed(0)}g`);
+      if (event.hasCaffeine && event.caffeineMg) {
+        lines.push(`  Caffeine: ${event.caffeineMg}mg`);
+      }
+      lines.push(`  Note: ${event.phaseDescription}`);
+      if (index < schedule.length - 1) {
+        lines.push('');
+      }
+    });
+    
+    lines.push('');
+    lines.push('═══════════════════════════════════════════════');
+    lines.push(`Generated: ${new Date().toLocaleString()}`);
+    lines.push('═══════════════════════════════════════════════');
+    
+    return lines.join('\n');
+  };
 
   // Calculate percentages based on loaded targets
   const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
@@ -120,7 +226,17 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
   return (
     <div className="results-section" key={planKey}>
       <div className="results-card">
-        <h2>Race Nutrition Plan</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2 style={{ margin: 0 }}>{planTitle}</h2>
+          <button 
+            onClick={copyPlanToClipboard}
+            className="btn btn-secondary"
+            style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+            title="Copy plan to clipboard"
+          >
+            {copySuccess ? '✓ Copied!' : '📋 Copy Plan'}
+          </button>
+        </div>
         
         {schedule.length === 0 ? (
           <p className="empty-message">No schedule generated</p>
@@ -136,7 +252,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
                   <div className="target-info">
                     <div className="info-item">
                       <span className="info-label">Target Carbs (per hour):</span>
-                      <span className="info-value">{targets.carbsGPerHour.toFixed(0)}g/h × {duration.toFixed(1)}h = {targets.totalCarbsG.toFixed(0)}g</span>
+                      <span className="info-value">{targets.carbsGPerHour.toFixed(0)}g/h × {raceDuration.toFixed(1)}h = {targets.totalCarbsG.toFixed(0)}g</span>
                     </div>
                   </div>
                   

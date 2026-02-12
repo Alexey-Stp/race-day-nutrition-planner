@@ -16,6 +16,7 @@ function App() {
   const [duration, setDuration] = useState(1.5);
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
+  const [useCaffeine, setUseCaffeine] = useState(true);
 
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
@@ -106,6 +107,17 @@ function App() {
 
           <BrandSelector onBrandsSelected={setSelectedProducts} />
 
+          <div className="form-card">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={useCaffeine}
+                onChange={(e) => setUseCaffeine(e.target.checked)}
+              />
+              <span>Include caffeine products</span>
+            </label>
+          </div>
+
           {error && <div className="error-message" style={{ marginTop: '10px' }}>{error}</div>}
 
           <button 
@@ -121,7 +133,15 @@ function App() {
         <div className="results-container">
           {plan ? (
             <>
-              <PlanResults plan={plan} />
+              <PlanResults 
+                plan={plan} 
+                useCaffeine={useCaffeine}
+                athleteWeight={athleteWeight}
+                sportType={sportType}
+                duration={duration}
+                temperature={temperature}
+                intensity={intensity}
+              />
               <ShoppingList plan={plan} />
             </>
           ) : (

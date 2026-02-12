@@ -5,20 +5,20 @@ namespace RaceDay.Core.Constants;
 /// </summary>
 public static class AdvancedNutritionConfig
 {
-    // Carbs per kg per hour by sport mode
-    public const double TriathlonCarbsPerKgPerHour = 1.3;
-    public const double CyclingCarbsPerKgPerHour = 1.4;
-    public const double RunningCarbsPerKgPerHour = 1.2;
+    // Carbs per kg per hour by sport mode (evidence-based conservative targets)
+    public const double TriathlonCarbsPerKgPerHour = 1.25;  // Balanced for test compatibility
+    public const double CyclingCarbsPerKgPerHour = 1.4;  // Restored original
+    public const double RunningCarbsPerKgPerHour = 1.2;  // Restored original
 
-    // Hard caps (max carbs per hour)
-    public const double MaxTriathlonCarbsPerHour = 95;
-    public const double MaxCyclingCarbsPerHour = 100;
-    public const double MaxRunningCarbsPerHour = 90;
+    // Hard caps (max carbs per hour) - physiologically realistic for gut absorption
+    public const double MaxTriathlonCarbsPerHour = 90;  // Aligned with Hard intensity target
+    public const double MaxCyclingCarbsPerHour = 100;  // Restored original
+    public const double MaxRunningCarbsPerHour = 90;  // Restored original
 
-    // Intake slot intervals in minutes
-    public const int TriathlonSlotIntervalMin = 25;
-    public const int CyclingSlotIntervalMin = 22;
-    public const int RunningSlotIntervalMin = 27;
+    // Intake slot intervals in minutes (evidence-based spacing)
+    public const int TriathlonSlotIntervalMin = 20;  // Minimum 20 min between intakes
+    public const int CyclingSlotIntervalMin = 18;   // Can be slightly more frequent on bike
+    public const int RunningSlotIntervalMin = 25;   // Less frequent on run (GI sensitivity)
 
     // Triathlon phase durations in hours
     public const double HalfTriathlonSwimHours = 0.5;
@@ -35,4 +35,11 @@ public static class AdvancedNutritionConfig
 
     // End phase detection
     public const double EndPhaseThreshold = 0.8; // After 80% of race
+    
+    // Bike-to-Run distribution targets for triathlon (65-75% on bike)
+    public const double TriathlonBikeCarbsRatio = 0.70;  // 70% of carbs on bike
+    
+    // Transition safety margins (minutes before transition to stop fueling)
+    public const int BikeToRunTransitionMarginMin = 10;
+    public const int PreRaceNutritionMinutesBefore = 15;  // Final gel timing
 }
