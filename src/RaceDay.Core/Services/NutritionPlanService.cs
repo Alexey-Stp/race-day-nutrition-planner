@@ -59,6 +59,7 @@ public class NutritionPlanService : INutritionPlanService
         return _planGenerator.GeneratePlanWithDiagnostics(race, athlete, enhancedProducts, intervalMin, caffeineEnabled);
     }
 
+
     /// <summary>
     /// Determine product texture from product type
     /// </summary>

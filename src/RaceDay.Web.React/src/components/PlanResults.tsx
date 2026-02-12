@@ -216,6 +216,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
     return lines.join('\n');
   };
 
+
   // Calculate percentages based on loaded targets
   const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
   const caffeinePercentage = (totalCaffeine / MAX_CAFFEINE_MG) * 100;
