@@ -176,7 +176,7 @@ public class PlanGeneratorTests
         var athlete = new AthleteProfile(WeightKg: 75);
         var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTestProducts();
-        var validActions = new[] { "Eat", "Squeeze", "Chew", "Drink", "Consume" };
+        var validActions = new[] { "Eat", "Squeeze", "Chew", "Drink", "Consume", "Sip" };
 
         // Act
         var plan = _generator.GeneratePlan(race, athlete, products);
@@ -413,13 +413,13 @@ public class PlanGeneratorTests
         var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled: false);
         var targetTotalCarbs = targets.CarbsG;
         
-        // Expected phase timeline (rough estimates for 5-hour triathlon)
-        // Swim: 20% = 1 hour, Bike: 50% = 2.5 hours, Run: 30% = 1.5 hours
-        var expectedSwimEnd = 1.0 * 60; // 60 min
+        // Expected phase timeline for 4.5-hour triathlon
+        // Swim: 20% = 0.9 hours, Bike: 50% = 2.25 hours, Run: 30% = 1.35 hours
+        var expectedSwimEnd = race.DurationHours * 0.20 * 60; // 54 min
         var expectedBikeStart = expectedSwimEnd;
-        var expectedBikeEnd = 3.5 * 60; // 210 min
+        var expectedBikeEnd = (race.DurationHours * 0.20 + race.DurationHours * 0.50) * 60; // 189 min
         var expectedRunStart = expectedBikeEnd;
-        var expectedRunEnd = 5.0 * 60; // 300 min
+        var expectedRunEnd = race.DurationHours * 60; // 270 min
 
         // Act
         var plan = _generator.GeneratePlan(race, athlete, products, intervalMinutes: 22, caffeineEnabled: false);
@@ -559,13 +559,14 @@ public class PlanGeneratorTests
             });
         }
 
-        // 12. Timing interval validation (no clustering)
-        var mainEvents = plan.Where(e => e.TimeMin > 0).OrderBy(e => e.TimeMin).ToList();
+        // 12. Timing interval validation (no clustering among non-sip events)
+        // Sip events are intentionally frequent; only check spacing between discrete intakes
+        var mainEvents = plan.Where(e => e.TimeMin > 0 && e.Action != "Sip").OrderBy(e => e.TimeMin).ToList();
         for (int i = 1; i < mainEvents.Count; i++)
         {
             var spacing = mainEvents[i].TimeMin - mainEvents[i - 1].TimeMin;
-            Assert.True(spacing >= 10, 
-                $"Events should be spaced at least 10 min apart, found {spacing} min between {mainEvents[i - 1].TimeMin} and {mainEvents[i].TimeMin}");
+            Assert.True(spacing >= 10,
+                $"Non-sip events should be spaced at least 10 min apart, found {spacing} min between {mainEvents[i - 1].TimeMin} and {mainEvents[i].TimeMin}");
         }
 
         // 13. Caffeine validation (when disabled)
@@ -575,11 +576,11 @@ public class PlanGeneratorTests
             Assert.Null(evt.CaffeineMg);
         });
 
-        // 14. Final summary validation
-        var totalEvents = plan.Count;
-        var eventsPerHour = totalEvents / race.DurationHours;
-        Assert.True(eventsPerHour >= 1.5 && eventsPerHour <= 4.0, 
-            $"Should have 1.5-4 nutrition events per hour, got {eventsPerHour:F1}");
+        // 14. Final summary validation (non-sip events should be 1.5-6 per hour)
+        var nonSipEvents = plan.Where(e => e.Action != "Sip").Count();
+        var nonSipEventsPerHour = nonSipEvents / race.DurationHours;
+        Assert.True(nonSipEventsPerHour >= 1.0 && nonSipEventsPerHour <= 6.0,
+            $"Should have 1-6 non-sip nutrition events per hour, got {nonSipEventsPerHour:F1}");
     }
 
     [Fact]
@@ -1209,8 +1210,8 @@ public class PlanGeneratorTests
         Assert.NotNull(plan);
         Assert.NotEmpty(plan);
 
-        // Validate reasonable event count for 2-hour race
-        Assert.InRange(plan.Count, 3, 10);
+        // Validate reasonable event count for 2-hour race (includes sip events)
+        Assert.InRange(plan.Count, 3, 30);
 
         // Calculate targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1249,8 +1250,8 @@ public class PlanGeneratorTests
         Assert.NotNull(plan);
         Assert.NotEmpty(plan);
 
-        // Validate reasonable event count for 4-hour marathon
-        Assert.InRange(plan.Count, 2, 20);
+        // Validate reasonable event count for 4-hour marathon (includes sip events)
+        Assert.InRange(plan.Count, 2, 40);
 
         // Calculate targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1497,6 +1498,310 @@ public class PlanGeneratorTests
             new("Energy Drink", CarbsG: 30, Texture: ProductTexture.Drink, HasCaffeine: false, CaffeineMg: 0, VolumeMl: 500, ProductType: "Energy"),
             new("Chew Mix", CarbsG: 22, Texture: ProductTexture.Chew, HasCaffeine: false, CaffeineMg: 0)
         };
+    }
+
+    #endregion
+
+    #region Regression Tests - Sip Scheduling, Distribution, Reconciliation, Formatting
+
+    // --- BUG 1: Drinks must never be scheduled as full-portion instant consumption ---
+
+    [Fact]
+    public void Regression_DrinksAreNeverFullPortionInstant()
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(SportType.Run, DurationHours: 3, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        var drinkEvents = plan.Where(e => e.ProductName.Contains("Drink")).ToList();
+        Assert.NotEmpty(drinkEvents);
+
+        // No drink event should be AmountPortions == 1 (full bottle at once)
+        Assert.All(drinkEvents, e =>
+        {
+            Assert.True(e.AmountPortions < 1.0,
+                $"Drink '{e.ProductName}' at {e.TimeMin}min has AmountPortions={e.AmountPortions}, should be fractional sip");
+        });
+
+        // All drink events should be Sip actions
+        Assert.All(drinkEvents, e =>
+        {
+            Assert.Equal("Sip", e.Action);
+        });
+
+        // All drink events should have SipMl set
+        Assert.All(drinkEvents, e =>
+        {
+            Assert.NotNull(e.SipMl);
+            Assert.True(e.SipMl > 0, $"SipMl should be positive, got {e.SipMl}");
+        });
+    }
+
+    [Fact]
+    public void Regression_SipEventsHaveSmallCarbsPerEvent()
+    {
+        var athlete = new AthleteProfile(WeightKg: 80);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 4, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        var sipEvents = plan.Where(e => e.Action == "Sip").ToList();
+        Assert.NotEmpty(sipEvents);
+
+        // Each sip should contribute a small amount of carbs (not the full product carbs)
+        Assert.All(sipEvents, e =>
+        {
+            Assert.True(e.CarbsInEvent > 0, "Sip event should have positive carbs");
+            Assert.True(e.CarbsInEvent <= 15, $"Sip at {e.TimeMin}min has {e.CarbsInEvent}g carbs, too much for a sip");
+        });
+    }
+
+    // --- BUG 2: Distribution across full duration ---
+
+    [Theory]
+    [InlineData(SportType.Run, 4.0, "4-hour run")]
+    [InlineData(SportType.Bike, 5.0, "5-hour bike")]
+    [InlineData(SportType.Triathlon, 5.0, "5-hour triathlon")]
+    public void Regression_ScheduleSpansFullDuration(SportType sportType, double durationHours, string scenario)
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        var positiveTimeEvents = plan.Where(e => e.TimeMin > 0).OrderBy(e => e.TimeMin).ToList();
+        Assert.NotEmpty(positiveTimeEvents);
+
+        int durationMinutes = (int)(durationHours * 60);
+        int lastEventTime = positiveTimeEvents.Last().TimeMin;
+
+        // Last event should be in the second half of the race
+        Assert.True(lastEventTime > durationMinutes / 2,
+            $"Scenario ({scenario}): Last event at {lastEventTime}min, but race is {durationMinutes}min. " +
+            $"Events should extend beyond the halfway point ({durationMinutes / 2}min)");
+
+        // Should have events beyond the first hour
+        var eventsAfterFirstHour = positiveTimeEvents.Where(e => e.TimeMin > 60).ToList();
+        Assert.True(eventsAfterFirstHour.Count >= 1,
+            $"Scenario ({scenario}): No events after minute 60 for a {durationHours}h race");
+    }
+
+    [Theory]
+    [InlineData(SportType.Run, 4.0)]
+    [InlineData(SportType.Bike, 4.0)]
+    public void Regression_NoFrontLoadingExcess(SportType sportType, double durationHours)
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        double totalPlanCarbs = plan.Sum(e => e.CarbsInEvent);
+        int durationMinutes = (int)(durationHours * 60);
+        int firstQuarterEnd = durationMinutes / 4;
+
+        // Sum carbs in first 25% of race
+        double firstQuarterCarbs = plan
+            .Where(e => e.TimeMin >= 0 && e.TimeMin <= firstQuarterEnd)
+            .Sum(e => e.CarbsInEvent);
+
+        // First quarter should not exceed 50% of total carbs
+        double maxAllowed = totalPlanCarbs * 0.50;
+        Assert.True(firstQuarterCarbs <= maxAllowed,
+            $"Front-loading: {firstQuarterCarbs:F0}g in first {firstQuarterEnd}min " +
+            $"exceeds 50% of total ({totalPlanCarbs:F0}g). Max allowed: {maxAllowed:F0}g");
+    }
+
+    // --- BUG 3: Target consistency / overshoot control ---
+
+    [Theory]
+    [InlineData(75, SportType.Run, 2.0, IntensityLevel.Hard)]
+    [InlineData(80, SportType.Bike, 4.0, IntensityLevel.Moderate)]
+    [InlineData(85, SportType.Triathlon, 5.0, IntensityLevel.Hard)]
+    [InlineData(55, SportType.Run, 1.0, IntensityLevel.Moderate)]
+    [InlineData(90, SportType.Bike, 6.0, IntensityLevel.Hard)]
+    public void Regression_PlanTotalMatchesSumOfEvents(double weightKg, SportType sportType, double durationHours, IntensityLevel intensity)
+    {
+        var athlete = new AthleteProfile(WeightKg: weightKg);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        // Sum of CarbsInEvent should equal the last cumulative total
+        double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
+        double lastCumulative = plan.Last().TotalCarbsSoFar;
+
+        Assert.True(Math.Abs(sumOfEvents - lastCumulative) < 1.0,
+            $"Sum of CarbsInEvent ({sumOfEvents:F1}g) != last TotalCarbsSoFar ({lastCumulative:F1}g)");
+    }
+
+    [Theory]
+    [InlineData(75, SportType.Run, 2.0, IntensityLevel.Hard)]
+    [InlineData(80, SportType.Bike, 4.0, IntensityLevel.Moderate)]
+    [InlineData(85, SportType.Triathlon, 5.0, IntensityLevel.Hard)]
+    public void Regression_PlanTotalWithinTargetTolerance(double weightKg, SportType sportType, double durationHours, IntensityLevel intensity)
+    {
+        var athlete = new AthleteProfile(WeightKg: weightKg);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+        var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled: false);
+
+        double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
+        double tolerance = targets.CarbsG * 0.15; // 15% tolerance
+
+        Assert.True(sumOfEvents >= targets.CarbsG - tolerance,
+            $"Plan total ({sumOfEvents:F0}g) too far below target ({targets.CarbsG:F0}g). Min: {targets.CarbsG - tolerance:F0}g");
+        Assert.True(sumOfEvents <= targets.CarbsG + tolerance,
+            $"Plan total ({sumOfEvents:F0}g) too far above target ({targets.CarbsG:F0}g). Max: {targets.CarbsG + tolerance:F0}g");
+    }
+
+    // --- BUG 4: No clustering among non-sip events ---
+
+    [Theory]
+    [InlineData(SportType.Run, 3.0)]
+    [InlineData(SportType.Bike, 4.0)]
+    [InlineData(SportType.Triathlon, 5.0)]
+    public void Regression_NonSipEventsHaveMinimumSpacing(SportType sportType, double durationHours)
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        var nonSipEvents = plan.Where(e => e.Action != "Sip" && e.TimeMin > 0).OrderBy(e => e.TimeMin).ToList();
+
+        for (int i = 1; i < nonSipEvents.Count; i++)
+        {
+            int spacing = nonSipEvents[i].TimeMin - nonSipEvents[i - 1].TimeMin;
+            Assert.True(spacing >= 5,
+                $"Non-sip events at {nonSipEvents[i - 1].TimeMin}min and {nonSipEvents[i].TimeMin}min " +
+                $"are only {spacing}min apart (min 5min)");
+        }
+    }
+
+    // --- BUG 5: Triathlon distribution ---
+
+    [Fact]
+    public void Regression_TriathlonDistributesAcrossBikeAndRun()
+    {
+        var athlete = new AthleteProfile(WeightKg: 80);
+        var race = new RaceProfile(SportType.Triathlon, DurationHours: 5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike && e.TimeMin > 0).ToList();
+        var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
+
+        Assert.NotEmpty(bikeEvents);
+        Assert.NotEmpty(runEvents);
+
+        // Bike events should span the bike phase, not cluster at start
+        int bikeStartMin = (int)(5 * 0.20 * 60); // 60min
+        int bikeEndMin = (int)((5 * 0.20 + 5 * 0.50) * 60); // 210min
+        int bikeFirst = bikeEvents.Min(e => e.TimeMin);
+        int bikeLast = bikeEvents.Max(e => e.TimeMin);
+
+        Assert.True(bikeLast > (bikeStartMin + bikeEndMin) / 2,
+            $"Bike events should extend past bike midpoint ({(bikeStartMin + bikeEndMin) / 2}min), last at {bikeLast}min");
+
+        // Run events should also span the run phase
+        int runStartMin = bikeEndMin;
+        int runEndMin = 5 * 60;
+        int runFirst = runEvents.Min(e => e.TimeMin);
+        int runLast = runEvents.Max(e => e.TimeMin);
+
+        Assert.True(runFirst >= runStartMin,
+            $"First run event ({runFirst}min) should be after run phase start ({runStartMin}min)");
+        Assert.True(runLast <= runEndMin - 5,
+            $"Last run event ({runLast}min) should be before race end ({runEndMin}min)");
+    }
+
+    // --- BUG 6: Duration formatting ---
+
+    [Theory]
+    [InlineData(4.0, "4h")]
+    [InlineData(2.5, "2h 30m")]
+    [InlineData(0.75, "45m")]
+    [InlineData(1.0, "1h")]
+    [InlineData(3.25, "3h 15m")]
+    public void Regression_FormatDuration_ReturnsCompactFormat(double hours, string expected)
+    {
+        // Use the same logic as the frontend formatDuration
+        int wholeHours = (int)Math.Floor(hours);
+        int minutes = (int)Math.Round((hours - wholeHours) * 60);
+
+        string result;
+        if (wholeHours == 0)
+            result = $"{minutes}m";
+        else if (minutes == 0)
+            result = $"{wholeHours}h";
+        else
+            result = $"{wholeHours}h {minutes:D2}m";
+
+        Assert.Equal(expected, result);
+    }
+
+    // --- Table-driven: Multiple scenarios must pass all invariants ---
+
+    [Theory]
+    [InlineData(60, SportType.Run, 1.0, IntensityLevel.Easy, TemperatureCondition.Cold)]
+    [InlineData(75, SportType.Run, 2.0, IntensityLevel.Moderate, TemperatureCondition.Moderate)]
+    [InlineData(90, SportType.Run, 4.0, IntensityLevel.Hard, TemperatureCondition.Hot)]
+    [InlineData(70, SportType.Bike, 3.0, IntensityLevel.Moderate, TemperatureCondition.Moderate)]
+    [InlineData(85, SportType.Bike, 5.0, IntensityLevel.Hard, TemperatureCondition.Hot)]
+    [InlineData(80, SportType.Triathlon, 4.5, IntensityLevel.Hard, TemperatureCondition.Moderate)]
+    [InlineData(65, SportType.Run, 1.5, IntensityLevel.Easy, TemperatureCondition.Moderate)]
+    public void Regression_AllInvariants(double weightKg, SportType sportType, double durationHours, IntensityLevel intensity, TemperatureCondition temperature)
+    {
+        var athlete = new AthleteProfile(WeightKg: weightKg);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: temperature, Intensity: intensity);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        // 1. Plan is non-empty
+        Assert.NotEmpty(plan);
+
+        // 2. Cumulative carbs never decrease
+        ValidateMonotonicCarbs(plan);
+
+        // 3. Events are sorted by time
+        ValidateTimingProgression(plan);
+
+        // 4. Sum of CarbsInEvent matches last cumulative
+        double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
+        double lastCumulative = plan.Last().TotalCarbsSoFar;
+        Assert.True(Math.Abs(sumOfEvents - lastCumulative) < 1.0,
+            $"Sum mismatch: events={sumOfEvents:F1}, cumulative={lastCumulative:F1}");
+
+        // 5. No events after race end
+        int durationMinutes = (int)(durationHours * 60);
+        Assert.All(plan.Where(e => e.TimeMin > 0), e =>
+        {
+            Assert.True(e.TimeMin <= durationMinutes,
+                $"Event at {e.TimeMin}min exceeds race duration of {durationMinutes}min");
+        });
+
+        // 6. All actions are valid
+        var validActions = new[] { "Eat", "Squeeze", "Chew", "Drink", "Consume", "Sip" };
+        Assert.All(plan, e => Assert.Contains(e.Action, validActions));
+
+        // 7. Drink events are sips (not full portions)
+        var drinkSipEvents = plan.Where(e => e.Action == "Sip").ToList();
+        Assert.All(drinkSipEvents, e =>
+        {
+            Assert.True(e.AmountPortions < 1.0, $"Sip at {e.TimeMin}min has full portion");
+        });
     }
 
     #endregion

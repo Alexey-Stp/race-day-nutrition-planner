@@ -17,13 +17,13 @@ function App() {
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
   const [useCaffeine, setUseCaffeine] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if all required fields are filled
   const isFormValid = () => {
     return (
       athleteWeight > 0 &&
@@ -77,7 +77,6 @@ function App() {
     <div className="planner-container">
       <div className="header">
         <h1>Race Day Nutrition Planner</h1>
-        <p className="subtitle">Personalized nutrition strategy</p>
       </div>
 
       <div className="content">
@@ -100,41 +99,56 @@ function App() {
             onIntensityChange={setIntensity}
           />
 
-          <TemperatureSelector
-            temperature={temperature}
-            onTemperatureChange={setTemperature}
-          />
-
           <BrandSelector onBrandsSelected={setSelectedProducts} />
 
-          <div className="form-card">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={useCaffeine}
-                onChange={(e) => setUseCaffeine(e.target.checked)}
-              />
-              <span>Include caffeine products</span>
-            </label>
+          {/* Advanced settings accordion */}
+          <div className="form-card accordion-card">
+            <button
+              className="accordion-toggle"
+              onClick={() => setAdvancedOpen(!advancedOpen)}
+              type="button"
+            >
+              <span>Advanced Settings</span>
+              <span className={`accordion-arrow ${advancedOpen ? 'open' : ''}`}>▾</span>
+            </button>
+            {advancedOpen && (
+              <div className="accordion-content">
+                <TemperatureSelector
+                  temperature={temperature}
+                  onTemperatureChange={setTemperature}
+                />
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={useCaffeine}
+                    onChange={(e) => setUseCaffeine(e.target.checked)}
+                  />
+                  <span>Include caffeine products</span>
+                </label>
+              </div>
+            )}
           </div>
 
-          {error && <div className="error-message" style={{ marginTop: '10px' }}>{error}</div>}
+          {error && <div className="error-message">{error}</div>}
 
-          <button 
-            onClick={generatePlan} 
-            className="btn btn-primary btn-lg btn-calculate"
-            disabled={loading || !isFormValid()}
-          >
-            {loading ? 'Generating...' : 'Generate Plan'}
-          </button>
+          {/* Sticky generate button */}
+          <div className="sticky-action-row">
+            <button
+              onClick={generatePlan}
+              className="btn btn-primary btn-lg btn-calculate"
+              disabled={loading || !isFormValid()}
+            >
+              {loading ? 'Generating...' : 'Generate Plan'}
+            </button>
+          </div>
         </div>
 
         {/* Right Section - Results */}
         <div className="results-container">
           {plan ? (
             <>
-              <PlanResults 
-                plan={plan} 
+              <PlanResults
+                plan={plan}
                 useCaffeine={useCaffeine}
                 athleteWeight={athleteWeight}
                 sportType={sportType}
