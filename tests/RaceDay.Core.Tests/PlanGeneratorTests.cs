@@ -276,8 +276,7 @@ public class PlanGeneratorTests
         // Assert
         Assert.NotEmpty(plan);
         
-        // Current implementation: Triathlon is treated as Run phase (Bike + Run combined)
-        // Future enhancement: Separate into Swim -> Bike -> Run phases
+        // Triathlon creates separate Swim -> Bike -> Run phase segments
         var mainEvents = plan.Where(e => e.TimeMin > 0).ToList();
         Assert.NotEmpty(mainEvents);
         
