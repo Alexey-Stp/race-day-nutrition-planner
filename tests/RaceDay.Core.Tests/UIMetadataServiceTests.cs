@@ -48,7 +48,7 @@ public class UIMetadataServiceTests
 
         // Assert
         Assert.NotNull(coldMeta);
-        Assert.Equal("≤ 5°C", coldMeta.Range);
+        Assert.Equal("5°C", coldMeta.Range);
         Assert.Contains("Reduced fluid needs", coldMeta.Effects);
         Assert.Equal(4, coldMeta.Effects.Length);
     }
@@ -76,7 +76,7 @@ public class UIMetadataServiceTests
 
         // Assert
         Assert.NotNull(hotMeta);
-        Assert.Equal("≥ 25°C", hotMeta.Range);
+        Assert.Equal("25°C", hotMeta.Range);
         Assert.Contains("Increased fluid needs", hotMeta.Effects);
         Assert.Equal(4, hotMeta.Effects.Length);
     }

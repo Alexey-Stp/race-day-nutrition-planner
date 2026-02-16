@@ -51,6 +51,15 @@ public static class SchedulingConstraints
     // Minimum sip volume to bother scheduling
     public const double MinSipVolumeMl = 20;
 
+    // === Intensity-based caffeine ceiling (mg per kg bodyweight) ===
+    public const double CaffeineCeilingEasyMgPerKg = 1.0;
+    public const double CaffeineCeilingModerateMgPerKg = 3.0;
+    public const double CaffeineCeilingHardMgPerKg = 4.0;
+    public const double CaffeineCeilingMaxMgPerKg = 5.0;
+
+    // === Full-duration coverage ===
+    public const double MinCoverageRatio = 0.85;
+
     // === Front-loading constraint ===
     // Cannot allocate more than this fraction of total carbs in the first 25% of time
     public const double MaxFrontLoadFraction = 0.40;

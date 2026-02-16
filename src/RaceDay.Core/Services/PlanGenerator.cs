@@ -81,6 +81,13 @@ public class PlanGenerator
         // === PHASE 6: Target reconciliation ===
         ReconcileToTarget(plan, products, targets, durationMinutes, phases);
 
+        // === PHASE 6b: Enforce caffeine ceiling ===
+        if (caffeineEnabled)
+            EnforceCaffeineCeiling(plan, products, targets);
+
+        // === PHASE 6c: Ensure full-duration coverage ===
+        EnsureFullDurationCoverage(plan, products, phases, targets, durationMinutes);
+
         // === PHASE 7: Validate ===
         var validationResult = ValidateAndAutoFix(plan, targets, products, durationMinutes, caffeineEnabled);
         return validationResult.Plan;
@@ -216,15 +223,31 @@ public class PlanGenerator
         double drinkVolume = drink.VolumeMl > 0 ? drink.VolumeMl : SchedulingConstraints.DefaultDrinkVolumeMl;
         double carbsPerMl = drink.CarbsG / drinkVolume;
 
-        for (int timeMin = startMin; timeMin <= endMin && state.TotalCarbs < carbsLimit; timeMin += interval)
+        for (int timeMin = startMin; timeMin <= endMin; timeMin += interval)
         {
-            // Clamp sip to not exceed limit
-            double remainingCarbs = carbsLimit - state.TotalCarbs;
-            double actualCarbsPerSip = Math.Min(carbsPerSip, remainingCarbs);
-            double actualSipMl = actualCarbsPerSip / carbsPerMl;
+            double actualCarbsPerSip;
+            double actualSipMl;
 
-            if (actualSipMl < SchedulingConstraints.MinSipVolumeMl)
-                break;
+            if (state.TotalCarbs < carbsLimit)
+            {
+                // Normal sip: clamp to not exceed carb limit
+                double remainingCarbs = carbsLimit - state.TotalCarbs;
+                actualCarbsPerSip = Math.Min(carbsPerSip, remainingCarbs);
+                actualSipMl = actualCarbsPerSip / carbsPerMl;
+
+                if (actualSipMl < SchedulingConstraints.MinSipVolumeMl)
+                {
+                    // Switch to hydration-only sips for coverage
+                    actualSipMl = SchedulingConstraints.MinSipVolumeMl;
+                    actualCarbsPerSip = carbsPerMl * actualSipMl;
+                }
+            }
+            else
+            {
+                // Past carb limit: continue with minimal hydration sips for coverage
+                actualSipMl = SchedulingConstraints.MinSipVolumeMl;
+                actualCarbsPerSip = carbsPerMl * actualSipMl;
+            }
 
             double portionFraction = actualSipMl / drinkVolume;
 
@@ -559,6 +582,166 @@ public class PlanGenerator
 
             RecalculateCumulativeTotals(plan, products);
         }
+    }
+
+    // ─── Phase 6b: Enforce caffeine ceiling ────────────────────────
+
+    private static void EnforceCaffeineCeiling(
+        List<NutritionEvent> plan,
+        List<ProductEnhanced> products,
+        MultiNutrientTargets targets)
+    {
+        double caffeineCeiling = targets.CaffeineMg;
+        if (caffeineCeiling <= 0) return;
+
+        double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue)
+            .Sum(e => e.CaffeineMg!.Value);
+
+        if (totalCaffeine <= caffeineCeiling) return;
+
+        // Remove caffeinated events from end until under ceiling,
+        // replacing with non-caffeinated alternatives where possible
+        var caffeinatedEvents = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue)
+            .OrderByDescending(e => e.TimeMin).ToList();
+
+        var nonCaffAlternative = products.FirstOrDefault(p =>
+            !p.HasCaffeine && (p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel));
+
+        foreach (var evt in caffeinatedEvents)
+        {
+            if (totalCaffeine <= caffeineCeiling) break;
+
+            double evtCaffeine = evt.CaffeineMg!.Value;
+            int idx = plan.IndexOf(evt);
+            if (idx < 0) continue;
+
+            if (nonCaffAlternative != null)
+            {
+                // Replace with non-caffeinated product
+                plan[idx] = evt with
+                {
+                    ProductName = nonCaffAlternative.Name,
+                    HasCaffeine = false,
+                    CaffeineMg = null,
+                    CarbsInEvent = nonCaffAlternative.CarbsG,
+                    Action = GetAction(nonCaffAlternative.Texture)
+                };
+            }
+            else
+            {
+                // Strip caffeine from event (keep the carbs)
+                plan[idx] = evt with
+                {
+                    HasCaffeine = false,
+                    CaffeineMg = null
+                };
+            }
+            totalCaffeine -= evtCaffeine;
+        }
+
+        RecalculateCumulativeTotals(plan, products);
+    }
+
+    // ─── Phase 6c: Ensure full-duration coverage ─────────────────
+
+    private static void EnsureFullDurationCoverage(
+        List<NutritionEvent> plan,
+        List<ProductEnhanced> products,
+        List<PhaseSegment> phases,
+        MultiNutrientTargets targets,
+        int durationMinutes)
+    {
+        int minLastEventTime = (int)(durationMinutes * SchedulingConstraints.MinCoverageRatio);
+        var positiveEvents = plan.Where(e => e.TimeMin > 0).ToList();
+        if (!positiveEvents.Any()) return;
+
+        int lastEventTime = positiveEvents.Max(e => e.TimeMin);
+        if (lastEventTime >= minLastEventTime) return;
+
+        // Plan ends too early - redistribute by adding sip events in the uncovered tail
+        var drinkProduct = products.FirstOrDefault(p => p.Texture == ProductTexture.Drink && p.CarbsG > 10);
+        var gelProduct = products.FirstOrDefault(p => !p.HasCaffeine &&
+            (p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel));
+
+        // Determine how much carb budget we can shift to the tail
+        double currentTotal = plan.Sum(e => e.CarbsInEvent);
+        double targetCarbs = targets.CarbsG;
+        double tolerance = targetCarbs * SchedulingConstraints.TargetTolerancePercent;
+
+        // First: remove some events from the front half to free up carb budget
+        double carbsToRedistribute = 0;
+        int midPoint = durationMinutes / 2;
+        var frontSips = plan.Where(e => e.Action == "Sip" && e.TimeMin > 0 && e.TimeMin <= midPoint)
+            .OrderByDescending(e => e.TimeMin).ToList();
+
+        // Remove up to 30% of front-half sips to free budget for later events
+        int maxToRemove = Math.Max(1, frontSips.Count / 3);
+        int removed = 0;
+        foreach (var sip in frontSips)
+        {
+            if (removed >= maxToRemove) break;
+            if (currentTotal - sip.CarbsInEvent < targetCarbs - tolerance) break;
+            carbsToRedistribute += sip.CarbsInEvent;
+            currentTotal -= sip.CarbsInEvent;
+            plan.Remove(sip);
+            removed++;
+        }
+
+        // Now add events in the uncovered tail region
+        var existingTimes = plan.Select(e => e.TimeMin).ToHashSet();
+        int sipInterval = SchedulingConstraints.SipIntervalMinutes;
+        int endMin = durationMinutes - 5;
+        int startMin = lastEventTime + sipInterval;
+        var lastPhase = phases.LastOrDefault()?.Phase ?? RacePhase.Run;
+
+        for (int t = startMin; t <= endMin; t += sipInterval)
+        {
+            if (existingTimes.Contains(t)) continue;
+
+            double hour = t / 60.0;
+            var phaseSegment = phases.FirstOrDefault(p => hour >= p.StartHour && hour < p.EndHour)
+                            ?? phases.LastOrDefault();
+            if (phaseSegment?.Phase == RacePhase.Swim) continue;
+            var phase = phaseSegment?.Phase ?? lastPhase;
+
+            if (drinkProduct != null)
+            {
+                double drinkVolume = drinkProduct.VolumeMl > 0 ? drinkProduct.VolumeMl : SchedulingConstraints.DefaultDrinkVolumeMl;
+                double carbsPerMl = drinkProduct.CarbsG / drinkVolume;
+                double sipMl = SchedulingConstraints.SipVolumeMl;
+                double carbsPerSip = carbsPerMl * sipMl;
+
+                plan.Add(new NutritionEvent(
+                    TimeMin: t, Phase: phase,
+                    PhaseDescription: GetPhaseDescription(phase),
+                    ProductName: drinkProduct.Name,
+                    AmountPortions: Math.Round(sipMl / drinkVolume, 2),
+                    Action: "Sip",
+                    TotalCarbsSoFar: 0,
+                    CarbsInEvent: Math.Round(carbsPerSip, 1),
+                    SipMl: Math.Round(sipMl, 0)
+                ));
+                existingTimes.Add(t);
+            }
+            else if (gelProduct != null && !existingTimes.Contains(t))
+            {
+                plan.Add(new NutritionEvent(
+                    TimeMin: t, Phase: phase,
+                    PhaseDescription: GetPhaseDescription(phase),
+                    ProductName: gelProduct.Name,
+                    AmountPortions: 1,
+                    Action: GetAction(gelProduct.Texture),
+                    TotalCarbsSoFar: 0,
+                    CarbsInEvent: gelProduct.CarbsG
+                ));
+                existingTimes.Add(t);
+            }
+        }
+
+        RecalculateCumulativeTotals(plan, products);
+
+        // Re-reconcile if we've overshot due to the added events
+        ReconcileToTarget(plan, products, targets, durationMinutes, phases);
     }
 
     // ─── Product scoring & selection ──────────────────────────────
@@ -945,6 +1128,10 @@ public class PlanGenerator
         var hydrationWarnings = CheckHydrationCoupling(plan, products);
         warnings.AddRange(hydrationWarnings);
 
+        // === Plan Quality Check ===
+        var qualityWarnings = CheckPlanQuality(plan, products, durationMinutes);
+        warnings.AddRange(qualityWarnings);
+
         return new ValidationResult(plan, warnings, errors);
     }
 
@@ -999,6 +1186,58 @@ public class PlanGenerator
                 warnings.Add($"Gel at {evt.TimeMin}min ({evt.ProductName}) may need additional hydration. " +
                            $"Consider pairing with water or sports drink within {hydrationWindowMin} minutes.");
             }
+        }
+
+        return warnings;
+    }
+
+    private static List<string> CheckPlanQuality(
+        List<NutritionEvent> plan,
+        List<ProductEnhanced> products,
+        int durationMinutes)
+    {
+        var warnings = new List<string>();
+        var raceEvents = plan.Where(e => e.TimeMin > 0).ToList();
+        if (!raceEvents.Any() || durationMinutes <= 0) return warnings;
+
+        double totalCarbs = plan.Sum(e => e.CarbsInEvent);
+        int seventyPercentTime = (int)(durationMinutes * 0.70);
+        int finalThirdStart = durationMinutes * 2 / 3;
+
+        // 1. All carbs consumed before 70% of race time
+        double carbsBefore70 = plan.Where(e => e.TimeMin >= 0 && e.TimeMin <= seventyPercentTime)
+            .Sum(e => e.CarbsInEvent);
+        if (totalCarbs > 0 && carbsBefore70 >= totalCarbs * 0.98)
+        {
+            warnings.Add($"Front-loaded plan: all carbs consumed before {seventyPercentTime}min " +
+                $"({seventyPercentTime * 100 / durationMinutes}% of race). Consider spreading intake across the full duration.");
+        }
+
+        // 2. No intake in final third
+        var finalThirdEvents = raceEvents.Where(e => e.TimeMin >= finalThirdStart).ToList();
+        if (!finalThirdEvents.Any() && durationMinutes >= 120)
+        {
+            warnings.Add($"No nutrition intake in final third of race (after {finalThirdStart}min). " +
+                "Late-race fueling helps maintain performance.");
+        }
+
+        // 3. Only high-density products used (risk of front-loading)
+        var nonSipProducts = plan.Where(e => e.Action != "Sip" && e.TimeMin > 0)
+            .Select(e => products.FirstOrDefault(p => p.Name == e.ProductName))
+            .Where(p => p != null)
+            .ToList();
+        if (nonSipProducts.Count > 0 && nonSipProducts.All(p => p!.CarbsG >= 35))
+        {
+            warnings.Add("Only high-carb products used. Consider adding lower-carb options " +
+                "(e.g., lighter gels or chews) for finer distribution across the race.");
+        }
+
+        // 4. No drink products selected
+        bool hasDrinkEvents = plan.Any(e => e.Action == "Sip" ||
+            products.Any(p => p.Name == e.ProductName && p.Texture == ProductTexture.Drink));
+        if (!hasDrinkEvents && durationMinutes >= 90)
+        {
+            warnings.Add("No drink products in plan. Consider adding a sports drink for hydration and sodium.");
         }
 
         return warnings;

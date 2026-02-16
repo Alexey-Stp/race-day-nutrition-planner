@@ -37,12 +37,18 @@ public static class NutritionCalculator
         double totalSodium = baseTargets.SodiumMgPerHour * race.DurationHours;
         double totalFluid = baseTargets.FluidsMlPerHour * race.DurationHours;
         
-        // Calculate caffeine target (if enabled)
+        // Calculate caffeine target (if enabled) - intensity-based ceiling
         double totalCaffeine = 0;
         if (caffeineEnabled)
         {
-            // 3-6 mg/kg is typical range; use 4 mg/kg as moderate target, cap at 300mg
-            totalCaffeine = Math.Min(athlete.WeightKg * 4.0, 300);
+            double mgPerKg = race.Intensity switch
+            {
+                IntensityLevel.Easy => SchedulingConstraints.CaffeineCeilingEasyMgPerKg,
+                IntensityLevel.Moderate => SchedulingConstraints.CaffeineCeilingModerateMgPerKg,
+                IntensityLevel.Hard => SchedulingConstraints.CaffeineCeilingHardMgPerKg,
+                _ => SchedulingConstraints.CaffeineCeilingHardMgPerKg
+            };
+            totalCaffeine = Math.Min(athlete.WeightKg * mgPerKg, 300);
         }
         
         // Calculate segment-specific targets for triathlon

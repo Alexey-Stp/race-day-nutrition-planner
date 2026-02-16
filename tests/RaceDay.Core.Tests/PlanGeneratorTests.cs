@@ -1805,4 +1805,143 @@ public class PlanGeneratorTests
     }
 
     #endregion
+
+    #region Regression Tests - Full Duration, Caffeine Ceiling, Quality Checks
+
+    // --- ISSUE 1: Plan must not end too early ---
+
+    [Fact]
+    public void Regression_5hRun_HasIntakeInFinalThird()
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(SportType.Run, DurationHours: 5.15, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        int durationMinutes = (int)(race.DurationHours * 60); // 309 min
+        int finalThirdStart = durationMinutes * 2 / 3; // ~206 min
+
+        var finalThirdEvents = plan.Where(e => e.TimeMin >= finalThirdStart && e.TimeMin > 0).ToList();
+        Assert.True(finalThirdEvents.Count >= 1,
+            $"5h run must have at least one intake event in final third (after {finalThirdStart}min), " +
+            $"but last event is at {plan.Where(e => e.TimeMin > 0).Max(e => e.TimeMin)}min");
+    }
+
+    [Theory]
+    [InlineData(SportType.Run, 4.0, IntensityLevel.Easy)]
+    [InlineData(SportType.Run, 5.0, IntensityLevel.Moderate)]
+    [InlineData(SportType.Bike, 5.0, IntensityLevel.Easy)]
+    public void Regression_LongRace_LastEventCoversMinCoverageRatio(SportType sportType, double durationHours, IntensityLevel intensity)
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        int durationMinutes = (int)(durationHours * 60);
+        int lastEventTime = plan.Where(e => e.TimeMin > 0).Max(e => e.TimeMin);
+
+        // Last event must be >= 85% of race duration
+        double minCoverageRatio = 0.85;
+        int minLastEventTime = (int)(durationMinutes * minCoverageRatio);
+
+        Assert.True(lastEventTime >= minLastEventTime,
+            $"Last event at {lastEventTime}min but must be >= {minLastEventTime}min " +
+            $"({minCoverageRatio:P0} of {durationMinutes}min race)");
+    }
+
+    // --- ISSUE 2: Caffeine ceiling by intensity ---
+
+    [Theory]
+    [InlineData(IntensityLevel.Easy, 1.0)]    // Easy: max 1 mg/kg
+    [InlineData(IntensityLevel.Moderate, 3.0)] // Moderate: max 3 mg/kg
+    public void Regression_CaffeineCeiling_RespectedByIntensity(IntensityLevel intensity, double maxMgPerKg)
+    {
+        double weightKg = 75;
+        var athlete = new AthleteProfile(WeightKg: weightKg);
+        var race = new RaceProfile(SportType.Run, DurationHours: 3, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
+
+        // Products with caffeine
+        var products = new List<ProductEnhanced>
+        {
+            new("Caffeine Gel", CarbsG: 25, Texture: ProductTexture.Gel, HasCaffeine: true, CaffeineMg: 75),
+            new("Caffeine Gel 2", CarbsG: 25, Texture: ProductTexture.Gel, HasCaffeine: true, CaffeineMg: 100),
+            new("Plain Gel", CarbsG: 25, Texture: ProductTexture.Gel, HasCaffeine: false, CaffeineMg: 0),
+            new("Energy Bar", CarbsG: 40, Texture: ProductTexture.Bake, HasCaffeine: false, CaffeineMg: 0),
+            new("Sports Drink", CarbsG: 30, Texture: ProductTexture.Drink, HasCaffeine: false, CaffeineMg: 0, VolumeMl: 500),
+        };
+
+        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+
+        double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
+        double ceiling = weightKg * maxMgPerKg;
+
+        Assert.True(totalCaffeine <= ceiling + 1, // +1 for rounding tolerance
+            $"Intensity={intensity}: Total caffeine {totalCaffeine:F0}mg exceeds ceiling {ceiling:F0}mg ({maxMgPerKg} mg/kg × {weightKg}kg)");
+    }
+
+    [Fact]
+    public void Regression_EasyIntensity_DoesNotExceed1MgPerKg()
+    {
+        double weightKg = 75;
+        var athlete = new AthleteProfile(WeightKg: weightKg);
+        var race = new RaceProfile(SportType.Run, DurationHours: 5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
+
+        // All caffeinated products to stress test the limit
+        var products = new List<ProductEnhanced>
+        {
+            new("Caff Gel 1", CarbsG: 25, Texture: ProductTexture.Gel, HasCaffeine: true, CaffeineMg: 100),
+            new("Caff Gel 2", CarbsG: 30, Texture: ProductTexture.Gel, HasCaffeine: true, CaffeineMg: 75),
+            new("Caff Drink", CarbsG: 40, Texture: ProductTexture.Drink, HasCaffeine: true, CaffeineMg: 150, VolumeMl: 500),
+            new("Plain Bar", CarbsG: 40, Texture: ProductTexture.Bake, HasCaffeine: false, CaffeineMg: 0),
+        };
+
+        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+
+        double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
+        double ceiling = weightKg * 1.0; // Easy = 1 mg/kg
+
+        Assert.True(totalCaffeine <= ceiling + 1,
+            $"Easy intensity: caffeine {totalCaffeine:F0}mg must not exceed {ceiling:F0}mg (1 mg/kg × {weightKg}kg)");
+    }
+
+    [Fact]
+    public void Regression_CaffeineTotalEqualsSumOfSchedule()
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(SportType.Run, DurationHours: 3, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateTriathlonProducts();
+
+        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+
+        double sumCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
+        double lastCumulativeCaffeine = plan.Last().TotalCaffeineSoFar;
+
+        Assert.True(Math.Abs(sumCaffeine - lastCumulativeCaffeine) < 1.0,
+            $"Caffeine sum ({sumCaffeine:F1}mg) != last cumulative ({lastCumulativeCaffeine:F1}mg)");
+    }
+
+    // --- ISSUE 3: Plan quality check (warnings) ---
+
+    [Fact]
+    public void Regression_FrontLoadedPlan_ProducesWarning()
+    {
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(SportType.Run, DurationHours: 5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
+
+        // Only high-carb gels - risk of front-loading
+        var products = new List<ProductEnhanced>
+        {
+            new("Big Gel", CarbsG: 45, Texture: ProductTexture.Gel, HasCaffeine: false, CaffeineMg: 0),
+        };
+
+        var result = _generator.GeneratePlanWithDiagnostics(race, athlete, products);
+
+        // Should have at least one quality warning (front-loading, coverage, or density)
+        Assert.NotEmpty(result.Warnings);
+    }
+
+    #endregion
 }
