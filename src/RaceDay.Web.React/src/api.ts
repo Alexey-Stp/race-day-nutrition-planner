@@ -63,31 +63,34 @@ export const api = {
   async generatePlan(
     athlete: AthleteProfile,
     race: RaceProfile,
-    products: (ProductEditor & { productType: string })[]
+    products: (ProductEditor & { productType: string; caffeineMg?: number })[],
+    caffeineEnabled: boolean = false
   ): Promise<RaceNutritionPlan> {
     // Map enums to integers for API
     const sportTypeMap: Record<string, number> = { Run: 0, Bike: 1, Triathlon: 2 };
     const intensityMap: Record<string, number> = { Easy: 0, Moderate: 1, Hard: 2 };
-    
+
     // Convert TemperatureCondition enum to representative temperature in Celsius
     const temperatureCMap: Record<string, number> = {
       Cold: 0,      // ≤ 5°C
       Moderate: 15, // 5-25°C
       Hot: 30       // ≥ 25°C
     };
-    
+
     const request = {
       athleteWeightKg: athlete.weightKg,
       sportType: sportTypeMap[race.sportType],
       durationHours: race.durationHours,
       temperatureC: temperatureCMap[race.temperature],
       intensity: intensityMap[race.intensity],
+      caffeineEnabled: caffeineEnabled,
       products: products.map(p => ({
         name: p.name,
         productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
-        volumeMl: p.volumeMl || 0
+        volumeMl: p.volumeMl || 0,
+        caffeineMg: p.caffeineMg || null
       }))
     };
 

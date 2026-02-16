@@ -2293,3 +2293,129 @@ html, body {
     color: #FF9500;
 }
 
+
+/* AdvancedProductSelector Styles */
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.badge {
+  background: var(--primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.product-groups {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.product-group {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.product-group:last-child {
+  border-bottom: none;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--light);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.group-label {
+  flex: 1;
+}
+
+.group-count {
+  color: var(--text-secondary);
+  margin-right: 12px;
+  font-size: 0.75rem;
+}
+
+.group-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-link:hover {
+  background: rgba(0, 122, 255, 0.1);
+}
+
+.product-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.product-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.product-item:last-child {
+  border-bottom: none;
+}
+
+.product-item:hover {
+  background: var(--light);
+}
+
+.product-item input[type="checkbox"] {
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.product-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.product-name {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.product-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.warning-message {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #FFF3CD;
+  border: 1px solid #FFE69C;
+  border-radius: 6px;
+  color: #664D03;
+  font-size: 0.875rem;
+}

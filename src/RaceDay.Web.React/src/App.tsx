@@ -5,7 +5,7 @@ import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
 import { IntensitySelector } from './components/IntensitySelector';
-import { BrandSelector } from './components/BrandSelector';
+import { AdvancedProductSelector } from './components/AdvancedProductSelector';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
 import './App.css';
@@ -58,10 +58,11 @@ function App() {
         productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
-        volumeMl: p.volumeMl || 0
+        volumeMl: p.volumeMl || 0,
+        caffeineMg: p.caffeineMg || null
       }));
 
-      const newPlan = await api.generatePlan(athlete, race, products);
+      const newPlan = await api.generatePlan(athlete, race, products, useCaffeine);
       setPlan(newPlan);
       setError(null);
     } catch (err) {
@@ -99,7 +100,12 @@ function App() {
             onIntensityChange={setIntensity}
           />
 
-          <BrandSelector onBrandsSelected={setSelectedProducts} />
+          <TemperatureSelector
+            temperature={temperature}
+            onTemperatureChange={setTemperature}
+          />
+
+          <AdvancedProductSelector onProductsSelected={setSelectedProducts} />
 
           {/* Advanced settings accordion */}
           <div className="form-card accordion-card">
@@ -113,10 +119,6 @@ function App() {
             </button>
             {advancedOpen && (
               <div className="accordion-content">
-                <TemperatureSelector
-                  temperature={temperature}
-                  onTemperatureChange={setTemperature}
-                />
                 <label className="checkbox-label">
                   <input
                     type="checkbox"
