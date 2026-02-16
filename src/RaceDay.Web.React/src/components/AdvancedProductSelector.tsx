@@ -26,7 +26,6 @@ export const AdvancedProductSelector: React.FC<AdvancedProductSelectorProps> = (
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Load products on mount
   useEffect(() => {
@@ -174,75 +173,64 @@ export const AdvancedProductSelector: React.FC<AdvancedProductSelectorProps> = (
         />
       </div>
 
-      {/* Expand/Collapse Button */}
-      <button
-        className="btn btn-secondary btn-compact"
-        onClick={() => setIsExpanded(!isExpanded)}
-        style={{ width: '100%', marginBottom: '12px' }}
-      >
-        {isExpanded ? '▲ Hide Product List' : '▼ Show Product List'} ({filteredProducts.length} products)
-      </button>
-
       {/* Product Groups */}
-      {isExpanded && (
-        <div className="product-groups">
-          {groupedProducts.map(group => {
-            const groupSelected = group.products.filter(p => selectedProducts.has(p.id)).length;
-            const groupTotal = group.products.length;
-            const allSelected = groupSelected === groupTotal;
+      <div className="product-groups">
+        {groupedProducts.map(group => {
+          const groupSelected = group.products.filter(p => selectedProducts.has(p.id)).length;
+          const groupTotal = group.products.length;
+          const allSelected = groupSelected === groupTotal;
 
-            return (
-              <div key={group.type} className="product-group">
-                <div className="group-header">
-                  <span className="group-label">{group.label}</span>
-                  <span className="group-count">{groupSelected}/{groupTotal}</span>
-                  <div className="group-actions">
-                    {!allSelected && (
-                      <button
-                        className="btn-link"
-                        onClick={() => selectAllInGroup(group.type)}
-                      >
-                        Select All
-                      </button>
-                    )}
-                    {groupSelected > 0 && (
-                      <button
-                        className="btn-link"
-                        onClick={() => deselectAllInGroup(group.type)}
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="product-list">
-                  {group.products.map(product => (
-                    <label key={product.id} className="product-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedProducts.has(product.id)}
-                        onChange={() => toggleProduct(product.id)}
-                      />
-                      <span className="product-details">
-                        <span className="product-name">{product.name}</span>
-                        <span className="product-meta">
-                          {product.carbsG.toFixed(0)}g carbs
-                          {product.caffeineMg && product.caffeineMg > 0 && (
-                            <> • ☕ {product.caffeineMg}mg</>
-                          )}
-                        </span>
-                      </span>
-                    </label>
-                  ))}
+          return (
+            <div key={group.type} className="product-group">
+              <div className="group-header">
+                <span className="group-label">{group.label}</span>
+                <span className="group-count">{groupSelected}/{groupTotal}</span>
+                <div className="group-actions">
+                  {!allSelected && (
+                    <button
+                      className="btn-link"
+                      onClick={() => selectAllInGroup(group.type)}
+                    >
+                      Select All
+                    </button>
+                  )}
+                  {groupSelected > 0 && (
+                    <button
+                      className="btn-link"
+                      onClick={() => deselectAllInGroup(group.type)}
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
               </div>
-            );
-          })}
-          {groupedProducts.length === 0 && (
-            <p className="empty-message">No products found matching your criteria</p>
-          )}
-        </div>
-      )}
+              <div className="product-list">
+                {group.products.map(product => (
+                  <label key={product.id} className="product-item">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.has(product.id)}
+                      onChange={() => toggleProduct(product.id)}
+                    />
+                    <span className="product-details">
+                      <span className="product-name">{product.name}</span>
+                      <span className="product-meta">
+                        {product.carbsG.toFixed(0)}g carbs
+                        {product.caffeineMg && product.caffeineMg > 0 && (
+                          <> • ☕ {product.caffeineMg}mg</>
+                        )}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {groupedProducts.length === 0 && (
+          <p className="empty-message">No products found matching your criteria</p>
+        )}
+      </div>
 
       {selectedProducts.size === 0 && (
         <p className="warning-message">⚠️ Please select at least one product</p>

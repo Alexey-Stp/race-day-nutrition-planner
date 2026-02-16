@@ -17,7 +17,6 @@ function App() {
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
   const [useCaffeine, setUseCaffeine] = useState(true);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
@@ -107,28 +106,23 @@ function App() {
 
           <AdvancedProductSelector onProductsSelected={setSelectedProducts} />
 
-          {/* Advanced settings accordion */}
-          <div className="form-card accordion-card">
-            <button
-              className="accordion-toggle"
-              onClick={() => setAdvancedOpen(!advancedOpen)}
-              type="button"
-            >
-              <span>Advanced Settings</span>
-              <span className={`accordion-arrow ${advancedOpen ? 'open' : ''}`}>▾</span>
-            </button>
-            {advancedOpen && (
-              <div className="accordion-content">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={useCaffeine}
-                    onChange={(e) => setUseCaffeine(e.target.checked)}
-                  />
-                  <span>Include caffeine products</span>
-                </label>
-              </div>
-            )}
+          <div className="form-card settings-card">
+            <h2>Preferences</h2>
+            <label className="switch-row" htmlFor="caffeine-toggle">
+              <span className="switch-copy">
+                <span className="switch-title">Caffeine</span>
+                <span className="switch-subtitle">Include caffeine products in recommendations</span>
+              </span>
+              <span className="ios-switch">
+                <input
+                  id="caffeine-toggle"
+                  type="checkbox"
+                  checked={useCaffeine}
+                  onChange={(e) => setUseCaffeine(e.target.checked)}
+                />
+                <span className="ios-switch-track" />
+              </span>
+            </label>
           </div>
 
           {error && <div className="error-message">{error}</div>}
