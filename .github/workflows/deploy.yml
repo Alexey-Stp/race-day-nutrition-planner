@@ -20,7 +20,7 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --service raceday-api --project 2938596c-7b4f-4dea-bbc7-75b4e25bb3c5 --detach
+        run: railway up --service raceday-api --project 2938596c-7b4f-4dea-bbc7-75b4e25bb3c5 --environment production --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
