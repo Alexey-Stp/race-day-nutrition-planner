@@ -11,6 +11,7 @@ interface RaceDetailsFormProps {
 }
 
 export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
+  sportType: _sportType,  // Passed from parent but managed internally via callbacks
   duration,
   onSportTypeChange,
   onDurationChange
@@ -108,7 +109,7 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             className="form-slider"
             min={minDuration}
             max={maxDuration}
-            step="0.25"
+            step="0.01667"
           />
           <div className="slider-labels">
             <span>{formatDuration(minDuration)}</span>

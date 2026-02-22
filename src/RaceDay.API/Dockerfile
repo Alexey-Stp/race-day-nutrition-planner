@@ -27,11 +27,9 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
-# Install curl for healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-
-# Create a non-root user to run the application
-RUN useradd -m -u 1000 -s /bin/bash appuser && \
+# Install curl, create non-root user, copy files, and set permissions
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* && \
+    useradd -m -u 1000 -s /bin/bash appuser && \
     chown -R appuser:appuser /app
 
 # Copy published files with correct ownership

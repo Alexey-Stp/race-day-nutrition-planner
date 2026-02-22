@@ -9,28 +9,11 @@ namespace RaceDay.Core.Repositories;
 /// </summary>
 public class ProductRepository : IProductRepository
 {
-    private static List<ProductInfo>? _products;
-    private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private static readonly Lazy<List<ProductInfo>> _productsLazy = new Lazy<List<ProductInfo>>(() => LoadProductsFromJsonFiles());
 
-    public async Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)
+    public Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)
     {
-        if (_products != null)
-            return _products;
-
-        await _semaphore.WaitAsync(cancellationToken);
-        try
-        {
-            if (_products != null)
-                return _products;
-
-            _products = await Task.Run(() => LoadProductsFromJsonFiles(), cancellationToken);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-
-        return _products;
+        return Task.FromResult(_productsLazy.Value);
     }
 
     public async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType, CancellationToken cancellationToken = default)

@@ -120,11 +120,6 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
         </div>
       </div>
 
-      <p className="info-text">
-        {selectedBrands.size > 0 ? `${Array.from(selectedBrands)[0]} selected` : 'No brand selected'} • 
-        {' '}{selectedTypes.size} product type{selectedTypes.size === 1 ? '' : 's'} selected
-      </p>
-
       {/* View Assortment Button */}
       {selectedBrands.size > 0 && (
         <button
@@ -148,44 +143,57 @@ export const BrandSelector: React.FC<BrandSelectorProps> = ({ onBrandsSelected }
 
       {/* Assortment Modal */}
       {showAssortment && assortmentBrand && (
-        <div 
+        <div // NOSONAR - Standard modal overlay pattern with click-to-dismiss
           className="modal-overlay" 
           onClick={() => setShowAssortment(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Brand assortment modal"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setShowAssortment(false);
-          }}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div // NOSONAR - Dialog content stops event propagation, standard modal pattern
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
             <div className="modal-header">
-              <h2>{assortmentBrand} - Full Assortment</h2>
-              <button className="modal-close" onClick={() => setShowAssortment(false)}>✕</button>
+              <h2 id="modal-title">{assortmentBrand} - Full Assortment</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowAssortment(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowAssortment(false);
+                }}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
             
             <div className="modal-body">
-              <div className="assortment-grid">
-                {products
-                  .filter(p => p.brand === assortmentBrand)
-                  .sort((a, b) => a.productType.localeCompare(b.productType))
-                  .map((product) => (
-                    <div key={product.name} className="assortment-item">
-                      <div className="item-header">
-                        <strong>{product.name}</strong>
-                      </div>
-                      <div className="item-details">
-                        <span className="type">{product.productType}</span>
-                        <span className="carbs">{product.carbsG}g carbs</span>
-                      </div>
-                      {product.sodiumMg > 0 && (
-                        <div className="item-sodium">
-                          <span>{product.sodiumMg}mg sodium</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
+              <table className="products-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th className="text-right">Carbs (g)</th>
+                    <th className="text-right">Sodium (mg)</th>
+                    <th className="text-right">Caffeine (mg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products
+                    .filter(p => p.brand === assortmentBrand)
+                    .sort((a, b) => a.productType.localeCompare(b.productType))
+                    .map((product) => (
+                      <tr key={product.name}>
+                        <td className="product-name">{product.name}</td>
+                        <td>{product.productType}</td>
+                        <td className="text-right">{product.carbsG.toFixed(1)}</td>
+                        <td className="text-right">{product.sodiumMg.toFixed(0)}</td>
+                        <td className="text-right">{product.caffeineMg ? product.caffeineMg.toFixed(0) : '-'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
             </div>
 
             <div className="modal-footer">

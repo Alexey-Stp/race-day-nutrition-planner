@@ -24,72 +24,6 @@ export const TemperatureCondition = {
 
 export type TemperatureCondition = typeof TemperatureCondition[keyof typeof TemperatureCondition];
 
-export const TemperatureDescriptions: Record<TemperatureCondition, { range: string; effects: string[] }> = {
-  Cold: {
-    range: "≤ 5°C",
-    effects: [
-      "Reduced fluid needs",
-      "Less sodium required",
-      "Risk of overconsumption",
-      "Lower sweating rate"
-    ]
-  },
-  Moderate: {
-    range: "5-25°C",
-    effects: [
-      "Baseline nutrition targets",
-      "Standard fluid intake",
-      "Optimal conditions",
-      "Stable digestion"
-    ]
-  },
-  Hot: {
-    range: "≥ 25°C",
-    effects: [
-      "Increased fluid needs",
-      "Higher sodium requirements",
-      "Risk of dehydration",
-      "Faster carb absorption"
-    ]
-  }
-};
-
-export const IntensityDescriptions: Record<IntensityLevel, { icon: string; carbRange: string; heartRateZone: string; effects: string[] }> = {
-  Easy: {
-    icon: "🟢",
-    carbRange: "45 g/hr",
-    heartRateZone: "Zone 1-2 (60-75% max HR)",
-    effects: [
-      "Conversational pace",
-      "Lower carb needs",
-      "Minimal fuel requirements",
-      "Comfortable breathing"
-    ]
-  },
-  Moderate: {
-    icon: "🟡",
-    carbRange: "75 g/hr",
-    heartRateZone: "Zone 3 (75-85% max HR)",
-    effects: [
-      "Steady effort",
-      "Standard nutrition targets",
-      "Regular intake intervals",
-      "Manageable intensity"
-    ]
-  },
-  Hard: {
-    icon: "🔴",
-    carbRange: "105 g/hr",
-    heartRateZone: "Zone 4-5 (85-100% max HR)",
-    effects: [
-      "High effort/competitive",
-      "Maximum carb intake",
-      "Frequent fuel needs",
-      "Elevated heart rate"
-    ]
-  }
-};
-
 // Metadata types from backend API
 export interface TemperatureMetadata {
   condition: TemperatureCondition;
@@ -109,59 +43,6 @@ export interface UIMetadata {
   temperatures: TemperatureMetadata[];
   intensities: IntensityMetadata[];
   defaultActivityId: string;
-}
-
-// Configuration metadata types
-export interface PhaseInfo {
-  phase: string;
-  name: string;
-  description: string;
-}
-
-export interface NutritionTargetConfig {
-  name: string;
-  unit: string;
-  description: string;
-  minValue: number;
-  maxValue: number;
-  baseValue: number;
-}
-
-export interface SportConfig {
-  sportType: string;
-  name: string;
-  description: string;
-  carbsPerKgPerHour: number;
-  maxCarbsPerHour: number;
-  slotIntervalMinutes: number;
-  caffeineStartHour: number;
-  caffeineIntervalHours: number;
-  maxCaffeineMgPerKg: number;
-}
-
-export interface TemperatureAdjustment {
-  temperatureCondition: string;
-  range: string;
-  fluidBonus: number;
-  sodiumBonus: number;
-  description: string;
-}
-
-export interface AthleteWeightConfig {
-  thresholdKg: number;
-  category: string;
-  fluidBonus: number;
-  sodiumBonus: number;
-  description: string;
-}
-
-export interface ConfigurationMetadata {
-  phases: PhaseInfo[];
-  nutritionTargets: NutritionTargetConfig[];
-  sports: SportConfig[];
-  temperatureAdjustments: TemperatureAdjustment[];
-  athleteWeightThresholds: AthleteWeightConfig[];
-  descriptions: Record<string, string>;
 }
 
 // Configuration metadata types
@@ -286,6 +167,9 @@ export interface NutritionEvent {
   totalCarbsSoFar: number;
   hasCaffeine: boolean;
   caffeineMg?: number;
+  totalCaffeineSoFar?: number;
+  carbsInEvent?: number;
+  sipMl?: number;
 }
 
 export interface AdvancedPlanResponse {

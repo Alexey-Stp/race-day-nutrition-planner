@@ -69,8 +69,8 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
       
       <div className="filter-section">
         <div className="filter-group">
-          <label>Brand:</label>
-          <select value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
+          <label htmlFor="brand-select">Brand:</label>
+          <select id="brand-select" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)}>
             <option value="">All Brands</option>
             {availableBrands.map(brand => (
               <option key={brand} value={brand}>{brand}</option>
@@ -79,8 +79,9 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
         </div>
         
         <div className="filter-group">
-          <label>Product Types:</label>
-          <div className="checkbox-group">
+          <fieldset>
+            <legend>Product Types:</legend>
+            <div className="checkbox-group">
             <label className="checkbox-label">
               <input
                 type="checkbox"
@@ -106,14 +107,18 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
               <span>Bars</span>
             </label>
           </div>
+        </fieldset>
         </div>
       </div>
 
-      {loading ? (
-        <p className="loading">Loading products...</p>
-      ) : products.length === 0 ? (
-        <p className="no-products">No products found</p>
-      ) : (
+      {(() => {
+        if (loading) {
+          return <p className="loading">Loading products...</p>;
+        }
+        if (products.length === 0) {
+          return <p className="no-products">No products found</p>;
+        }
+        return (
         <div className="products-grid">
           {products.map(product => (
             <div key={product.id} className="product-card">
@@ -146,7 +151,8 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
             </div>
           ))}
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

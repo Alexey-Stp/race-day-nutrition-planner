@@ -28,7 +28,7 @@ public static class UIMetadataService
         {
             new TemperatureMetadata(
                 Condition: TemperatureCondition.Cold,
-                Range: "≤ 5°C",
+                Range: "5°C",
                 Effects: new[]
                 {
                     "Reduced fluid needs",
@@ -50,7 +50,7 @@ public static class UIMetadataService
             ),
             new TemperatureMetadata(
                 Condition: TemperatureCondition.Hot,
-                Range: "≥ 25°C",
+                Range: "25°C",
                 Effects: new[]
                 {
                     "Increased fluid needs",

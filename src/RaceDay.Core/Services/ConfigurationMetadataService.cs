@@ -134,7 +134,7 @@ public static class ConfigurationMetadataService
         {
             new TemperatureAdjustment(
                 TemperatureCondition: "Cold",
-                Range: "≤ 5°C",
+                Range: "5°C",
                 FluidBonus: -NutritionConstants.Fluids.ColdWeatherPenalty,
                 SodiumBonus: 0,
                 Description: "Cold conditions reduce sweat rate and fluid needs. Risk of overconsumption if not adjusted."
@@ -148,7 +148,7 @@ public static class ConfigurationMetadataService
             ),
             new TemperatureAdjustment(
                 TemperatureCondition: "Hot",
-                Range: "≥ 25°C",
+                Range: "25°C",
                 FluidBonus: NutritionConstants.Fluids.HotWeatherBonus,
                 SodiumBonus: NutritionConstants.Sodium.HotWeatherBonus,
                 Description: "Hot conditions increase sweat rate significantly. Increase both fluids and sodium to prevent dehydration and hyponatremia."

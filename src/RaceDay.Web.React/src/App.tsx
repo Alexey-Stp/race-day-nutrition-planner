@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { SportType, IntensityLevel, TemperatureCondition, type ProductInfo, type RaceNutritionPlan } from './types';
+import { SportType, IntensityLevel, TemperatureCondition, type RaceNutritionPlan } from './types';
 import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
 import { IntensitySelector } from './components/IntensitySelector';
-import { BrandSelector } from './components/BrandSelector';
-import { ProductsList } from './components/ProductsList';
+import { AdvancedProductSelector } from './components/AdvancedProductSelector';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
 import './App.css';
@@ -17,14 +16,13 @@ function App() {
   const [duration, setDuration] = useState(1.5);
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
+  const [useCaffeine, setUseCaffeine] = useState(true);
 
-  const [selectedProducts, setSelectedProducts] = useState<ProductInfo[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'selector' | 'list'>('selector');
 
-  // Check if all required fields are filled
   const isFormValid = () => {
     return (
       athleteWeight > 0 &&
@@ -59,10 +57,11 @@ function App() {
         productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
-        volumeMl: p.volumeMl || 0
+        volumeMl: p.volumeMl || 0,
+        caffeineMg: p.caffeineMg || null
       }));
 
-      const newPlan = await api.generatePlan(athlete, race, products);
+      const newPlan = await api.generatePlan(athlete, race, products, useCaffeine);
       setPlan(newPlan);
       setError(null);
     } catch (err) {
@@ -78,7 +77,6 @@ function App() {
     <div className="planner-container">
       <div className="header">
         <h1>Race Day Nutrition Planner</h1>
-        <p className="subtitle">Personalized nutrition strategy</p>
       </div>
 
       <div className="content">
@@ -106,47 +104,54 @@ function App() {
             onTemperatureChange={setTemperature}
           />
 
-          <div className="product-selector-tabs">
-            <button 
-              className={`tab-btn ${viewMode === 'selector' ? 'active' : ''}`}
-              onClick={() => setViewMode('selector')}
-            >
-              Select by Brand
-            </button>
-            <button 
-              className={`tab-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-            >
-              View All Products
-            </button>
+          <AdvancedProductSelector onProductsSelected={setSelectedProducts} />
+
+          <div className="form-card settings-card">
+            <h2>Preferences</h2>
+            <label className="switch-row" htmlFor="caffeine-toggle">
+              <span className="switch-copy">
+                <span className="switch-title">Caffeine</span>
+                <span className="switch-subtitle">Include caffeine products in recommendations</span>
+              </span>
+              <span className="ios-switch">
+                <input
+                  id="caffeine-toggle"
+                  type="checkbox"
+                  checked={useCaffeine}
+                  onChange={(e) => setUseCaffeine(e.target.checked)}
+                />
+                <span className="ios-switch-track" />
+              </span>
+            </label>
           </div>
 
-          {viewMode === 'selector' ? (
-            <BrandSelector onBrandsSelected={setSelectedProducts} />
-          ) : (
-            <ProductsList onProductSelected={(product) => {
-              if (!selectedProducts.find(p => p.id === product.id)) {
-                setSelectedProducts([...selectedProducts, product]);
-              }
-            }} />
-          )}
+          {error && <div className="error-message">{error}</div>}
 
-          {error && <div className="error-message" style={{ marginTop: '10px' }}>{error}</div>}
-
-          <button 
-            onClick={generatePlan} 
-            className="btn btn-primary btn-lg btn-calculate"
-            disabled={loading || !isFormValid()}
-          >
-            {loading ? 'Generating...' : 'Generate Plan'}
-          </button>
+          {/* Sticky generate button */}
+          <div className="sticky-action-row">
+            <button
+              onClick={generatePlan}
+              className="btn btn-primary btn-lg btn-calculate"
+              disabled={loading || !isFormValid()}
+            >
+              {loading ? 'Generating...' : 'Generate Plan'}
+            </button>
+          </div>
         </div>
 
         {/* Right Section - Results */}
         <div className="results-container">
           {plan ? (
             <>
-              <PlanResults plan={plan} />
+              <PlanResults
+                plan={plan}
+                useCaffeine={useCaffeine}
+                athleteWeight={athleteWeight}
+                sportType={sportType}
+                duration={duration}
+                temperature={temperature}
+                intensity={intensity}
+              />
               <ShoppingList plan={plan} />
             </>
           ) : (
