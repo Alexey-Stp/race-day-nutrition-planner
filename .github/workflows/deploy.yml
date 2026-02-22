@@ -33,8 +33,20 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
+      - name: Compute version
+        id: version
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          DATESHORT=$(date -u +%Y%m%d)
+          COUNT=$(gh api "/repos/${{ github.repository }}/actions/workflows/deploy.yml/runs?per_page=100&status=completed" \
+            --jq "[.workflow_runs[] | select(.created_at | startswith(\"$TODAY\"))] | length")
+          DAILY_N=$((COUNT + 1))
+          echo "version=1.0.${DATESHORT}.${DAILY_N}" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: Deploy to Vercel (Production)
-        run: vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }} --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }}
         working-directory: src/RaceDay.Web.React
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

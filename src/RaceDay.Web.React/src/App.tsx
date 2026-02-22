@@ -10,6 +10,8 @@ import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
 import './App.css';
 
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'dev';
+
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
   const [sportType, setSportType] = useState<SportType>(SportType.Run);
@@ -76,6 +78,7 @@ function App() {
   return (
     <div className="planner-container">
       <div className="header">
+        <span className="version-badge">{APP_VERSION}</span>
         <h1>Race Day Nutrition Planner</h1>
       </div>
 
