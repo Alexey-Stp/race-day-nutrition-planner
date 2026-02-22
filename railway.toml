@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "src/RaceDay.API/Dockerfile"
+buildContext = "."
+
+[deploy]
+healthcheckPath = "/api/products"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
