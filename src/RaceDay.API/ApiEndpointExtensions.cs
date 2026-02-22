@@ -241,8 +241,8 @@ public static class ApiEndpointExtensions
                 return productsResult.Error;
 
             var profiles = CreateProfiles(request);
-            var nutritionPlan = GenerateNutritionPlan(profiles.athlete, profiles.race, productsResult.Products!);
-            var response = BuildResponse(profiles.athlete, profiles.race, nutritionPlan);
+            var planResult = GenerateNutritionPlanWithDiagnostics(profiles.athlete, profiles.race, productsResult.Products!, request.CaffeineEnabled ?? false);
+            var response = BuildResponseWithDiagnostics(profiles.athlete, profiles.race, planResult);
 
             return Results.Ok(response);
         }
@@ -367,6 +367,19 @@ public static class ApiEndpointExtensions
     }
 
     /// <summary>
+    /// Generate the nutrition plan with diagnostics (warnings/errors)
+    /// </summary>
+    private static PlanResult GenerateNutritionPlanWithDiagnostics(
+        AthleteProfile athlete,
+        RaceProfile race,
+        List<Product> products,
+        bool caffeineEnabled)
+    {
+        var service = new NutritionPlanService();
+        return service.GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled: caffeineEnabled);
+    }
+
+    /// <summary>
     /// Build the API response with plan and shopping summary
     /// </summary>
     private static AdvancedPlanResponse BuildResponse(
@@ -376,6 +389,18 @@ public static class ApiEndpointExtensions
     {
         var shoppingSummary = nutritionEvents.CalculateShoppingList();
         return new AdvancedPlanResponse(race, athlete, nutritionEvents, shoppingSummary);
+    }
+
+    /// <summary>
+    /// Build the API response with plan, shopping summary, and diagnostics
+    /// </summary>
+    private static AdvancedPlanResponse BuildResponseWithDiagnostics(
+        AthleteProfile athlete,
+        RaceProfile race,
+        PlanResult planResult)
+    {
+        var shoppingSummary = planResult.Events.CalculateShoppingList();
+        return new AdvancedPlanResponse(race, athlete, planResult.Events, shoppingSummary, planResult.Warnings, planResult.Errors);
     }
 
     /// <summary>
@@ -499,7 +524,8 @@ public record PlanGenerationRequest(
     IntensityLevel Intensity,
     List<ProductRequest>? Products = null,
     ProductFilter? Filter = null,
-    int? IntervalMin = null
+    int? IntervalMin = null,
+    bool? CaffeineEnabled = null
 );
 
 public record ProductRequest(
@@ -518,5 +544,7 @@ public record AdvancedPlanResponse(
     RaceProfile Race,
     AthleteProfile Athlete,
     List<NutritionEvent> NutritionSchedule,
-    ShoppingSummary? ShoppingSummary = null
+    ShoppingSummary? ShoppingSummary = null,
+    List<string>? Warnings = null,
+    List<string>? Errors = null
 );

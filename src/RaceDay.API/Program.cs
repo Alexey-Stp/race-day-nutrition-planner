@@ -31,6 +31,9 @@ builder.Services.AddCors(options =>
 // Register application services
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
 
+// Support Railway's dynamic PORT injection (falls back to 8080 for docker-compose)
+builder.WebHost.UseUrls($"http://+:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

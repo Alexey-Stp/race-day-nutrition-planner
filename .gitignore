@@ -504,3 +504,4 @@ example-outputs/*.json
 .sonarlint/
 *.bak
 .vscode/settings.json
+.claude/settings.local.json

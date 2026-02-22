@@ -167,6 +167,9 @@ export interface NutritionEvent {
   totalCarbsSoFar: number;
   hasCaffeine: boolean;
   caffeineMg?: number;
+  totalCaffeineSoFar?: number;
+  carbsInEvent?: number;
+  sipMl?: number;
 }
 
 export interface AdvancedPlanResponse {

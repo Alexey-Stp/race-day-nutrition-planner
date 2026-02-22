@@ -1,16 +1,16 @@
 // Utility functions
 
-// Format duration helper
+// Format duration as compact "Xh Ym" (e.g., "4h 05m", "2h 30m", "45m")
 export function formatDuration(hours: number): string {
   const wholeHours = Math.floor(hours);
   const minutes = Math.round((hours - wholeHours) * 60);
 
   if (wholeHours === 0) {
-    return `${minutes} minutes`;
+    return `${minutes}m`;
   } else if (minutes === 0) {
-    return `${wholeHours} hour${wholeHours > 1 ? 's' : ''}`;
+    return `${wholeHours}h`;
   } else {
-    return `${wholeHours} hour${wholeHours > 1 ? 's' : ''} ${minutes} minutes`;
+    return `${wholeHours}h ${minutes.toString().padStart(2, '0')}m`;
   }
 }
 
@@ -24,6 +24,17 @@ export function formatPhase(phase: string | number): string {
     'Bike': 'Bike',
     'Run': 'Run'
   };
-  
+
   return phaseMap[phase] || String(phase);
+}
+
+// Format sip action for display
+export function formatAction(event: { action: string; sipMl?: number; amountPortions: number }): string {
+  if (event.action === 'Sip' && event.sipMl) {
+    return `Sip: ${Math.round(event.sipMl)} ml`;
+  }
+  if (event.action === 'Sip') {
+    return 'Sip';
+  }
+  return `${event.action} (${event.amountPortions} portion${event.amountPortions !== 1 ? 's' : ''})`;
 }

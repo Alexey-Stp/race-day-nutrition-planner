@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import type { RaceNutritionPlan } from '../types';
-import { formatDuration, formatPhase } from '../utils';
+import type { RaceNutritionPlan, SportType, TemperatureCondition, IntensityLevel } from '../types';
+import { formatDuration, formatPhase, formatAction } from '../utils';
 import { api } from '../api';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
+  useCaffeine: boolean;
+  athleteWeight: number;
+  sportType: SportType;
+  duration: number;
+  temperature: TemperatureCondition;
+  intensity: IntensityLevel;
 }
 
 interface NutritionTargets {
@@ -23,32 +29,23 @@ interface ProgressBarProps {
   label: string;
 }
 
-// Conservative maximum caffeine intake in milligrams
 const MAX_CAFFEINE_MG = 300;
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label }) => {
   const isOptimal = percentage >= 95 && percentage <= 105;
   const isHigh = percentage > 105;
   const isLow = percentage < 95;
-  
+
   let fillClassName = 'progress-fill';
-  if (isOptimal) {
-    fillClassName += ' optimal';
-  } else if (isHigh) {
-    fillClassName += ' high';
-  } else if (isLow) {
-    fillClassName += ' low';
-  }
-  
+  if (isOptimal) fillClassName += ' optimal';
+  else if (isHigh) fillClassName += ' high';
+  else if (isLow) fillClassName += ' low';
+
   let percentClassName = 'progress-percent';
-  if (isOptimal) {
-    percentClassName += ' optimal';
-  } else if (isHigh) {
-    percentClassName += ' high';
-  } else if (isLow) {
-    percentClassName += ' low';
-  }
-  
+  if (isOptimal) percentClassName += ' optimal';
+  else if (isHigh) percentClassName += ' high';
+  else if (isLow) percentClassName += ' low';
+
   return (
     <div className="progress-item">
       <div className="progress-header">
@@ -57,7 +54,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label
       </div>
       <div className="progress-bar-container">
         <div className="progress-bar">
-          <div 
+          <div
             className={fillClassName}
             style={{ width: `${Math.min(percentage, 100)}%` }}
           />
@@ -70,9 +67,18 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label
   );
 };
 
-export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
+export const PlanResults: React.FC<PlanResultsProps> = ({
+  plan,
+  useCaffeine,
+  athleteWeight,
+  sportType,
+  duration,
+  temperature,
+  intensity
+}) => {
   const [targets, setTargets] = useState<NutritionTargets | null>(null);
   const [loadingTargets, setLoadingTargets] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     const fetchTargets = async () => {
@@ -102,56 +108,155 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
     return null;
   }
 
-  // Group schedule items by time
-  const schedule = plan.nutritionSchedule;
+  const schedule = useCaffeine
+    ? plan.nutritionSchedule
+    : plan.nutritionSchedule.filter(event => !event.hasCaffeine);
 
-  // Calculate totals
-  const totalCarbs = schedule.length > 0 ? schedule.at(-1)!.totalCarbsSoFar : 0;
+  // Calculate totals from CarbsInEvent (sum of individual events) for accuracy
+  const totalCarbs = schedule.reduce((sum, e) => sum + (e.carbsInEvent ?? 0), 0) ||
+    (schedule.length > 0 ? schedule.at(-1)!.totalCarbsSoFar : 0);
   const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
-  const duration = plan.race?.durationHours ?? 0;
+  const raceDuration = plan.race?.durationHours ?? 0;
 
-  // Calculate percentages based on loaded targets
+  const getSportTypeDisplay = (type: string) => {
+    switch(type) {
+      case 'Run': return '🏃';
+      case 'Bike': return '🚴';
+      case 'Triathlon': return '🏊‍♂️🚴🏃';
+      default: return type;
+    }
+  };
+
+  const getTemperatureDisplay = (temp: string) => {
+    switch(temp) {
+      case 'Cold': return '❄️ Cold';
+      case 'Moderate': return '🌤️ Moderate';
+      case 'Hot': return '🌡️ Hot';
+      default: return temp;
+    }
+  };
+
+  const planTitle = `${getSportTypeDisplay(sportType)} ${sportType} | ${athleteWeight}kg | ${formatDuration(duration)} | ${intensity} | ${getTemperatureDisplay(temperature)}`;
+
+  const copyPlanToClipboard = () => {
+    const planText = generatePlanText();
+    navigator.clipboard.writeText(planText).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  };
+
+  const generatePlanText = () => {
+    const lines: string[] = [];
+
+    lines.push('═══════════════════════════════════════════════');
+    lines.push('           RACE NUTRITION PLAN');
+    lines.push('═══════════════════════════════════════════════');
+    lines.push('');
+    lines.push('ATHLETE INFORMATION');
+    lines.push(`  Weight: ${athleteWeight} kg`);
+    lines.push('');
+    lines.push('RACE INFORMATION');
+    lines.push(`  Sport: ${sportType}`);
+    lines.push(`  Duration: ${formatDuration(duration)}`);
+    lines.push(`  Intensity: ${intensity}`);
+    lines.push(`  Temperature: ${temperature}`);
+    lines.push('');
+
+    if (targets) {
+      lines.push('NUTRITION TARGETS');
+      lines.push(`  Carbs Target: ${targets.carbsGPerHour.toFixed(0)}g/h × ${formatDuration(raceDuration)} = ${targets.totalCarbsG.toFixed(0)}g`);
+      lines.push(`  Plan Total Carbs: ${totalCarbs.toFixed(0)}g`);
+      if (useCaffeine) {
+        lines.push(`  Total Caffeine: ${totalCaffeine.toFixed(0)}mg`);
+      }
+      lines.push('');
+    }
+
+    lines.push('NUTRITION SCHEDULE');
+    lines.push('───────────────────────────────────────────────');
+    lines.push('');
+
+    schedule.forEach((event, index) => {
+      const timeStr = event.timeMin < 0 ? `Pre-race (${Math.abs(event.timeMin)}min before)` : formatDuration(event.timeMin / 60);
+      const phaseStr = formatPhase(event.phase);
+      const actionStr = formatAction(event);
+      lines.push(`[${timeStr}] ${phaseStr}`);
+      lines.push(`  Product: ${event.productName}`);
+      lines.push(`  ${actionStr}`);
+      if (event.carbsInEvent) {
+        lines.push(`  Carbs: ${event.carbsInEvent.toFixed(1)}g (cumulative: ${event.totalCarbsSoFar.toFixed(0)}g)`);
+      } else {
+        lines.push(`  Cumulative Carbs: ${event.totalCarbsSoFar.toFixed(0)}g`);
+      }
+      if (event.hasCaffeine && event.caffeineMg) {
+        lines.push(`  Caffeine: ${event.caffeineMg}mg`);
+      }
+      if (index < schedule.length - 1) {
+        lines.push('');
+      }
+    });
+
+    lines.push('');
+    lines.push('═══════════════════════════════════════════════');
+    lines.push(`Generated: ${new Date().toLocaleString()}`);
+    lines.push('═══════════════════════════════════════════════');
+
+    return lines.join('\n');
+  };
+
   const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
   const caffeinePercentage = (totalCaffeine / MAX_CAFFEINE_MG) * 100;
-
-  // Create a unique key based on plan content to force re-render on plan changes
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
 
   return (
     <div className="results-section" key={planKey}>
       <div className="results-card">
-        <h2>Race Nutrition Plan</h2>
-        
+        {/* Sticky header with title and copy button */}
+        <div className="plan-header-sticky">
+          <h2 className="plan-title">{planTitle}</h2>
+          <button
+            onClick={copyPlanToClipboard}
+            className="btn btn-secondary btn-compact"
+            title="Copy plan to clipboard"
+          >
+            {copySuccess ? '✓ Copied!' : '📋 Copy'}
+          </button>
+        </div>
+
         {schedule.length === 0 ? (
           <p className="empty-message">No schedule generated</p>
         ) : (
           <>
-            {/* Targets Section */}
+            {/* Targets Section - compact */}
             <div className="targets-section">
-              <h3>Targets</h3>
-              {loadingTargets && <p className="loading">Loading nutrition targets...</p>}
+              {loadingTargets && <p className="loading">Loading targets...</p>}
               {!loadingTargets && targets && (
                 <div className="targets-container">
                   <div className="target-info">
-                    <div className="info-item">
-                      <span className="info-label">Target Carbs (per hour):</span>
-                      <span className="info-value">{targets.carbsGPerHour.toFixed(0)}g/h × {duration.toFixed(1)}h = {targets.totalCarbsG.toFixed(0)}g</span>
-                    </div>
+                    <span className="info-label">Target:</span>
+                    <span className="info-value">{targets.carbsGPerHour.toFixed(0)}g/h × {formatDuration(raceDuration)} = {targets.totalCarbsG.toFixed(0)}g</span>
+                    <span className="info-label" style={{ marginLeft: '1rem' }}>Plan:</span>
+                    <span className="info-value"><strong>{totalCarbs.toFixed(0)}g</strong></span>
                   </div>
-                  
-                  <ProgressBar 
+
+                  <ProgressBar
                     value={totalCarbs}
                     max={targets.totalCarbsG}
                     percentage={carbsPercentage}
-                    label="Plan Carbs vs Target"
+                    label="Carbs"
                   />
-                  
-                  <ProgressBar 
-                    value={totalCaffeine}
-                    max={MAX_CAFFEINE_MG}
-                    percentage={caffeinePercentage}
-                    label="Plan Caffeine vs Target"
-                  />
+
+                  {useCaffeine && (
+                    <ProgressBar
+                      value={totalCaffeine}
+                      max={MAX_CAFFEINE_MG}
+                      percentage={caffeinePercentage}
+                      label="Caffeine"
+                    />
+                  )}
                 </div>
               )}
               {!loadingTargets && !targets && (
@@ -159,33 +264,39 @@ export const PlanResults: React.FC<PlanResultsProps> = ({ plan }) => {
               )}
             </div>
 
+            {/* Schedule table - compact */}
             <div className="schedule-table">
               <table>
                 <thead>
                   <tr>
                     <th>Time</th>
                     <th>Phase</th>
-                    <th>Phase Description</th>
                     <th>Product</th>
                     <th>Action</th>
                     <th className="text-right">Carbs</th>
                     <th className="text-right">Total</th>
-                    <th>Caffeine</th>
+                    {useCaffeine && <th>Caffeine</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {schedule.map((event, index) => (
-                    <tr key={`${index}-${event.timeMin}-${event.productName}`} title={event.phaseDescription}>
-                      <td><strong>{formatDuration(event.timeMin / 60)}</strong></td>
-                      <td>{formatPhase(event.phase)}</td>
-                      <td className="phase-desc">{event.phaseDescription}</td>
-                      <td>{event.productName}</td>
-                      <td>{event.action}</td>
-                      <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
-                      <td className="text-right">{event.amountPortions} portion(s)</td>
-                      <td>{event.hasCaffeine ? `☕ ${event.caffeineMg || '?'}mg` : '-'}</td>
-                    </tr>
-                  ))}
+                  {schedule.map((event, index) => {
+                    const isSip = event.action === 'Sip';
+                    return (
+                      <tr
+                        key={`${index}-${event.timeMin}-${event.productName}`}
+                        title={event.phaseDescription}
+                        className={isSip ? 'sip-row' : ''}
+                      >
+                        <td><strong>{event.timeMin < 0 ? `Pre (${Math.abs(event.timeMin)}m)` : formatDuration(event.timeMin / 60)}</strong></td>
+                        <td>{formatPhase(event.phase)}</td>
+                        <td>{event.productName}</td>
+                        <td>{formatAction(event)}</td>
+                        <td className="text-right">{(event.carbsInEvent ?? 0).toFixed(1)}g</td>
+                        <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
+                        {useCaffeine && <td>{event.hasCaffeine ? `☕ ${event.caffeineMg || '?'}mg` : '-'}</td>}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

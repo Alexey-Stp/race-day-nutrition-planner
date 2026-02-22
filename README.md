@@ -16,13 +16,20 @@ The application generates a time-based schedule showing when and how much of eac
 - **Interactive Web UI**: User-friendly React web interface for creating nutrition plans
 - **Activity Presets**: 3 core endurance activities (Run, Bike, Triathlon) with customizable durations
 - **Personalized Calculations**: Adjusts nutrition targets based on athlete weight, race intensity, duration, and temperature
-- **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars) from multiple brands
+- **Individual Product Selection**:
+  - Choose specific products via checkboxes, not just entire brands
+  - Products grouped by type (Drinks, Gels, Bars, Chews, Recovery)
+  - Global search to filter products
+  - "Select All / Clear" controls per group
+  - Collapsible interface for compact layout
 - **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan with 20-minute intervals
-- **Smart Recommendations**: 
+- **Smart Recommendations**:
   - Increases carb intake for harder efforts and longer durations (5+ hours)
   - Adjusts fluid needs based on temperature and athlete weight
   - Optimizes sodium intake for hot conditions and heavier athletes
-  - Tracks caffeine intake and displays caffeine content from selected products
+  - **Tracks caffeine intake** and displays caffeine content from selected products
+  - Enable/disable caffeine products via checkbox
+- **Comprehensive Testing**: 203 unit tests covering all core functionality with regression test suite
 - **REST API**: Full programmatic access via REST endpoints with Swagger documentation
 
 ## Architecture
@@ -289,11 +296,13 @@ npm run preview
 #### Web Features:
 - Interactive form for athlete profile (body weight)
 - Race configuration (sport type, duration, temperature, intensity)
-- Dynamic product management (add/remove gels and drinks)
+- **Individual product selection** with checkboxes grouped by type
+- **Brand filtering** to quickly select products from favorite brands
+- **Caffeine control** - enable/disable caffeinated products
 - Server-side nutrition plan calculation via API
-- Visual display of targets and intake schedule
-- Product browser with filtering capabilities
-- Responsive design with modern UI
+- Visual display of targets, caffeine totals, and intake schedule
+- Product browser with search and filtering capabilities
+- Responsive design with modern, compact UI
 
 ### REST API (Swagger/OpenAPI)
 
