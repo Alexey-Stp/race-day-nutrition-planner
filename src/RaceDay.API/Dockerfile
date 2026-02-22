@@ -29,7 +29,7 @@ EXPOSE 8081
 
 # Install curl, create non-root user, copy files, and set permissions
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* && \
-    useradd -m -u 1000 -s /bin/bash appuser && \
+    useradd -m -u 1001 -s /bin/bash appuser && \
     chown -R appuser:appuser /app
 
 # Copy published files with correct ownership
