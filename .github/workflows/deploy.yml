@@ -26,13 +26,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
       - name: Compute version
         id: version
         run: |
@@ -45,24 +38,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Deploy to Vercel (Production)
-        id: vercel
+      - name: Trigger Vercel Deployment
         run: |
-          URL=$(vercel deploy --prod --yes --archive=tgz \
-            --token ${{ secrets.VERCEL_TOKEN }} \
-            --build-env VITE_API_URL=${{ secrets.RAILWAY_API_URL }} \
-            --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }})
-          echo "url=$URL" >> $GITHUB_OUTPUT
-        working-directory: src/RaceDay.Web.React
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
 
       - name: Notify Telegram
         run: |
           curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
             -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
             -d parse_mode="Markdown" \
-            -d text="*Race Day Planner deployed* v${{ steps.version.outputs.version }}%0A${{ steps.vercel.outputs.url }}"
+            -d text="*Race Day Planner deployed* v${{ steps.version.outputs.version }}%0Ahttps://race-day-nutrition-planner-alexey-stps-projects.vercel.app"
 
    
