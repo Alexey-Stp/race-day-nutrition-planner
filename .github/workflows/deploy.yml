@@ -57,19 +57,10 @@ jobs:
 
       - name: Deploy to Vercel (Production)
         id: vercel
-        run: |
-          URL=$(vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }} \
-            --build-env VITE_API_URL=${{ secrets.RAILWAY_API_URL }} \
-            --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }})
-          echo "url=$URL" >> $GITHUB_OUTPUT
+        run: vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_URL=${{ secrets.RAILWAY_API_URL }} --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }}
         working-directory: src/RaceDay.Web.React
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
-      - name: Notify Telegram
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d parse_mode="Markdown" \
-            -d text="*Race Day Planner deployed* v${{ steps.version.outputs.version }}%0A${{ steps.vercel.outputs.url }}"
+   
