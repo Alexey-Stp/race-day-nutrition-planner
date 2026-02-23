@@ -49,7 +49,7 @@ The PR also includes comprehensive test coverage:
 - `NutritionCalculatorTests.cs` - Calculator validation tests
 - `ValidationTests.cs` - Input validation tests
 - Additional test files for repositories and services
-- **Total: 157 tests** (as documented in ALGORITHM_IMPROVEMENTS.md)
+- **Total: 212 tests** (as documented in ALGORITHM_IMPROVEMENTS.md)
 
 ## Impact Assessment
 
@@ -75,7 +75,7 @@ The PR also includes comprehensive test coverage:
 1. **Algorithm Correctness**: Does the new PlanGenerator produce physiologically sound nutrition plans?
 2. **Performance**: Is the O(n² + m log m) complexity acceptable for expected inputs?
 3. **API Compatibility**: Do the API changes maintain backward compatibility or require version bumping?
-4. **Test Coverage**: Are the 157 tests sufficient to catch regression issues?
+4. **Test Coverage**: Are the 212 tests sufficient to catch regression issues?
 5. **Security**: Are user inputs properly validated? Any injection risks?
 6. **Maintainability**: Is the ~1,200 line PlanGenerator.cs maintainable or should it be refactored?
 
