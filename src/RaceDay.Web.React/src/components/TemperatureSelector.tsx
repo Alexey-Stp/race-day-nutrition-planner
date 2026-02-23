@@ -12,11 +12,15 @@ const TEMP_ICONS: Record<string, string> = {
 interface TemperatureSelectorProps {
   temperature: TemperatureCondition;
   onTemperatureChange: (temp: TemperatureCondition) => void;
+  useCaffeine: boolean;
+  onCaffeineToggle: (value: boolean) => void;
 }
 
 export const TemperatureSelector: React.FC<TemperatureSelectorProps> = ({
   temperature,
-  onTemperatureChange
+  onTemperatureChange,
+  useCaffeine,
+  onCaffeineToggle,
 }) => {
   const [metadata, setMetadata] = useState<TemperatureMetadata[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +66,17 @@ export const TemperatureSelector: React.FC<TemperatureSelectorProps> = ({
           );
         })}
       </div>
+      <label className="caffeine-compact-row">
+        <span className="caffeine-compact-label">☕ Caffeine</span>
+        <span className="ios-switch">
+          <input
+            type="checkbox"
+            checked={useCaffeine}
+            onChange={(e) => onCaffeineToggle(e.target.checked)}
+          />
+          <span className="ios-switch-track" />
+        </span>
+      </label>
     </div>
   );
 };

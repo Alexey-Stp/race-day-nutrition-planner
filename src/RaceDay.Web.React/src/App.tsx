@@ -155,29 +155,12 @@ function App() {
             <TemperatureSelector
               temperature={temperature}
               onTemperatureChange={setTemperature}
+              useCaffeine={useCaffeine}
+              onCaffeineToggle={setUseCaffeine}
             />
           </div>
 
           <AdvancedProductSelector onProductsSelected={setSelectedProducts} />
-
-          <div className="form-card settings-card">
-            <h2>Preferences</h2>
-            <label className="switch-row" htmlFor="caffeine-toggle">
-              <span className="switch-copy">
-                <span className="switch-title">Caffeine</span>
-                <span className="switch-subtitle">Include caffeine products in recommendations</span>
-              </span>
-              <span className="ios-switch">
-                <input
-                  id="caffeine-toggle"
-                  type="checkbox"
-                  checked={useCaffeine}
-                  onChange={(e) => setUseCaffeine(e.target.checked)}
-                />
-                <span className="ios-switch-track" />
-              </span>
-            </label>
-          </div>
 
           {error && <div className="error-message">{error}</div>}
 
