@@ -90,22 +90,24 @@ function App() {
             onAthleteWeightChange={setAthleteWeight}
           />
 
-          <RaceDetailsForm
-            sportType={sportType}
-            duration={duration}
-            onSportTypeChange={setSportType}
-            onDurationChange={setDuration}
-          />
+          <div className="selector-group">
+            <RaceDetailsForm
+              sportType={sportType}
+              duration={duration}
+              onSportTypeChange={setSportType}
+              onDurationChange={setDuration}
+            />
 
-          <IntensitySelector
-            intensity={intensity}
-            onIntensityChange={setIntensity}
-          />
+            <IntensitySelector
+              intensity={intensity}
+              onIntensityChange={setIntensity}
+            />
 
-          <TemperatureSelector
-            temperature={temperature}
-            onTemperatureChange={setTemperature}
-          />
+            <TemperatureSelector
+              temperature={temperature}
+              onTemperatureChange={setTemperature}
+            />
+          </div>
 
           <AdvancedProductSelector onProductsSelected={setSelectedProducts} />
 

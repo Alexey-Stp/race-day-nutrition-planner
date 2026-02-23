@@ -468,15 +468,13 @@ html, body {
 /* Activity Buttons - Sport Type Selection */
 .activity-buttons {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 6px;
     width: 100%;
 }
 
 .activity-btn {
     flex: 1;
-    min-width: 80px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--background);
@@ -485,7 +483,17 @@ html, body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    text-transform: capitalize;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.activity-btn .activity-icon {
+    font-size: 1rem;
+    line-height: 1;
 }
 
 .activity-btn:hover {
@@ -497,6 +505,27 @@ html, body {
     background: var(--primary);
     border-color: var(--primary);
     color: white;
+}
+
+/* Selector group — merges sport/intensity/temperature cards into one visual block */
+.selector-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.selector-group > .form-card {
+    border-radius: 0;
+    border-bottom: none;
+    padding: 10px 14px;
+}
+
+.selector-group > .form-card:first-child {
+    border-radius: 12px 12px 0 0;
+}
+
+.selector-group > .form-card:last-child {
+    border-radius: 0 0 12px 12px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 /* Intensity Buttons - Matching Temperature Design */

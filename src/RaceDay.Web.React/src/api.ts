@@ -1,6 +1,6 @@
 import type { ProductInfo, ActivityInfo, RaceNutritionPlan, AthleteProfile, RaceProfile, ProductEditor, UIMetadata, TemperatureMetadata, IntensityMetadata, ConfigurationMetadata } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5208';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const api = {
   // Products

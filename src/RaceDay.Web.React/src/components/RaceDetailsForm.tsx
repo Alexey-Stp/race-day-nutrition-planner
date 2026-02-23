@@ -3,6 +3,12 @@ import { SportType, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../utils';
 
+const ACTIVITY_ICONS: Record<string, string> = {
+  run: '🏃',
+  bike: '🚴',
+  triathlon: '🏊',
+};
+
 interface RaceDetailsFormProps {
   sportType: SportType;
   duration: number;
@@ -68,30 +74,29 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
 
   return (
     <div className="form-card">
-      <h2>Sport Type</h2>
-      <div className="form-group">
-        <div className="activity-buttons">
-          {loading ? (
-            <p className="loading">Loading activities...</p>
-          ) : (
-            activities.map(activity => (
-              <button
-                key={activity.id}
-                className={`activity-btn ${currentActivityId === activity.id ? 'active' : ''}`}
-                onClick={() => {
-                  setCurrentActivityId(activity.id);
-                  setMinDuration(activity.minDurationHours);
-                  setMaxDuration(activity.maxDurationHours);
-                  onDurationChange(activity.bestTimeHours);
-                  setCurrentDisplayDuration(activity.bestTimeHours);
-                  onSportTypeChange(activity.sportType);
-                }}
-              >
-                {activity.name}
-              </button>
-            ))
-          )}
-        </div>
+      <div className="activity-buttons">
+        {loading ? (
+          <p className="loading">Loading...</p>
+        ) : (
+          activities.map(activity => (
+            <button
+              key={activity.id}
+              className={`activity-btn ${currentActivityId === activity.id ? 'active' : ''}`}
+              onClick={() => {
+                setCurrentActivityId(activity.id);
+                setMinDuration(activity.minDurationHours);
+                setMaxDuration(activity.maxDurationHours);
+                onDurationChange(activity.bestTimeHours);
+                setCurrentDisplayDuration(activity.bestTimeHours);
+                onSportTypeChange(activity.sportType);
+              }}
+              data-tooltip={activity.description}
+            >
+              <span className="activity-icon">{ACTIVITY_ICONS[activity.id]}</span>
+              <span>{activity.name}</span>
+            </button>
+          ))
+        )}
       </div>
 
       <div className="form-group inline-group">
