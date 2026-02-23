@@ -45,15 +45,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Configure Vercel Project
-        run: |
-          mkdir -p .vercel
-          echo '{"projectId":"${{ secrets.VERCEL_PROJECT_ID }}","orgId":"${{ secrets.VERCEL_ORG_ID }}"}' > .vercel/project.json
-        working-directory: src/RaceDay.Web.React
-
       - name: Deploy to Vercel (Production)
         id: vercel
         run: vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_URL=${{ secrets.RAILWAY_API_URL }} --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }}
         working-directory: src/RaceDay.Web.React
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
    
