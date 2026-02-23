@@ -471,6 +471,20 @@ body {
     color: white;
 }
 
+.caffeine-compact-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.caffeine-compact-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
 .temperature-details {
     font-size: 0.75rem;
     color: var(--text-secondary);

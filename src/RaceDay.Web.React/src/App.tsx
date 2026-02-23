@@ -5,7 +5,6 @@ import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
 import { IntensitySelector } from './components/IntensitySelector';
-import { CaffeineToggle } from './components/CaffeineToggle';
 import { AdvancedProductSelector } from './components/AdvancedProductSelector';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
@@ -156,11 +155,8 @@ function App() {
             <TemperatureSelector
               temperature={temperature}
               onTemperatureChange={setTemperature}
-            />
-
-            <CaffeineToggle
               useCaffeine={useCaffeine}
-              onToggle={setUseCaffeine}
+              onCaffeineToggle={setUseCaffeine}
             />
           </div>
 
