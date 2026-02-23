@@ -22,6 +22,8 @@ The application generates a time-based schedule showing when and how much of eac
   - Global search to filter products
   - "Select All / Clear" controls per group
   - Collapsible interface for compact layout
+- **Brand Filtering**: Filter products by brand for quick selection (e.g., "SiS", "Maurten")
+  - Automatic product type exclusions based on sport (e.g., runners don't carry bottles)
 - **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan with 20-minute intervals
 - **Smart Recommendations**:
   - Increases carb intake for harder efforts and longer durations (5+ hours)
@@ -29,7 +31,7 @@ The application generates a time-based schedule showing when and how much of eac
   - Optimizes sodium intake for hot conditions and heavier athletes
   - **Tracks caffeine intake** and displays caffeine content from selected products
   - Enable/disable caffeine products via checkbox
-- **Comprehensive Testing**: 157 unit tests covering all core functionality with regression test suite
+- **Comprehensive Testing**: 212 unit tests covering all core functionality with regression test suite
 - **REST API**: Full programmatic access via REST endpoints with Swagger documentation
 
 ## Architecture
@@ -70,7 +72,7 @@ RaceDayNutritionPlanner/
 │           ├── /api/activities    # Activity presets endpoints
 │           └── /api/plan/generate # Nutrition plan generation (POST)
 ├── tests/
-│   └── RaceDay.Core.Tests/        # Unit tests (157 tests)
+│   └── RaceDay.Core.Tests/        # Unit tests (212 tests)
 │       ├── NutritionCalculatorTests.cs
 │       ├── PlanGeneratorTests.cs
 │       ├── ValidationTests.cs
@@ -341,6 +343,15 @@ Navigate to `https://localhost:[port]/swagger` to access the interactive Swagger
 - **POST /api/plan/generate** - Generate a personalized nutrition plan with shopping list
   - Returns nutrition targets, time-based schedule, totals, and aggregated product summaries
   - Shopping list shows total quantities needed per product for easy race day preparation
+  - Supports optional brand filtering via `filter` parameter
+
+**Metadata** (UI Support)
+- **GET /api/metadata** - Get all UI metadata (temperatures, intensities, defaults)
+- **GET /api/metadata/temperatures** - Get temperature condition metadata with ranges and effects
+- **GET /api/metadata/intensities** - Get intensity level metadata with icons, carb ranges, and effects
+- **GET /api/metadata/defaults** - Get default values for the application
+- **GET /api/metadata/configuration** - Get all nutrition configuration including sport-specific parameters and thresholds
+- **POST /api/metadata/targets** - Calculate nutrition targets for specific athlete and race parameters
 
 #### Example API Calls
 
@@ -377,6 +388,35 @@ curl -X POST https://localhost:7001/api/plan/generate \
       {"name": "Sports Drink", "productType": "drink", "carbsG": 30, "sodiumMg": 300, "volumeMl": 500}
     ]
   }'
+
+# Generate plan with brand filter (automatically excludes drinks for running)
+curl -X POST https://localhost:7001/api/plan/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "athleteWeightKg": 75,
+    "sportType": "Run",
+    "durationHours": 3,
+    "temperatureC": 20,
+    "intensity": "Moderate",
+    "filter": {
+      "brand": "SiS"
+    }
+  }'
+
+# Generate plan with brand filter and explicit type exclusions
+curl -X POST https://localhost:7001/api/plan/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "athleteWeightKg": 75,
+    "sportType": "Bike",
+    "durationHours": 3,
+    "temperatureC": 20,
+    "intensity": "Moderate",
+    "filter": {
+      "brand": "SiS",
+      "excludeTypes": ["bar"]
+    }
+  }'
 ```
 
 The response includes a `productSummaries` array with the shopping list:
@@ -388,6 +428,53 @@ The response includes a `productSummaries` array with the shopping list:
   ]
 }
 ```
+
+### Brand Filtering
+
+The API supports filtering products by brand without needing to specify individual products. This is useful when you want to use only products from a specific brand (e.g., "SiS", "Maurten").
+
+#### Sport-Specific Automatic Exclusions
+
+When using brand filtering, certain product types are automatically excluded based on the sport:
+
+- **Run**: Automatically excludes `drink` and `recovery` types (runners typically don't carry bottles)
+- **Bike**: No automatic exclusions (cyclists can easily carry bottles)
+- **Triathlon**: No automatic exclusions (bike portion allows for carrying bottles)
+
+#### Using Brand Filters
+
+The `filter` parameter accepts:
+- `brand`: String - Filter by brand name (e.g., "SiS", "Maurten") - case insensitive
+- `excludeTypes`: Array of strings - Explicitly exclude product types (e.g., ["bar", "gel"])
+
+**Example - Running with SiS brand:**
+```json
+{
+  "athleteWeightKg": 75,
+  "sportType": "Run",
+  "durationHours": 3,
+  "filter": {
+    "brand": "SiS"
+  }
+}
+```
+This will use only SiS gels and bars (drinks automatically excluded for running).
+
+**Example - Cycling with explicit exclusions:**
+```json
+{
+  "athleteWeightKg": 75,
+  "sportType": "Bike",
+  "durationHours": 4,
+  "filter": {
+    "brand": "Maurten",
+    "excludeTypes": ["bar"]
+  }
+}
+```
+This will use only Maurten gels and drinks (bars explicitly excluded).
+
+For detailed examples, see [Brand Filter Usage Examples](example-outputs/brand-filter-usage.md).
 
 ## Quick API Testing
 
@@ -527,7 +614,7 @@ Current test coverage includes:
 - **AlgorithmImprovementTests**: Algorithm v2 regression tests
 - **AdvancedPlanGeneratorTests**: Advanced scheduling scenarios (caffeine, coverage, front-load)
 
-**Total: 157 tests, all passing**
+**Total: 212 tests, all passing**
 
 ## Architecture Details
 

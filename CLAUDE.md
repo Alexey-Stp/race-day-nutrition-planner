@@ -6,7 +6,7 @@
 # Build
 dotnet build
 
-# Test (all 157 tests must pass before any commit)
+# Test (all 212 tests must pass before any commit)
 dotnet test
 
 # Test with output
@@ -24,12 +24,12 @@ Permitted bash operations are restricted to `dotnet test:*` and `dotnet build:*`
 
 1. Read the relevant source files — never modify code you have not read.
 2. Run `dotnet build` to confirm the baseline compiles.
-3. Run `dotnet test` to confirm the baseline is green (157 tests).
+3. Run `dotnet test` to confirm the baseline is green (212 tests).
 
 ## After Making Changes
 
 1. Run `dotnet build` — zero warnings is the target.
-2. Run `dotnet test` — all 157 tests must pass; fix failures before proceeding.
+2. Run `dotnet test` — all 212 tests must pass; fix failures before proceeding.
 3. Do not commit unless explicitly asked.
 
 ## Code Conventions
@@ -173,7 +173,7 @@ Entry point: `NutritionPlanService` → `PlanGenerator`.
 
 ## Tests
 
-All 157 tests in `tests/RaceDay.Core.Tests/` must pass.
+All 212 tests in `tests/RaceDay.Core.Tests/` must pass.
 
 | File | Scope |
 |------|-------|
