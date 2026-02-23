@@ -35,7 +35,7 @@ Permitted bash operations are restricted to `dotnet test:*` and `dotnet build:*`
 ## Code Conventions
 
 ### C# (.NET)
-- Target framework: .NET 8 / C# 12.
+- Target framework: .NET 10 / C# 13.
 - Use `record` types for immutable domain models (see `Models/`).
 - Prefer expression-bodied members and pattern matching.
 - No public mutable state on domain objects.

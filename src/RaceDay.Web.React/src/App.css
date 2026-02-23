@@ -18,7 +18,14 @@
     box-sizing: border-box;
 }
 
-html, body {
+html {
+    /* Prevent iOS from boosting font sizes in landscape */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+html,
+body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -31,7 +38,11 @@ html, body {
 .planner-container {
     max-width: 1400px;
     margin: 0 auto;
+    /* Honour iPhone notch / Dynamic Island / home indicator */
     padding: 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
 }
 
 .header {
@@ -282,6 +293,13 @@ html, body {
     cursor: pointer;
     font-size: 0.875rem;
     transition: all 0.15s ease;
+    /* Tap-friendly on touch screens */
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-icon:hover:not(:disabled) {
@@ -306,6 +324,9 @@ html, body {
     transition: all 0.15s ease;
     display: inline-block;
     text-align: center;
+    /* Minimum Apple HIG tap target */
+    min-height: 44px;
+    touch-action: manipulation;
 }
 
 .btn-primary {
@@ -362,11 +383,41 @@ html, body {
     cursor: not-allowed;
 }
 
+/* CSS Tooltip */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1C1C1E;
+    color: #F2F2F7;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 400;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    z-index: 200;
+    max-width: 280px;
+    white-space: normal;
+    text-align: center;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+}
+
 /* Temperature Buttons - Compact Control */
 .temperature-buttons {
     display: flex;
     gap: 6px;
-    flex: 1;
+    width: 100%;
 }
 
 .temp-btn {
@@ -382,9 +433,16 @@ html, body {
     transition: all 0.2s ease;
     text-transform: capitalize;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 2px;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.temp-btn .temp-icon {
+    font-size: 1rem;
+    line-height: 1;
 }
 
 .temp-btn .btn-range {
@@ -430,15 +488,13 @@ html, body {
 /* Activity Buttons - Sport Type Selection */
 .activity-buttons {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 6px;
     width: 100%;
 }
 
 .activity-btn {
     flex: 1;
-    min-width: 80px;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--background);
@@ -447,7 +503,17 @@ html, body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    text-transform: capitalize;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.activity-btn .activity-icon {
+    font-size: 1rem;
+    line-height: 1;
 }
 
 .activity-btn:hover {
@@ -461,6 +527,27 @@ html, body {
     color: white;
 }
 
+/* Selector group — merges sport/intensity/temperature cards into one visual block */
+.selector-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.selector-group>.form-card {
+    border-radius: 0;
+    border-bottom: none;
+    padding: 10px 14px;
+}
+
+.selector-group>.form-card:first-child {
+    border-radius: 12px 12px 0 0;
+}
+
+.selector-group>.form-card:last-child {
+    border-radius: 0 0 12px 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
 /* Intensity Buttons - Matching Temperature Design */
 .intensity-buttons {
     display: flex;
@@ -472,7 +559,7 @@ html, body {
 
 .intensity-btn {
     flex: 1;
-    padding: 12px 16px;
+    padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--background);
@@ -481,11 +568,12 @@ html, body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    text-transform: capitalize;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
 }
 
 .intensity-btn .intensity-icon {
@@ -734,6 +822,8 @@ html, body {
 @media (max-width: 768px) {
     .planner-container {
         padding: 12px;
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(12px, env(safe-area-inset-right));
     }
 
     .header {
@@ -742,16 +832,31 @@ html, body {
     }
 
     .header h1 {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
     }
 
     .subtitle {
         font-size: 0.8125rem;
     }
 
+    /* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
+    .form-control,
+    .filter-group select,
+    .filter-group input,
+    select,
+    input[type="text"],
+    input[type="number"],
+    input[type="email"] {
+        font-size: 16px !important;
+    }
+
     .targets-grid,
     .totals-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .plan-summary {
+        grid-template-columns: repeat(2, 1fr);
     }
 
     .schedule-header,
@@ -774,6 +879,17 @@ html, body {
 
     .action-buttons .btn {
         flex: 1;
+    }
+
+    /* Horizontal scroll hint for tables */
+    .schedule-table-wrapper,
+    .shopping-list-wrapper,
+    .products-list-wrapper,
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        /* Subtle right-edge fade to hint horizontal scroll */
+        -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+        mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
     }
 }
 
@@ -1761,7 +1877,7 @@ html, body {
 
 @media (max-width: 768px) {
     .targets-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -2308,276 +2424,517 @@ html, body {
 
 /* AdvancedProductSelector Styles */
 .selector-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
 }
 
 .badge {
-  background: var(--primary);
-  color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
+    background: var(--primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
 .product-groups {
-  max-height: 400px;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-top: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-top: 12px;
 }
 
 .product-group {
-  border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .product-group:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .group-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: var(--light);
-  font-weight: 600;
-  font-size: 0.875rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--light);
+    font-weight: 600;
+    font-size: 0.875rem;
 }
 
 .group-label {
-  flex: 1;
+    flex: 1;
 }
 
 .group-count {
-  color: var(--text-secondary);
-  margin-right: 12px;
-  font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-right: 12px;
+    font-size: 0.75rem;
 }
 
 .group-actions {
-  display: flex;
-  gap: 8px;
+    display: flex;
+    gap: 8px;
 }
 
 .btn-link {
-  background: none;
-  border: none;
-  color: var(--primary);
-  cursor: pointer;
-  font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 4px;
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 .btn-link:hover {
-  background: rgba(0, 122, 255, 0.1);
+    background: rgba(0, 122, 255, 0.1);
 }
 
 .product-list {
-  display: flex;
-  flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
 
 .product-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-color);
-  cursor: pointer;
-  transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.15s ease;
 }
 
 .product-item:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .product-item:hover {
-  background: var(--light);
+    background: var(--light);
 }
 
 .product-item input[type="checkbox"] {
-  margin-right: 12px;
-  cursor: pointer;
+    margin-right: 12px;
+    cursor: pointer;
 }
 
 .product-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
 }
 
 .product-name {
-  font-size: 0.875rem;
-  color: var(--text-primary);
+    font-size: 0.875rem;
+    color: var(--text-primary);
 }
 
 .product-meta {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 .warning-message {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: #FFF3CD;
-  border: 1px solid #FFE69C;
-  border-radius: 6px;
-  color: #664D03;
-  font-size: 0.875rem;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: #FFF3CD;
+    border: 1px solid #FFE69C;
+    border-radius: 6px;
+    color: #664D03;
+    font-size: 0.875rem;
 }
 
 /* iOS-like selector refinements */
 .settings-card h2 {
-  margin-bottom: 14px;
+    margin-bottom: 14px;
 }
 
 .switch-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 0;
-  cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 0;
+    cursor: pointer;
 }
 
 .switch-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .switch-title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--text-primary);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .switch-subtitle {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 .ios-switch {
-  position: relative;
-  width: 52px;
-  height: 32px;
-  flex-shrink: 0;
+    position: relative;
+    width: 52px;
+    height: 32px;
+    flex-shrink: 0;
 }
 
 .ios-switch input {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-  z-index: 2;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 2;
 }
 
 .ios-switch-track {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: #d1d1d6;
-  transition: background-color 0.2s ease;
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: #d1d1d6;
+    transition: background-color 0.2s ease;
 }
 
 .ios-switch-track::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
 }
 
-.ios-switch input:checked + .ios-switch-track {
-  background: var(--success);
+.ios-switch input:checked+.ios-switch-track {
+    background: var(--success);
 }
 
-.ios-switch input:checked + .ios-switch-track::after {
-  transform: translateX(20px);
+.ios-switch input:checked+.ios-switch-track::after {
+    transform: translateX(20px);
 }
 
 .activity-buttons,
 .temperature-buttons,
 .intensity-buttons {
-  gap: 8px;
+    gap: 8px;
 }
 
 .activity-btn,
 .temp-btn,
 .intensity-btn {
-  min-height: 56px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background: #f7f7fa;
-  transition: all 0.2s ease;
+    min-height: 56px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: #f7f7fa;
+    transition: all 0.2s ease;
 }
 
 .activity-btn:hover,
 .temp-btn:hover,
 .intensity-btn:hover {
-  background: #ececf2;
+    background: #ececf2;
 }
 
 .activity-btn.active,
 .temp-btn.active,
 .intensity-btn.active {
-  background: #e8f2ff;
-  border-color: #8abfff;
-  color: #005ac9;
-  box-shadow: inset 0 0 0 1px #b8d7ff;
+    background: #e8f2ff;
+    border-color: #8abfff;
+    color: #005ac9;
+    box-shadow: inset 0 0 0 1px #b8d7ff;
 }
 
 .product-groups {
-  max-height: none;
-  overflow: visible;
-  border-radius: 12px;
+    max-height: none;
+    overflow: visible;
+    border-radius: 12px;
 }
 
 .group-header {
-  padding: 12px 14px;
+    padding: 12px 14px;
 }
 
 .product-item {
-  padding: 12px 14px;
+    padding: 12px 14px;
 }
 
 .product-item input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--primary);
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
 }
 
 @media (max-width: 768px) {
-  .switch-row {
-    padding: 10px 0;
-  }
+    .switch-row {
+        padding: 10px 0;
+    }
 
-  .switch-subtitle {
-    font-size: 0.72rem;
-  }
+    .switch-subtitle {
+        font-size: 0.72rem;
+    }
 
-  .activity-buttons,
-  .temperature-buttons,
-  .intensity-buttons {
+    .activity-buttons,
+    .temperature-buttons,
+    .intensity-buttons {
+        flex-direction: column;
+    }
+
+    .activity-btn,
+    .temp-btn,
+    .intensity-btn {
+        width: 100%;
+    }
+}
+
+/* ── Loading overlay ──────────────────────────────────────────────────────── */
+
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    animation: loading-overlay-in 0.25s ease;
+}
+
+@keyframes loading-overlay-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.loading-card {
+    background: var(--background);
+    border-radius: 20px;
+    padding: 48px 64px;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    min-width: 280px;
+    animation: loading-card-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes loading-card-in {
+    from {
+        transform: scale(0.85);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.loading-track-area {
+    display: flex;
     flex-direction: column;
-  }
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+}
 
-  .activity-btn,
-  .temp-btn,
-  .intensity-btn {
-    width: 100%;
-  }
+.loading-athlete {
+    font-size: 3.5rem;
+    display: inline-block;
+    animation: loading-athlete-run 1.5s ease-in-out infinite alternate;
+    line-height: 1;
+}
+
+@keyframes loading-athlete-run {
+    from {
+        transform: translateX(-52px);
+    }
+
+    to {
+        transform: translateX(52px);
+    }
+}
+
+.loading-track {
+    width: 180px;
+    border-bottom: 2px dashed var(--border-color, #ddd);
+}
+
+.loading-message {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+    min-height: 1.6em;
+    animation: loading-message-in 0.35s ease;
+}
+
+@keyframes loading-message-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Mobile Modal — bottom sheet on small screens ─────────────────────────── */
+@media (max-width: 768px) {
+    .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .modal-content {
+        max-width: 100%;
+        max-height: 90dvh;
+        /* dynamic viewport height avoids the soft keyboard */
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-footer {
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+
+    /* Loading card — keep on screen */
+    .loading-card {
+        padding: 32px 28px;
+        min-width: unset;
+        width: min(90vw, 320px);
+    }
+}
+
+/* ── 480px — tighter grids & product layout ───────────────────────────────── */
+@media (max-width: 480px) {
+
+    .targets-grid,
+    .totals-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .plan-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .assortment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Tighten table columns */
+    .schedule-table th,
+    .schedule-table td,
+    .shopping-list-table th,
+    .shopping-list-table td {
+        padding: 5px 6px;
+        font-size: 0.75rem;
+    }
+}
+
+/* ── 430px — iPhone 15 / iPhone 16 dedicated pass ────────────────────────── */
+@media (max-width: 430px) {
+    .planner-container {
+        padding: 10px;
+        padding-left: max(10px, env(safe-area-inset-left));
+        padding-right: max(10px, env(safe-area-inset-right));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+
+    .header h1 {
+        font-size: 1.25rem;
+    }
+
+    .version-badge {
+        font-size: 0.5625rem;
+    }
+
+    .form-card {
+        padding: 12px;
+    }
+
+    /* Bigger calculate button for thumb comfort */
+    .btn-calculate {
+        font-size: 1rem;
+        padding: 14px;
+        min-height: 52px;
+    }
+
+    /* Sticky action row respects home indicator */
+    .sticky-action-row {
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    /* Stack targets to 1 column on very small screens */
+    .targets-grid,
+    .totals-grid,
+    .plan-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .target-value {
+        font-size: 1.25rem;
+    }
+
+    /* Intensity / activity / temp buttons slightly shorter text */
+    .intensity-btn .btn-carbs,
+    .intensity-btn .btn-hr,
+    .temp-btn .btn-range {
+        display: none;
+        /* hide small sublabels; save space */
+    }
+
+    /* Accordion and selector group tighter */
+    .selector-group>.form-card {
+        padding: 8px 12px;
+    }
+
+    /* Shopping items stack label/detail */
+    .shopping-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .shopping-item-details {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* ── iPhone SE (375px) — smallest supported size ──────────────────────────── */
+@media (max-width: 375px) {
+    .header h1 {
+        font-size: 1.125rem;
+    }
+
+    .form-card {
+        padding: 10px;
+    }
+
+    .activity-btn,
+    .temp-btn,
+    .intensity-btn {
+        min-height: 48px;
+        font-size: 0.75rem;
+    }
 }
