@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SportType, IntensityLevel, TemperatureCondition, type RaceNutritionPlan } from './types';
 import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
@@ -12,6 +12,24 @@ import './App.css';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'dev';
 
+const LOADING_MESSAGES = [
+  'Thinking...',
+  'Analyzing your race profile...',
+  'Calculating nutrition targets...',
+  'Building your fuel schedule...',
+  'Optimizing timing and portions...',
+  'Finalizing your plan...',
+];
+
+const MIN_LOADING_MS = 5000;
+const MSG_INTERVAL_MS = Math.floor(MIN_LOADING_MS / LOADING_MESSAGES.length);
+
+const SPORT_EMOJI: Record<string, string[]> = {
+  [SportType.Run]:       ['🏃'],
+  [SportType.Bike]:      ['🚴'],
+  [SportType.Triathlon]: ['🏊', '🚴', '🏃'],
+};
+
 function App() {
   const [athleteWeight, setAthleteWeight] = useState(75);
   const [sportType, setSportType] = useState<SportType>(SportType.Run);
@@ -20,10 +38,21 @@ function App() {
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
   const [useCaffeine, setUseCaffeine] = useState(true);
 
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<{ name: string; productType: string; carbsG: number; sodiumMg: number; volumeMl?: number; caffeineMg?: number }[]>([]);
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messageIdx, setMessageIdx] = useState(0);
+
+  useEffect(() => {
+    if (!loading) return;
+    setMessageIdx(0);
+    const interval = setInterval(
+      () => setMessageIdx(i => (i + 1) % LOADING_MESSAGES.length),
+      MSG_INTERVAL_MS,
+    );
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const isFormValid = () => {
     return (
@@ -59,11 +88,14 @@ function App() {
         productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
-        volumeMl: p.volumeMl || 0,
-        caffeineMg: p.caffeineMg || null
+        volumeMl: p.volumeMl ?? 0,
+        caffeineMg: p.caffeineMg ?? undefined
       }));
 
-      const newPlan = await api.generatePlan(athlete, race, products, useCaffeine);
+      const [newPlan] = await Promise.all([
+        api.generatePlan(athlete, race, products, useCaffeine),
+        new Promise<void>(resolve => setTimeout(resolve, MIN_LOADING_MS)),
+      ]);
       setPlan(newPlan);
       setError(null);
     } catch (err) {
@@ -75,12 +107,29 @@ function App() {
     }
   };
 
+  const emojiList = SPORT_EMOJI[sportType] ?? ['🏃'];
+  const loadingEmoji = emojiList[messageIdx % emojiList.length];
+
   return (
     <div className="planner-container">
       <div className="header">
         <span className="version-badge">{APP_VERSION}</span>
         <h1>Race Day Nutrition Planner</h1>
       </div>
+
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-card">
+            <div className="loading-track-area">
+              <span className="loading-athlete">{loadingEmoji}</span>
+              <div className="loading-track" />
+            </div>
+            <p key={messageIdx} className="loading-message">
+              {LOADING_MESSAGES[messageIdx]}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="content">
         {/* Left Section - Input Form */}
