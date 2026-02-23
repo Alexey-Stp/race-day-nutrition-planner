@@ -5,6 +5,7 @@ import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
 import { TemperatureSelector } from './components/TemperatureSelector';
 import { IntensitySelector } from './components/IntensitySelector';
+import { CaffeineToggle } from './components/CaffeineToggle';
 import { AdvancedProductSelector } from './components/AdvancedProductSelector';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
@@ -156,28 +157,14 @@ function App() {
               temperature={temperature}
               onTemperatureChange={setTemperature}
             />
+
+            <CaffeineToggle
+              useCaffeine={useCaffeine}
+              onToggle={setUseCaffeine}
+            />
           </div>
 
           <AdvancedProductSelector onProductsSelected={setSelectedProducts} />
-
-          <div className="form-card settings-card">
-            <h2>Preferences</h2>
-            <label className="switch-row" htmlFor="caffeine-toggle">
-              <span className="switch-copy">
-                <span className="switch-title">Caffeine</span>
-                <span className="switch-subtitle">Include caffeine products in recommendations</span>
-              </span>
-              <span className="ios-switch">
-                <input
-                  id="caffeine-toggle"
-                  type="checkbox"
-                  checked={useCaffeine}
-                  onChange={(e) => setUseCaffeine(e.target.checked)}
-                />
-                <span className="ios-switch-track" />
-              </span>
-            </label>
-          </div>
 
           {error && <div className="error-message">{error}</div>}
 

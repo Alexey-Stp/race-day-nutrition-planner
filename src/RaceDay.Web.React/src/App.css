@@ -485,6 +485,64 @@ body {
     display: inline-block;
 }
 
+/* Caffeine Toggle - Preferences */
+.preferences-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+.preference-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.preference-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.preference-description {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+}
+
+.caffeine-toggle-buttons {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
+.caffeine-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--background);
+    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: capitalize;
+}
+
+.caffeine-btn:hover {
+    border-color: var(--primary);
+    background: var(--light);
+}
+
+.caffeine-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
 /* Activity Buttons - Sport Type Selection */
 .activity-buttons {
     display: flex;
@@ -2627,13 +2685,15 @@ body {
 
 .activity-buttons,
 .temperature-buttons,
-.intensity-buttons {
+.intensity-buttons,
+.caffeine-toggle-buttons {
     gap: 8px;
 }
 
 .activity-btn,
 .temp-btn,
-.intensity-btn {
+.intensity-btn,
+.caffeine-btn {
     min-height: 56px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
@@ -2643,13 +2703,15 @@ body {
 
 .activity-btn:hover,
 .temp-btn:hover,
-.intensity-btn:hover {
+.intensity-btn:hover,
+.caffeine-btn:hover {
     background: #ececf2;
 }
 
 .activity-btn.active,
 .temp-btn.active,
-.intensity-btn.active {
+.intensity-btn.active,
+.caffeine-btn.active {
     background: #e8f2ff;
     border-color: #8abfff;
     color: #005ac9;
@@ -2687,13 +2749,15 @@ body {
 
     .activity-buttons,
     .temperature-buttons,
-    .intensity-buttons {
+    .intensity-buttons,
+    .caffeine-toggle-buttons {
         flex-direction: column;
     }
 
     .activity-btn,
     .temp-btn,
-    .intensity-btn {
+    .intensity-btn,
+    .caffeine-btn {
         width: 100%;
     }
 }
@@ -2933,7 +2997,8 @@ body {
 
     .activity-btn,
     .temp-btn,
-    .intensity-btn {
+    .intensity-btn,
+    .caffeine-btn {
         min-height: 48px;
         font-size: 0.75rem;
     }
