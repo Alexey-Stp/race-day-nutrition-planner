@@ -29,7 +29,7 @@ The application generates a time-based schedule showing when and how much of eac
   - Optimizes sodium intake for hot conditions and heavier athletes
   - **Tracks caffeine intake** and displays caffeine content from selected products
   - Enable/disable caffeine products via checkbox
-- **Comprehensive Testing**: 203 unit tests covering all core functionality with regression test suite
+- **Comprehensive Testing**: 157 unit tests covering all core functionality with regression test suite
 - **REST API**: Full programmatic access via REST endpoints with Swagger documentation
 
 ## Architecture
@@ -70,7 +70,7 @@ RaceDayNutritionPlanner/
 │           ├── /api/activities    # Activity presets endpoints
 │           └── /api/plan/generate # Nutrition plan generation (POST)
 ├── tests/
-│   └── RaceDay.Core.Tests/        # Unit tests (59 tests, 100% coverage)
+│   └── RaceDay.Core.Tests/        # Unit tests (157 tests)
 │       ├── NutritionCalculatorTests.cs
 │       ├── PlanGeneratorTests.cs
 │       ├── ValidationTests.cs
@@ -115,7 +115,7 @@ Validates input data to ensure:
 - Docker Compose
 
 ### For Local Development
-- .NET 9.0 SDK or later
+- .NET 10.0 SDK or later
 - Node.js 20.x or later (for React web application)
 - npm 10.x or later (for React web application)
 
@@ -159,7 +159,7 @@ docker compose up --build -d
 The application will be available at:
 - **Web Application**: http://localhost:8080
 - **API**: http://localhost:5208
-- **Swagger Documentation** (Development only): http://localhost:5208/swagger/ui
+- **Swagger Documentation** (Development only): http://localhost:5208/swagger
 
 To stop the containers:
 
@@ -317,7 +317,7 @@ The API will be available at `https://localhost:5001` (or another port shown in 
 
 #### Access Swagger UI
 
-Navigate to `https://localhost:[port]/swagger/ui` to access the interactive Swagger documentation where you can:
+Navigate to `https://localhost:[port]/swagger` to access the interactive Swagger documentation where you can:
 - View all available endpoints
 - See request/response schemas
 - Test endpoints directly from the browser
@@ -520,18 +520,14 @@ dotnet test tests/RaceDay.Core.Tests/RaceDay.Core.Tests.csproj
 ```
 
 Current test coverage includes:
-- **NutritionCalculator**: 100% coverage (14 tests)
-  - Nutrition calculations for all intensity levels
-  - Temperature and weight adjustments
-  - Long race bonuses
-- **PlanGenerator**: Full coverage (6 tests)
-  - Schedule generation with custom intervals
-  - Product validation and exception handling
-- **Validation**: Full coverage (22 tests)
-  - Race profile, athlete profile, product, and interval validation
-  - Boundary conditions and error messages
+- **NutritionCalculatorTests**: Target calculation for all intensity levels, temperature and weight adjustments
+- **PlanGeneratorTests**: Core schedule generation, product validation, exception handling
+- **ValidationTests**: Race profile, athlete profile, product, and interval validation; boundary conditions
+- **ActivityRepositoryTests**: Activity catalogue access
+- **AlgorithmImprovementTests**: Algorithm v2 regression tests
+- **AdvancedPlanGeneratorTests**: Advanced scheduling scenarios (caffeine, coverage, front-load)
 
-**Total: 42 tests, all passing**
+**Total: 157 tests, all passing**
 
 ## Architecture Details
 
@@ -558,7 +554,7 @@ The application follows a **separation of concerns** pattern:
    - Nutrition plan generation endpoint (POST /api/plan/generate)
    - CORS support for frontend integration
    - Located at: `src/RaceDay.API`
-   - Access Swagger UI at: `/swagger/ui`
+   - Access Swagger UI at: `/swagger`
 
 3. **RaceDay.Core** (Business Logic Layer)
    - Pure business logic and calculations
