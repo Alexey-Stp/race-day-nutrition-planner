@@ -379,7 +379,6 @@ html, body {
     border-radius: 8px;
     font-size: 0.7rem;
     font-weight: 400;
-    white-space: nowrap;
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.15s ease;
