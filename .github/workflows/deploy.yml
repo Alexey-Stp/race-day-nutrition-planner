@@ -33,16 +33,6 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel
 
-      - name: Link Vercel Project
-        run: |
-          vercel link --yes --token ${{ secrets.VERCEL_TOKEN }} \
-            --project race-day-nutrition-planner \
-            --scope ${{ secrets.VERCEL_ORG_ID }}
-        working-directory: src/RaceDay.Web.React
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
       - name: Compute version
         id: version
         run: |
@@ -59,8 +49,5 @@ jobs:
         id: vercel
         run: vercel deploy --prod --yes --token ${{ secrets.VERCEL_TOKEN }} --build-env VITE_API_URL=${{ secrets.RAILWAY_API_URL }} --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }}
         working-directory: src/RaceDay.Web.React
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
    
