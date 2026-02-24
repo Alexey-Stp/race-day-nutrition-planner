@@ -115,11 +115,19 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             step="0.01667"
           />
           <div className="slider-markers">
-            {Array.from({ length: Math.floor(maxDuration) }, (_, i) => i + 1).map((hour) => (
-              <span key={hour} className="slider-marker" style={{ left: `${((hour - minDuration) / (maxDuration - minDuration)) * 100}%` }}>
-                {hour}h
-              </span>
-            ))}
+            {maxDuration > minDuration && (() => {
+              const startHour = Math.ceil(minDuration);
+              const endHour = Math.floor(maxDuration);
+              const hours = [];
+              for (let h = startHour; h <= endHour; h++) {
+                hours.push(h);
+              }
+              return hours.map((hour) => (
+                <span key={hour} className="slider-marker" style={{ left: `${((hour - minDuration) / (maxDuration - minDuration)) * 100}%` }}>
+                  {hour}h
+                </span>
+              ));
+            })()}
           </div>
           <div className="slider-labels">
             <span>{formatDuration(minDuration)}</span>
