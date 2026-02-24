@@ -373,6 +373,15 @@ jobs:
     - name: Prepare GitHub Pages Content
       if: always() && github.event.pull_request.head.repo.full_name == github.repository
       run: |
+        echo "📁 Checking test results structure..."
+        ls -la src/RaceDay.Web.React/test-results/ || echo "No test-results directory"
+        ls -la src/RaceDay.Web.React/test-results/screenshots/ || echo "No screenshots directory"
+        ls -la src/RaceDay.Web.React/test-results/screenshots/mobile/ || echo "No mobile screenshots"
+        ls -la src/RaceDay.Web.React/test-results/screenshots/desktop/ || echo "No desktop screenshots"
+        
+        echo "📁 Checking Playwright report..."
+        ls -la src/RaceDay.Web.React/playwright-report/ || echo "No playwright-report directory"
+        
         mkdir -p ui-preview-dist/mobile ui-preview-dist/desktop
         
         # Copy mobile report and screenshots
@@ -395,6 +404,9 @@ jobs:
           mkdir -p ui-preview-dist/desktop/screenshots
           cp -r src/RaceDay.Web.React/test-results/screenshots/desktop/* ui-preview-dist/desktop/screenshots/ || true
         fi
+        
+        echo "📁 Final ui-preview-dist structure:"
+        find ui-preview-dist -type f | sort
         
         # Create a landing page
         cat > ui-preview-dist/index.html << 'EOF'
@@ -443,6 +455,14 @@ jobs:
         user_name: 'github-actions[bot]'
         user_email: 'github-actions[bot]@users.noreply.github.com'
     
+    - name: Extract Repository Info
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      id: repo-info
+      run: |
+        REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+        echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
+        echo "Repository: ${{ github.repository_owner }}/$REPO_NAME"
+    
     - name: Comment on PR with Screenshots
       if: always() && github.event.pull_request.head.repo.full_name == github.repository
       uses: peter-evans/create-or-update-comment@v4
@@ -455,18 +475,18 @@ jobs:
           Screenshots and test reports have been generated for this PR.
           
           ### 📱 Mobile View (390×844)
-          **[View Mobile Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/index.html)**
+          **[View Mobile Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/index.html)**
           
           | Home | Form Filled |
           |------|-------------|
-          | ![Mobile Home](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/home.png) | ![Mobile Form](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/form-filled.png) |
+          | ![Mobile Home](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/home.png) | ![Mobile Form](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/form-filled.png) |
           
           ### 🖥️ Desktop View (1440×900)
-          **[View Desktop Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/index.html)**
+          **[View Desktop Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/index.html)**
           
           | Home | Form Filled |
           |------|-------------|
-          | ![Desktop Home](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/home.png) | ![Desktop Form](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/form-filled.png) |
+          | ![Desktop Home](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/home.png) | ![Desktop Form](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/form-filled.png) |
           
           ---
           
