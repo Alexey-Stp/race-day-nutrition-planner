@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 /**
  * Playwright configuration for UI screenshot tests
@@ -47,16 +47,19 @@ export default defineConfig({
     {
       name: 'mobile',
       use: {
-        ...devices['iPhone 13'],
+        // Use Chromium for mobile (faster in CI, consistent with desktop)
+        browserName: 'chromium',
         viewport: { width: 390, height: 844 },
         isMobile: true,
         hasTouch: true,
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        deviceScaleFactor: 3,
       },
     },
     {
       name: 'desktop',
       use: {
-        ...devices['Desktop Chrome'],
+        browserName: 'chromium',
         viewport: { width: 1440, height: 900 },
         isMobile: false,
       },

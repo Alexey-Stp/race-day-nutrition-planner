@@ -24,6 +24,8 @@ The screenshot testing infrastructure uses specific ports for local development 
 
 2. **Playwright Config** (`playwright.config.ts`):
    - Defines two projects: `mobile` (390×844) and `desktop` (1440×900)
+   - Both projects use Chromium browser for consistency and CI performance
+   - Mobile project includes mobile emulation (touch, user agent, device scale)
    - Screenshots saved to `test-results/screenshots/{project}/`
    - HTML report generated in `playwright-report/`
 
