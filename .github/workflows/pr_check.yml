@@ -200,13 +200,12 @@ jobs:
     
     - name: Start API Server
       run: |
-        dotnet run --project src/RaceDay.API/RaceDay.API.csproj --no-build --configuration Release &
+        dotnet run --project src/RaceDay.API/RaceDay.API.csproj --no-build --configuration Release --no-launch-profile --urls "http://127.0.0.1:5208" &
         API_PID=$!
         echo "API_PID=$API_PID" >> $GITHUB_ENV
         echo "Started API server with PID $API_PID"
       env:
         ASPNETCORE_ENVIRONMENT: Production
-        ASPNETCORE_URLS: http://127.0.0.1:5208
     
     - name: Wait for API to be ready
       run: npx wait-on http://127.0.0.1:5208/api/products --timeout 60000
