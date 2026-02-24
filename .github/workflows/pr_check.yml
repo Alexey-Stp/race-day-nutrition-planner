@@ -55,7 +55,7 @@ jobs:
       run: dotnet restore
     
     - name: Build .NET Solution
-      run: dotnet build --configuration Release --no-restore --verbosity normal
+      run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true --verbosity normal
     
     - name: Run Unit Tests with Code Coverage
       run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed" --collect:"XPlat Code Coverage" --results-directory ./coverage
@@ -79,7 +79,7 @@ jobs:
         
         # Extract overall coverage
         OVERALL_COVERAGE=$(grep -o 'line-rate="[^"]*"' "$COVERAGE_FILE" | head -1 | grep -o '[0-9]*\.[0-9]*')
-        OVERALL_PERCENT=$(($(echo "$OVERALL_COVERAGE * 100" | bc -l | cut -d. -f1)))
+        OVERALL_PERCENT=$(echo "$OVERALL_COVERAGE * 100" | bc -l | cut -d. -f1)
         
         echo ""
         echo "════════════════════════════════════════════════════════════"
@@ -102,7 +102,7 @@ jobs:
         grep '<class' "$COVERAGE_FILE" | while read line; do
           CLASS_NAME=$(echo "$line" | grep -o 'name="[^"]*"' | cut -d'"' -f2)
           LINE_RATE=$(echo "$line" | grep -o 'line-rate="[^"]*"' | cut -d'"' -f2)
-          LINE_PERCENT=$(($(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)))
+          LINE_PERCENT=$(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)
           
           if (( $(echo "$LINE_RATE < 0.50" | bc -l) )); then
             echo "  🔴 $CLASS_NAME: $LINE_PERCENT%"
@@ -116,7 +116,7 @@ jobs:
         grep '<class' "$COVERAGE_FILE" | while read line; do
           CLASS_NAME=$(echo "$line" | grep -o 'name="[^"]*"' | cut -d'"' -f2)
           LINE_RATE=$(echo "$line" | grep -o 'line-rate="[^"]*"' | cut -d'"' -f2)
-          LINE_PERCENT=$(($(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)))
+          LINE_PERCENT=$(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)
           
           if (( $(echo "$LINE_RATE >= 0.50 && $LINE_RATE < 0.80" | bc -l) )); then
             echo "  🟡 $CLASS_NAME: $LINE_PERCENT%"
@@ -160,10 +160,6 @@ jobs:
           src/RaceDay.API/bin/Release
           src/RaceDay.Core/bin/Release
         retention-days: 1
-    
-    - name: Verify Code Quality
-      run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
-      continue-on-error: false
 
   lint-check:
     runs-on: ubuntu-latest
@@ -190,7 +186,6 @@ jobs:
     
     - name: Analyze with StyleCop
       run: dotnet build --configuration Release --no-restore /p:EnforceCodeStyleInBuild=true
-      continue-on-error: true
 
   web-lint:
     runs-on: ubuntu-latest
@@ -311,6 +306,7 @@ jobs:
           ${{ runner.os }}-playwright-
     
     - name: Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps chromium
       working-directory: src/RaceDay.Web.React
     
