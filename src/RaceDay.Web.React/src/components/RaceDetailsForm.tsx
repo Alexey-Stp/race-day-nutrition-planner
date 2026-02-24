@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { SportType, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../utils';
@@ -72,6 +72,24 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
     onDurationChange(currentDisplayDuration);
   };
 
+  const hourMarkers = useMemo(() => {
+    if (maxDuration <= minDuration) return [];
+    
+    const startHour = Math.ceil(minDuration);
+    const endHour = Math.floor(maxDuration);
+    const range = maxDuration - minDuration;
+    const hours = [];
+    
+    for (let h = startHour; h <= endHour; h++) {
+      hours.push({
+        hour: h,
+        position: ((h - minDuration) / range) * 100
+      });
+    }
+    
+    return hours;
+  }, [minDuration, maxDuration]);
+
   return (
     <div className="form-card">
       <div className="activity-buttons">
@@ -115,19 +133,11 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             step="0.01667"
           />
           <div className="slider-markers">
-            {maxDuration > minDuration && (() => {
-              const startHour = Math.ceil(minDuration);
-              const endHour = Math.floor(maxDuration);
-              const hours = [];
-              for (let h = startHour; h <= endHour; h++) {
-                hours.push(h);
-              }
-              return hours.map((hour) => (
-                <span key={hour} className="slider-marker" style={{ left: `${((hour - minDuration) / (maxDuration - minDuration)) * 100}%` }}>
-                  {hour}h
-                </span>
-              ));
-            })()}
+            {hourMarkers.map(({ hour, position }) => (
+              <span key={hour} className="slider-marker" style={{ left: `${position}%` }}>
+                {hour}h
+              </span>
+            ))}
           </div>
           <div className="slider-labels">
             <span>{formatDuration(minDuration)}</span>
