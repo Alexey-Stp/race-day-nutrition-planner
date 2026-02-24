@@ -6,15 +6,17 @@ The screenshot testing infrastructure uses specific ports for local development 
 
 - **Preview Server**: `4173` (Vite preview mode)
   - Configured in: `playwright.config.ts`, `vite.config.ts`, `.github/workflows/pr_check.yml`
-- **API Server**: `5208` (ASP.NET Core)
-  - Configured in: `src/RaceDay.API/Properties/launchSettings.json`, `.github/workflows/pr_check.yml`
+- **API Server**: 
+  - **Development** (with launch profile): `5208` - used by `npm run dev`
+  - **CI/Production** (no launch profile): `8080` - default ASP.NET Core port
+  - Configured in: `src/RaceDay.API/Properties/launchSettings.json`, `docker-compose.yml`, `.github/workflows/pr_check.yml`
   - Proxied through Vite for CORS
 
 ## How Screenshot Tests Work
 
 1. **CI Workflow** (`.github/workflows/pr_check.yml`):
    - Builds both backend and frontend
-   - Starts API server on port 5208
+   - Starts API server on port 8080 (ASP.NET Core default without launch profile)
    - Starts Vite preview server on port 4173
    - Runs Playwright tests for mobile and desktop
    - Uploads results to GitHub Pages
