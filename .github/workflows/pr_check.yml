@@ -5,9 +5,27 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  # Check which files changed to determine if ui_screenshots should run
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui_screenshots: ${{ steps.filter.outputs.ui_screenshots }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          ui_screenshots:
+            - 'src/RaceDay.Web.React/**'
+            - '.github/workflows/pr_check.yml'
+
   build-and-test:
     runs-on: ubuntu-latest
     name: Build, Test & Quality Check
+    outputs:
+      dotnet-build-cache-key: ${{ steps.dotnet-cache.outputs.cache-hit }}
+      npm-build-cache-key: ${{ steps.npm-cache.outputs.cache-hit }}
 
     steps:
     - uses: actions/checkout@v4
@@ -17,10 +35,21 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
+    - name: Cache NuGet packages
+      id: dotnet-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
     - name: Restore .NET dependencies
       run: dotnet restore
@@ -116,6 +145,22 @@ jobs:
       working-directory: src/RaceDay.Web.React
       continue-on-error: false
     
+    - name: Upload React Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: react-build
+        path: src/RaceDay.Web.React/dist
+        retention-days: 1
+    
+    - name: Upload .NET Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dotnet-build
+        path: |
+          src/RaceDay.API/bin/Release
+          src/RaceDay.Core/bin/Release
+        retention-days: 1
+    
     - name: Verify Code Quality
       run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
       continue-on-error: false
@@ -131,6 +176,14 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
     
     - name: Restore dependencies
       run: dotnet restore
@@ -150,6 +203,8 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
     - name: Install dependencies
       run: npm ci --ignore-scripts
@@ -159,3 +214,281 @@ jobs:
       run: npx tsc --noEmit
       working-directory: src/RaceDay.Web.React
       continue-on-error: false
+
+  ui_screenshots:
+    runs-on: ubuntu-latest
+    name: UI Screenshots (Mobile & Desktop)
+    needs: [changes, build-and-test]
+    if: needs.changes.outputs.ui_screenshots == 'true'
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: src/RaceDay.Web.React/package-lock.json
+    
+    - name: Download React Build Artifacts
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: react-build
+        path: src/RaceDay.Web.React/dist
+    
+    - name: Download .NET Build Artifacts
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: dotnet-build
+        path: build-artifacts
+    
+    - name: Restore .NET Build from Artifacts
+      continue-on-error: true
+      run: |
+        if [ -d "build-artifacts" ]; then
+          mkdir -p src/RaceDay.API/bin/Release
+          mkdir -p src/RaceDay.Core/bin/Release
+          cp -r build-artifacts/src/RaceDay.API/bin/Release/* src/RaceDay.API/bin/Release/ 2>/dev/null || true
+          cp -r build-artifacts/src/RaceDay.Core/bin/Release/* src/RaceDay.Core/bin/Release/ 2>/dev/null || true
+          echo "Build artifacts restored from previous job"
+        fi
+    
+    - name: Check if builds are needed
+      id: check-builds
+      run: |
+        if [ -f "src/RaceDay.Web.React/dist/index.html" ] && [ -f "src/RaceDay.API/bin/Release/net10.0/RaceDay.API.dll" ]; then
+          echo "builds_exist=true" >> $GITHUB_OUTPUT
+          echo "✅ Build artifacts exist, skipping rebuild"
+        else
+          echo "builds_exist=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Build artifacts missing, will rebuild"
+        fi
+    
+    - name: Restore .NET dependencies
+      if: steps.check-builds.outputs.builds_exist != 'true'
+      run: dotnet restore
+    
+    - name: Build .NET Solution
+      if: steps.check-builds.outputs.builds_exist != 'true'
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Install React dependencies
+      if: steps.check-builds.outputs.builds_exist != 'true'
+      run: npm ci --ignore-scripts
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Build React Application
+      if: steps.check-builds.outputs.builds_exist != 'true'
+      run: npm run build
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Cache Playwright Browsers
+      id: playwright-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('src/RaceDay.Web.React/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
+    
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Start API Server
+      run: |
+        dotnet run --project src/RaceDay.API/RaceDay.API.csproj --no-build --configuration Release --no-launch-profile &
+        API_PID=$!
+        echo "API_PID=$API_PID" >> $GITHUB_ENV
+        echo "Started API server with PID $API_PID"
+      env:
+        ASPNETCORE_ENVIRONMENT: Production
+        ASPNETCORE_URLS: http://127.0.0.1:8080
+    
+    - name: Wait for API to be ready
+      run: npx -y wait-on tcp:localhost:8080 --timeout 120000
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Start Frontend Preview Server
+      run: |
+        npm run preview -- --host 127.0.0.1 --port 4173 &
+        PREVIEW_PID=$!
+        echo "PREVIEW_PID=$PREVIEW_PID" >> $GITHUB_ENV
+        echo "Started preview server with PID $PREVIEW_PID"
+      working-directory: src/RaceDay.Web.React
+      env:
+        BASE_URL: http://127.0.0.1:4173
+    
+    - name: Wait for Preview Server
+      run: npx wait-on http://127.0.0.1:4173 --timeout 60000
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Run Playwright Screenshots
+      run: npx playwright test --project=mobile --project=desktop
+      working-directory: src/RaceDay.Web.React
+      env:
+        BASE_URL: http://127.0.0.1:4173
+    
+    - name: Stop Servers
+      if: always()
+      run: |
+        if [ ! -z "$API_PID" ]; then kill $API_PID || true; fi
+        if [ ! -z "$PREVIEW_PID" ]; then kill $PREVIEW_PID || true; fi
+    
+    - name: Upload Playwright Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: src/RaceDay.Web.React/playwright-report/
+        retention-days: 30
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: src/RaceDay.Web.React/test-results/
+        retention-days: 30
+    
+    - name: Prepare GitHub Pages Content
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      run: |
+        echo "📁 Checking test results structure..."
+        ls -la src/RaceDay.Web.React/test-results/ || echo "No test-results directory"
+        ls -la src/RaceDay.Web.React/test-results/screenshots/ || echo "No screenshots directory"
+        ls -la src/RaceDay.Web.React/test-results/screenshots/mobile/ || echo "No mobile screenshots"
+        ls -la src/RaceDay.Web.React/test-results/screenshots/desktop/ || echo "No desktop screenshots"
+        
+        echo "📁 Checking Playwright report..."
+        ls -la src/RaceDay.Web.React/playwright-report/ || echo "No playwright-report directory"
+        
+        mkdir -p ui-preview-dist/mobile ui-preview-dist/desktop
+        
+        # Copy mobile report and screenshots
+        if [ -d "src/RaceDay.Web.React/playwright-report" ]; then
+          cp -r src/RaceDay.Web.React/playwright-report/* ui-preview-dist/mobile/ || true
+        fi
+        
+        # Copy desktop report (if separate) or reuse the combined report
+        if [ -d "src/RaceDay.Web.React/playwright-report" ]; then
+          cp -r src/RaceDay.Web.React/playwright-report/* ui-preview-dist/desktop/ || true
+        fi
+        
+        # Copy screenshots into dedicated folders
+        if [ -d "src/RaceDay.Web.React/test-results/screenshots/mobile" ]; then
+          mkdir -p ui-preview-dist/mobile/screenshots
+          cp -r src/RaceDay.Web.React/test-results/screenshots/mobile/* ui-preview-dist/mobile/screenshots/ || true
+        fi
+        
+        if [ -d "src/RaceDay.Web.React/test-results/screenshots/desktop" ]; then
+          mkdir -p ui-preview-dist/desktop/screenshots
+          cp -r src/RaceDay.Web.React/test-results/screenshots/desktop/* ui-preview-dist/desktop/screenshots/ || true
+        fi
+        
+        echo "📁 Final ui-preview-dist structure:"
+        find ui-preview-dist -type f | sort
+        
+        # Create a landing page
+        cat > ui-preview-dist/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>UI Preview - PR #${{ github.event.pull_request.number }}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 40px auto; padding: 20px; }
+            h1 { color: #333; }
+            .links { display: flex; gap: 20px; margin: 30px 0; }
+            .link-card { flex: 1; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+            .link-card a { font-size: 18px; text-decoration: none; color: #0969da; }
+            .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+            .screenshot-item { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+            .screenshot-item img { width: 100%; height: auto; }
+            .screenshot-item p { padding: 10px; margin: 0; background: #f6f8fa; }
+          </style>
+        </head>
+        <body>
+          <h1>UI Preview - PR #${{ github.event.pull_request.number }}</h1>
+          <p>Screenshots and test reports for this pull request.</p>
+          
+          <div class="links">
+            <div class="link-card">
+              <h3>📱 Mobile View</h3>
+              <a href="mobile/index.html" target="_blank">View Mobile Report</a>
+            </div>
+            <div class="link-card">
+              <h3>🖥️ Desktop View</h3>
+              <a href="desktop/index.html" target="_blank">View Desktop Report</a>
+            </div>
+          </div>
+        </body>
+        </html>
+        EOF
+    
+    - name: Publish to GitHub Pages
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./ui-preview-dist
+        destination_dir: ui-preview/pr-${{ github.event.pull_request.number }}/latest
+        keep_files: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+    
+    - name: Extract Repository Info
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      id: repo-info
+      run: |
+        REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+        echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
+        echo "Repository: ${{ github.repository_owner }}/$REPO_NAME"
+    
+    - name: Comment on PR with Screenshots
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          <!-- ui-preview-playwright -->
+          ## 📸 UI Preview - Mobile & Desktop
+          
+          Screenshots and test reports have been generated for this PR.
+          
+          ### 📱 Mobile View (390×844)
+          **[View Mobile Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/index.html)**
+          
+          | Home | Form Filled |
+          |------|-------------|
+          | ![Mobile Home](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/home.png) | ![Mobile Form](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/form-filled.png) |
+          
+          ### 🖥️ Desktop View (1440×900)
+          **[View Desktop Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/index.html)**
+          
+          | Home | Form Filled |
+          |------|-------------|
+          | ![Desktop Home](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/home.png) | ![Desktop Form](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/form-filled.png) |
+          
+          ---
+          
+          **Fallback:** If images don't load, [download artifacts from the workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+

@@ -711,3 +711,36 @@ Please ensure:
 - Code follows existing patterns
 - New features include unit tests
 - Public APIs have XML documentation
+
+### UI Screenshot Testing
+
+Pull requests automatically generate UI screenshots for both mobile (390×844) and desktop (1440×900) viewports using Playwright.
+
+**Viewing Screenshots:**
+- Screenshots are automatically posted in PR comments with inline previews
+- Full Playwright HTML reports are published to GitHub Pages
+- Links appear within minutes of opening/updating a PR
+
+**Adding New Routes to Screenshot Tests:**
+1. Edit `src/RaceDay.Web.React/e2e/ui-screenshots.spec.ts`
+2. Add a new test case following the existing pattern
+3. Use `testInfo.project.name` to separate mobile/desktop paths
+4. Wait for `networkidle` and key UI elements before capturing
+
+**Running Locally:**
+```bash
+cd src/RaceDay.Web.React
+npm install
+npm run build
+npm run preview &  # Start preview server
+npx playwright test  # Run tests for both viewports
+npx playwright show-report  # View HTML report
+```
+
+**How It Works:**
+- The `ui_screenshots` job in `.github/workflows/pr_check.yml` runs on every PR
+- Both mobile and desktop screenshots are captured using Playwright projects
+- Results are published to `gh-pages` branch under `ui-preview/pr-<number>/latest/`
+- A PR comment is created/updated with direct links and inline images
+- For fork PRs, screenshots are generated but not published (artifacts only)
+
