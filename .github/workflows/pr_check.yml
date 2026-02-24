@@ -368,77 +368,23 @@ jobs:
     
     - name: Prepare GitHub Pages Content
       if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      id: prepare-pages
       run: |
-        echo "📁 Checking test results structure..."
-        ls -la src/RaceDay.Web.React/test-results/ || echo "No test-results directory"
-        ls -la src/RaceDay.Web.React/test-results/screenshots/ || echo "No screenshots directory"
-        ls -la src/RaceDay.Web.React/test-results/screenshots/mobile/ || echo "No mobile screenshots"
-        ls -la src/RaceDay.Web.React/test-results/screenshots/desktop/ || echo "No desktop screenshots"
-        
-        echo "📁 Checking Playwright report..."
-        ls -la src/RaceDay.Web.React/playwright-report/ || echo "No playwright-report directory"
-        
-        mkdir -p ui-preview-dist/mobile ui-preview-dist/desktop
-        
-        # Copy mobile report and screenshots
+        mkdir -p ui-preview-dist/screenshots/mobile ui-preview-dist/screenshots/desktop
+
         if [ -d "src/RaceDay.Web.React/playwright-report" ]; then
-          cp -r src/RaceDay.Web.React/playwright-report/* ui-preview-dist/mobile/ || true
+          cp -r src/RaceDay.Web.React/playwright-report ui-preview-dist/report
         fi
-        
-        # Copy desktop report (if separate) or reuse the combined report
-        if [ -d "src/RaceDay.Web.React/playwright-report" ]; then
-          cp -r src/RaceDay.Web.React/playwright-report/* ui-preview-dist/desktop/ || true
-        fi
-        
-        # Copy screenshots into dedicated folders
+
         if [ -d "src/RaceDay.Web.React/test-results/screenshots/mobile" ]; then
-          mkdir -p ui-preview-dist/mobile/screenshots
-          cp -r src/RaceDay.Web.React/test-results/screenshots/mobile/* ui-preview-dist/mobile/screenshots/ || true
+          cp src/RaceDay.Web.React/test-results/screenshots/mobile/*.png ui-preview-dist/screenshots/mobile/ 2>/dev/null || true
         fi
-        
         if [ -d "src/RaceDay.Web.React/test-results/screenshots/desktop" ]; then
-          mkdir -p ui-preview-dist/desktop/screenshots
-          cp -r src/RaceDay.Web.React/test-results/screenshots/desktop/* ui-preview-dist/desktop/screenshots/ || true
+          cp src/RaceDay.Web.React/test-results/screenshots/desktop/*.png ui-preview-dist/screenshots/desktop/ 2>/dev/null || true
         fi
-        
-        echo "📁 Final ui-preview-dist structure:"
+
+        echo "📁 Final structure:"
         find ui-preview-dist -type f | sort
-        
-        # Create a landing page
-        cat > ui-preview-dist/index.html << 'EOF'
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>UI Preview - PR #${{ github.event.pull_request.number }}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 40px auto; padding: 20px; }
-            h1 { color: #333; }
-            .links { display: flex; gap: 20px; margin: 30px 0; }
-            .link-card { flex: 1; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
-            .link-card a { font-size: 18px; text-decoration: none; color: #0969da; }
-            .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
-            .screenshot-item { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
-            .screenshot-item img { width: 100%; height: auto; }
-            .screenshot-item p { padding: 10px; margin: 0; background: #f6f8fa; }
-          </style>
-        </head>
-        <body>
-          <h1>UI Preview - PR #${{ github.event.pull_request.number }}</h1>
-          <p>Screenshots and test reports for this pull request.</p>
-          
-          <div class="links">
-            <div class="link-card">
-              <h3>📱 Mobile View</h3>
-              <a href="mobile/index.html" target="_blank">View Mobile Report</a>
-            </div>
-            <div class="link-card">
-              <h3>🖥️ Desktop View</h3>
-              <a href="desktop/index.html" target="_blank">View Desktop Report</a>
-            </div>
-          </div>
-        </body>
-        </html>
-        EOF
     
     - name: Publish to GitHub Pages
       if: always() && github.event.pull_request.head.repo.full_name == github.repository
@@ -459,32 +405,70 @@ jobs:
         echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
         echo "Repository: ${{ github.repository_owner }}/$REPO_NAME"
     
-    - name: Comment on PR with Screenshots
+    - name: Build PR Comment
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      id: build-comment
+      run: |
+        BASE_URL="https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest"
+
+        COMMENT="<!-- ui-preview-playwright -->"$'\n'
+        COMMENT+="## 📸 UI Preview — Mobile & Desktop"$'\n\n'
+        COMMENT+="**[📊 Full Playwright Report](${BASE_URL}/report/index.html)**"$'\n\n'
+
+        COMMENT+="### 📱 Mobile (390×844)"$'\n'
+        MOBILE_TABLE="| "
+        MOBILE_IMAGES="| "
+
+        for f in ui-preview-dist/screenshots/mobile/*.png; do
+          [ -f "$f" ] || continue
+          NAME=$(basename "$f" .png)
+          MOBILE_TABLE+="$NAME | "
+          MOBILE_IMAGES+="![$NAME](${BASE_URL}/screenshots/mobile/${NAME}.png) | "
+        done
+
+        if [ "$MOBILE_TABLE" != "| " ]; then
+          COMMENT+="$MOBILE_TABLE"$'\n'
+          COUNT=$(find ui-preview-dist/screenshots/mobile -name "*.png" | wc -l)
+          SEP="| "
+          for i in $(seq 1 $COUNT); do SEP+="--- | "; done
+          COMMENT+="$SEP"$'\n'
+          COMMENT+="$MOBILE_IMAGES"$'\n\n'
+        else
+          COMMENT+="_No mobile screenshots found_"$'\n\n'
+        fi
+
+        COMMENT+="### 🖥️ Desktop (1440×900)"$'\n'
+        DESKTOP_TABLE="| "
+        DESKTOP_IMAGES="| "
+
+        for f in ui-preview-dist/screenshots/desktop/*.png; do
+          [ -f "$f" ] || continue
+          NAME=$(basename "$f" .png)
+          DESKTOP_TABLE+="$NAME | "
+          DESKTOP_IMAGES+="![$NAME](${BASE_URL}/screenshots/desktop/${NAME}.png) | "
+        done
+
+        if [ "$DESKTOP_TABLE" != "| " ]; then
+          COMMENT+="$DESKTOP_TABLE"$'\n'
+          COUNT=$(find ui-preview-dist/screenshots/desktop -name "*.png" | wc -l)
+          SEP="| "
+          for i in $(seq 1 $COUNT); do SEP+="--- | "; done
+          COMMENT+="$SEP"$'\n'
+          COMMENT+="$DESKTOP_IMAGES"$'\n\n'
+        else
+          COMMENT+="_No desktop screenshots found_"$'\n\n'
+        fi
+
+        COMMENT+="---"$'\n'
+        COMMENT+="**Fallback:** [Download artifacts](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+        echo "$COMMENT" > /tmp/pr-comment.md
+    
+    - name: Comment on PR
       if: always() && github.event.pull_request.head.repo.full_name == github.repository
       uses: peter-evans/create-or-update-comment@v4
       with:
         issue-number: ${{ github.event.pull_request.number }}
-        body: |
-          <!-- ui-preview-playwright -->
-          ## 📸 UI Preview - Mobile & Desktop
-          
-          Screenshots and test reports have been generated for this PR.
-          
-          ### 📱 Mobile View (390×844)
-          **[View Mobile Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/index.html)**
-          
-          | Home | Form Filled |
-          |------|-------------|
-          | ![Mobile Home](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/home.png) | ![Mobile Form](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/form-filled.png) |
-          
-          ### 🖥️ Desktop View (1440×900)
-          **[View Desktop Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/index.html)**
-          
-          | Home | Form Filled |
-          |------|-------------|
-          | ![Desktop Home](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/home.png) | ![Desktop Form](https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/form-filled.png) |
-          
-          ---
-          
-          **Fallback:** If images don't load, [download artifacts from the workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+        body-path: /tmp/pr-comment.md
+        comment-author: 'github-actions[bot]'
 
