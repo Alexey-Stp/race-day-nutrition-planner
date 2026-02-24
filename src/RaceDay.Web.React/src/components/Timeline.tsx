@@ -4,13 +4,11 @@ import { formatDuration, formatPhase, formatAction } from '../utils';
 
 interface TimelineEventCardProps {
   event: NutritionEvent;
-  index: number;
   showCaffeine: boolean;
 }
 
 export const TimelineEventCard: React.FC<TimelineEventCardProps> = ({
   event,
-  index,
   showCaffeine
 }) => {
   const isPreRace = event.timeMin < 0;
@@ -93,7 +91,6 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
           <TimelineEventCard
             key={`${index}-${event.timeMin}-${event.productName}`}
             event={event}
-            index={index}
             showCaffeine={showCaffeine}
           />
         ))}

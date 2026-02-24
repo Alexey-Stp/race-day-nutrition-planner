@@ -8,7 +8,7 @@ import { ATHLETE_WEIGHT } from '../constants';
  */
 export function usePlannerForm() {
   // Athlete profile
-  const [athleteWeight, setAthleteWeight] = useState(ATHLETE_WEIGHT.DEFAULT);
+  const [athleteWeight, setAthleteWeight] = useState<number>(ATHLETE_WEIGHT.DEFAULT);
 
   // Race details
   const [sportType, setSportType] = useState<SportType>(SportType.Run);
