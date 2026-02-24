@@ -21,19 +21,16 @@ test.describe('UI Screenshots', () => {
 
   test('homepage - initial state', async ({ page }, testInfo) => {
     // Navigate to the homepage
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
     // Wait for the root element to be visible
     await page.waitForSelector('#root', { state: 'visible' });
     
-    // Wait for network to be idle
-    await page.waitForLoadState('networkidle');
-    
-    // Additional wait for React to fully render
+    // Wait for React to fully render the main heading
     await page.waitForSelector('h1:has-text("Race Day Nutrition Planner")', { state: 'visible' });
     
-    // Small delay to ensure all styles are applied
-    await page.waitForTimeout(500);
+    // Wait for the form to be ready (athlete weight input should be present)
+    await page.waitForSelector('input[type="number"]', { state: 'visible' });
     
     // Take screenshot with project name in path
     const projectName = testInfo.project.name;
@@ -48,31 +45,29 @@ test.describe('UI Screenshots', () => {
 
   test('form with products selected', async ({ page }, testInfo) => {
     // Navigate to the homepage
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
     // Wait for page to load
     await page.waitForSelector('#root', { state: 'visible' });
-    await page.waitForLoadState('networkidle');
     await page.waitForSelector('h1:has-text("Race Day Nutrition Planner")', { state: 'visible' });
     
-    // Fill in athlete weight
+    // Fill in athlete weight and wait for it to be populated
     const weightInput = page.locator('input[type="number"]').first();
+    await weightInput.waitFor({ state: 'visible' });
     await weightInput.fill('75');
     
     // Select sport type (if there's a select element)
     const sportSelect = page.locator('select').first();
-    if (await sportSelect.isVisible()) {
+    if (await sportSelect.isVisible({ timeout: 1000 }).catch(() => false)) {
       await sportSelect.selectOption({ label: 'Running' });
     }
     
-    // Small delay for form updates
-    await page.waitForTimeout(500);
-    
     // Try to open product selector if available
     const addProductButton = page.locator('button:has-text("Add"), button:has-text("Select")').first();
-    if (await addProductButton.isVisible()) {
+    if (await addProductButton.isVisible({ timeout: 1000 }).catch(() => false)) {
       await addProductButton.click();
-      await page.waitForTimeout(500);
+      // Wait for any modal or product list to appear
+      await page.waitForLoadState('networkidle');
     }
     
     // Take screenshot
@@ -85,11 +80,10 @@ test.describe('UI Screenshots', () => {
 
   test('product selector modal', async ({ page }, testInfo) => {
     // Navigate to the homepage
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'networkidle' });
     
     // Wait for page to load
     await page.waitForSelector('#root', { state: 'visible' });
-    await page.waitForLoadState('networkidle');
     await page.waitForSelector('h1:has-text("Race Day Nutrition Planner")', { state: 'visible' });
     
     // Try to find and click a button that opens product selector
@@ -97,7 +91,9 @@ test.describe('UI Screenshots', () => {
     
     if (await browseButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await browseButton.click();
-      await page.waitForTimeout(1000);
+      
+      // Wait for modal or product list to be visible (using a generic approach)
+      await page.waitForLoadState('networkidle');
       
       // Take screenshot with modal open
       const projectName = testInfo.project.name;
