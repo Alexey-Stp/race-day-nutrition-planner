@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { ProductInfo } from '../types';
 import { api } from '../api';
+import { PRODUCT_GROUP_LABELS, PRODUCT_GROUP_ORDER } from '../constants/icons';
 
 interface AdvancedProductSelectorProps {
   onProductsSelected: (products: ProductInfo[]) => void;
@@ -8,15 +9,8 @@ interface AdvancedProductSelectorProps {
 
 type ProductGroup = 'drink' | 'gel' | 'bar' | 'chew' | 'recovery';
 
-const GROUP_LABELS: Record<ProductGroup, string> = {
-  drink: '🥤 Drinks',
-  gel: '🟦 Gels',
-  bar: '🍫 Bars',
-  chew: '🍬 Chews',
-  recovery: '💊 Recovery (Post-Race)'
-};
-
-const GROUP_ORDER: ProductGroup[] = ['drink', 'gel', 'bar', 'chew', 'recovery'];
+const GROUP_LABELS = PRODUCT_GROUP_LABELS;
+const GROUP_ORDER = PRODUCT_GROUP_ORDER as unknown as ProductGroup[];
 
 export const AdvancedProductSelector: React.FC<AdvancedProductSelectorProps> = ({ onProductsSelected }) => {
   const [products, setProducts] = useState<ProductInfo[]>([]);
