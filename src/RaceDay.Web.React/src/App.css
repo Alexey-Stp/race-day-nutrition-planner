@@ -1398,6 +1398,31 @@ body {
     margin-top: 2px;
 }
 
+.duration-center-display {
+    text-align: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--primary);
+    margin: 8px 0;
+    padding: 4px 0;
+}
+
+.slider-markers {
+    position: relative;
+    height: 16px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.slider-marker {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 0.625rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    user-select: none;
+}
+
 .duration-display {
     background: var(--light);
     padding: 8px 12px;
@@ -2759,20 +2784,6 @@ body {
 
     .switch-subtitle {
         font-size: 0.72rem;
-    }
-
-    .activity-buttons,
-    .temperature-buttons,
-    .intensity-buttons,
-    .caffeine-toggle-buttons {
-        flex-direction: column;
-    }
-
-    .activity-btn,
-    .temp-btn,
-    .intensity-btn,
-    .caffeine-btn {
-        width: 100%;
     }
 }
 
