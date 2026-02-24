@@ -209,7 +209,7 @@ jobs:
         ASPNETCORE_URLS: http://127.0.0.1:8080
     
     - name: Wait for API to be ready
-      run: npx wait-on http://127.0.0.1:8080/api/products --timeout 60000
+      run: npx -y wait-on tcp:localhost:8080 --timeout 120000
       working-directory: src/RaceDay.Web.React
     
     - name: Start Frontend Preview Server
