@@ -58,13 +58,15 @@ test.describe('UI Screenshots', () => {
     
     // Select sport type (if there's a select element)
     const sportSelect = page.locator('select').first();
-    if (await sportSelect.isVisible({ timeout: 1000 }).catch(() => false)) {
+    const sportSelectCount = await sportSelect.count();
+    if (sportSelectCount > 0 && await sportSelect.isVisible()) {
       await sportSelect.selectOption({ label: 'Running' });
     }
     
     // Try to open product selector if available
     const addProductButton = page.locator('button:has-text("Add"), button:has-text("Select")').first();
-    if (await addProductButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+    const buttonCount = await addProductButton.count();
+    if (buttonCount > 0 && await addProductButton.isVisible()) {
       await addProductButton.click();
       // Wait for any modal or product list to appear
       await page.waitForLoadState('networkidle');
@@ -88,8 +90,9 @@ test.describe('UI Screenshots', () => {
     
     // Try to find and click a button that opens product selector
     const browseButton = page.locator('button:has-text("Browse"), button:has-text("Add Product"), button:has-text("Select Product")').first();
+    const buttonCount = await browseButton.count();
     
-    if (await browseButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (buttonCount > 0 && await browseButton.isVisible()) {
       await browseButton.click();
       
       // Wait for modal or product list to be visible (using a generic approach)
