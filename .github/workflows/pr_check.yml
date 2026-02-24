@@ -159,3 +159,200 @@ jobs:
       run: npx tsc --noEmit
       working-directory: src/RaceDay.Web.React
       continue-on-error: false
+
+  ui_screenshots:
+    runs-on: ubuntu-latest
+    name: UI Screenshots (Mobile & Desktop)
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Restore .NET dependencies
+      run: dotnet restore
+    
+    - name: Build .NET Solution
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Install React dependencies
+      run: npm ci --ignore-scripts
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Build React Application
+      run: npm run build
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Start API Server
+      run: |
+        dotnet run --project src/RaceDay.API/RaceDay.API.csproj --no-build --configuration Release &
+        API_PID=$!
+        echo "API_PID=$API_PID" >> $GITHUB_ENV
+        echo "Started API server with PID $API_PID"
+      env:
+        ASPNETCORE_ENVIRONMENT: Production
+        ASPNETCORE_URLS: http://127.0.0.1:5208
+    
+    - name: Wait for API to be ready
+      run: npx wait-on http://127.0.0.1:5208/api/products --timeout 60000
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Start Frontend Preview Server
+      run: |
+        npm run preview -- --host 127.0.0.1 --port 4173 &
+        PREVIEW_PID=$!
+        echo "PREVIEW_PID=$PREVIEW_PID" >> $GITHUB_ENV
+        echo "Started preview server with PID $PREVIEW_PID"
+      working-directory: src/RaceDay.Web.React
+      env:
+        BASE_URL: http://127.0.0.1:4173
+    
+    - name: Wait for Preview Server
+      run: npx wait-on http://127.0.0.1:4173 --timeout 60000
+      working-directory: src/RaceDay.Web.React
+    
+    - name: Run Playwright Screenshots
+      run: npx playwright test --project=mobile --project=desktop
+      working-directory: src/RaceDay.Web.React
+      env:
+        BASE_URL: http://127.0.0.1:4173
+    
+    - name: Stop Servers
+      if: always()
+      run: |
+        if [ ! -z "$API_PID" ]; then kill $API_PID || true; fi
+        if [ ! -z "$PREVIEW_PID" ]; then kill $PREVIEW_PID || true; fi
+    
+    - name: Upload Playwright Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: src/RaceDay.Web.React/playwright-report/
+        retention-days: 30
+    
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: src/RaceDay.Web.React/test-results/
+        retention-days: 30
+    
+    - name: Prepare GitHub Pages Content
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      run: |
+        mkdir -p ui-preview-dist/mobile ui-preview-dist/desktop
+        
+        # Copy mobile report and screenshots
+        if [ -d "src/RaceDay.Web.React/playwright-report" ]; then
+          cp -r src/RaceDay.Web.React/playwright-report/* ui-preview-dist/mobile/ || true
+        fi
+        
+        # Copy desktop report (if separate) or reuse the combined report
+        if [ -d "src/RaceDay.Web.React/playwright-report" ]; then
+          cp -r src/RaceDay.Web.React/playwright-report/* ui-preview-dist/desktop/ || true
+        fi
+        
+        # Copy screenshots into dedicated folders
+        if [ -d "src/RaceDay.Web.React/test-results/screenshots/mobile" ]; then
+          mkdir -p ui-preview-dist/mobile/screenshots
+          cp -r src/RaceDay.Web.React/test-results/screenshots/mobile/* ui-preview-dist/mobile/screenshots/ || true
+        fi
+        
+        if [ -d "src/RaceDay.Web.React/test-results/screenshots/desktop" ]; then
+          mkdir -p ui-preview-dist/desktop/screenshots
+          cp -r src/RaceDay.Web.React/test-results/screenshots/desktop/* ui-preview-dist/desktop/screenshots/ || true
+        fi
+        
+        # Create a landing page
+        cat > ui-preview-dist/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>UI Preview - PR #${{ github.event.pull_request.number }}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1200px; margin: 40px auto; padding: 20px; }
+            h1 { color: #333; }
+            .links { display: flex; gap: 20px; margin: 30px 0; }
+            .link-card { flex: 1; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+            .link-card a { font-size: 18px; text-decoration: none; color: #0969da; }
+            .screenshots { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+            .screenshot-item { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+            .screenshot-item img { width: 100%; height: auto; }
+            .screenshot-item p { padding: 10px; margin: 0; background: #f6f8fa; }
+          </style>
+        </head>
+        <body>
+          <h1>UI Preview - PR #${{ github.event.pull_request.number }}</h1>
+          <p>Screenshots and test reports for this pull request.</p>
+          
+          <div class="links">
+            <div class="link-card">
+              <h3>📱 Mobile View</h3>
+              <a href="mobile/index.html" target="_blank">View Mobile Report</a>
+            </div>
+            <div class="link-card">
+              <h3>🖥️ Desktop View</h3>
+              <a href="desktop/index.html" target="_blank">View Desktop Report</a>
+            </div>
+          </div>
+        </body>
+        </html>
+        EOF
+    
+    - name: Publish to GitHub Pages
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./ui-preview-dist
+        destination_dir: ui-preview/pr-${{ github.event.pull_request.number }}/latest
+        keep_files: true
+        user_name: 'github-actions[bot]'
+        user_email: 'github-actions[bot]@users.noreply.github.com'
+    
+    - name: Comment on PR with Screenshots
+      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          <!-- ui-preview-playwright -->
+          ## 📸 UI Preview - Mobile & Desktop
+          
+          Screenshots and test reports have been generated for this PR.
+          
+          ### 📱 Mobile View (390×844)
+          **[View Mobile Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/index.html)**
+          
+          | Home | Form Filled |
+          |------|-------------|
+          | ![Mobile Home](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/home.png) | ![Mobile Form](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/mobile/screenshots/form-filled.png) |
+          
+          ### 🖥️ Desktop View (1440×900)
+          **[View Desktop Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/index.html)**
+          
+          | Home | Form Filled |
+          |------|-------------|
+          | ![Desktop Home](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/home.png) | ![Desktop Form](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest/desktop/screenshots/form-filled.png) |
+          
+          ---
+          
+          **Fallback:** If images don't load, [download artifacts from the workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
