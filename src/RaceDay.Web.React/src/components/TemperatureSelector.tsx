@@ -2,12 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { TemperatureCondition } from '../types';
 import { api } from '../api';
 import type { TemperatureMetadata } from '../types';
-
-const TEMP_ICONS: Record<string, string> = {
-  Cold: '❄️',
-  Moderate: '🌤️',
-  Hot: '🌡️',
-};
+import { TEMP_ICONS } from '../constants/icons';
 
 interface TemperatureSelectorProps {
   temperature: TemperatureCondition;

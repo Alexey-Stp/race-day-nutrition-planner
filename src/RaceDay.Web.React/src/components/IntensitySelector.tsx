@@ -2,17 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { IntensityLevel } from '../types';
 import { api } from '../api';
 import type { IntensityMetadata } from '../types';
+import { INTENSITY_LABELS } from '../constants/icons';
 
 interface IntensitySelectorProps {
   intensity: IntensityLevel;
   onIntensityChange: (intensity: IntensityLevel) => void;
 }
-
-const INTENSITY_LABELS: Record<string, string> = {
-  Easy: 'Easy',
-  Moderate: 'Training',
-  Hard: 'Race',
-};
 
 export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
   intensity,

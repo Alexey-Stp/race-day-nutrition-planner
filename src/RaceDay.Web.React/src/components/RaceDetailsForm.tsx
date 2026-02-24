@@ -2,12 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { SportType, type ActivityInfo } from '../types';
 import { api } from '../api';
 import { formatDuration } from '../utils';
-
-const ACTIVITY_ICONS: Record<string, string> = {
-  run: '🏃',
-  bike: '🚴',
-  triathlon: '🏊',
-};
+import { ACTIVITY_ICONS } from '../constants/icons';
 
 interface RaceDetailsFormProps {
   sportType: SportType;

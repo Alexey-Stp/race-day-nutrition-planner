@@ -1,0 +1,201 @@
+/* Progress Bar Component Styles */
+
+.progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progress-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.progress-value {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-lg);
+  transition: width var(--transition-slow), background-color var(--transition-normal);
+  background: var(--secondary);
+}
+
+.progress-fill--optimal {
+  background: var(--success);
+}
+
+.progress-fill--high {
+  background: var(--warning);
+}
+
+.progress-fill--low {
+  background: var(--danger);
+}
+
+.progress-percent {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+  text-align: right;
+}
+
+.progress-percent--optimal {
+  color: var(--success);
+}
+
+.progress-percent--high {
+  color: var(--warning);
+}
+
+.progress-percent--low {
+  color: var(--danger);
+}
+
+/* Nutrition Summary Styles */
+
+.nutrition-summary {
+  padding: var(--space-md);
+  background: var(--light);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.nutrition-stats {
+  display: flex;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nutrition-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xxs);
+}
+
+.nutrition-stat--highlight {
+  padding: var(--space-xs) var(--space-md);
+  background: var(--background);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.nutrition-stat__label {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nutrition-stat__value {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.nutrition-stat__value strong {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--primary);
+}
+
+.nutrition-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.loading-text,
+.error-text {
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--space-md);
+}
+
+.loading-text {
+  color: var(--text-secondary);
+}
+
+.error-text {
+  color: var(--danger);
+}
+
+/* Plan Timeline Container */
+
+.plan-timeline {
+  margin-top: var(--space-lg);
+}
+
+.plan-header-sticky {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: var(--background);
+  z-index: var(--z-elevated);
+}
+
+.plan-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .plan-header-sticky {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nutrition-stats {
+    flex-direction: column;
+    gap: var(--space-sm);
+    width: 100%;
+  }
+
+  .nutrition-stat,
+  .nutrition-stat--highlight {
+    width: 100%;
+  }
+}

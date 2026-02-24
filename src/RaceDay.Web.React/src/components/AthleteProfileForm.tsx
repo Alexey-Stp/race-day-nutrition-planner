@@ -1,4 +1,5 @@
 import React from 'react';
+import { ATHLETE_WEIGHT } from '../constants';
 
 interface AthleteProfileFormProps {
   athleteWeight: number;
@@ -20,9 +21,9 @@ export const AthleteProfileForm: React.FC<AthleteProfileFormProps> = ({
             value={athleteWeight}
             onChange={(e) => onAthleteWeightChange(Number.parseFloat(e.target.value) || 0)}
             className="form-control"
-            min="40"
-            max="150"
-            step="0.5"
+            min={ATHLETE_WEIGHT.MIN}
+            max={ATHLETE_WEIGHT.MAX}
+            step={ATHLETE_WEIGHT.STEP}
           />
           <span className="input-unit">kg</span>
         </div>

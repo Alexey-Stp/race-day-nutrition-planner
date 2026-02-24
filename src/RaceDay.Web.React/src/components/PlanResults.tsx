@@ -1,7 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import type { RaceNutritionPlan, SportType, TemperatureCondition, IntensityLevel } from '../types';
-import { formatDuration, formatPhase, formatAction } from '../utils';
+import { formatDuration } from '../utils';
 import { api } from '../api';
+import { TimelineSection } from './Timeline';
+import { NutritionSummary } from './NutritionSummary';
+import { Button } from './ui/Button';
+import { getSportTypeDisplay, getTemperatureDisplay } from '../constants/icons';
 
 interface PlanResultsProps {
   plan: RaceNutritionPlan | null;
@@ -22,51 +26,6 @@ interface NutritionTargets {
   totalSodiumMg: number;
 }
 
-interface ProgressBarProps {
-  value: number;
-  max: number;
-  percentage: number;
-  label: string;
-}
-
-const MAX_CAFFEINE_MG = 300;
-
-const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, percentage, label }) => {
-  const isOptimal = percentage >= 95 && percentage <= 105;
-  const isHigh = percentage > 105;
-  const isLow = percentage < 95;
-
-  let fillClassName = 'progress-fill';
-  if (isOptimal) fillClassName += ' optimal';
-  else if (isHigh) fillClassName += ' high';
-  else if (isLow) fillClassName += ' low';
-
-  let percentClassName = 'progress-percent';
-  if (isOptimal) percentClassName += ' optimal';
-  else if (isHigh) percentClassName += ' high';
-  else if (isLow) percentClassName += ' low';
-
-  return (
-    <div className="progress-item">
-      <div className="progress-header">
-        <span className="progress-label">{label}</span>
-        <span className="progress-value">{value.toFixed(0)} / {max.toFixed(0)}</span>
-      </div>
-      <div className="progress-bar-container">
-        <div className="progress-bar">
-          <div
-            className={fillClassName}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
-          />
-        </div>
-        <span className={percentClassName}>
-          {percentage.toFixed(0)}%
-        </span>
-      </div>
-    </div>
-  );
-};
-
 export const PlanResults: React.FC<PlanResultsProps> = ({
   plan,
   useCaffeine,
@@ -80,6 +39,7 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
   const [loadingTargets, setLoadingTargets] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
+  // Fetch nutrition targets when plan changes
   useEffect(() => {
     const fetchTargets = async () => {
       if (!(plan?.race && plan?.athlete)) return;
@@ -104,52 +64,34 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
     fetchTargets();
   }, [plan]);
 
-  if (!plan?.nutritionSchedule) {
-    return null;
-  }
+  // Filter schedule based on caffeine preference - memoized
+  const schedule = useMemo(() => {
+    if (!plan?.nutritionSchedule) return [];
+    return useCaffeine
+      ? plan.nutritionSchedule
+      : plan.nutritionSchedule.filter(event => !event.hasCaffeine);
+  }, [plan?.nutritionSchedule, useCaffeine]);
 
-  const schedule = useCaffeine
-    ? plan.nutritionSchedule
-    : plan.nutritionSchedule.filter(event => !event.hasCaffeine);
+  // Split events into pre-race and in-race - memoized
+  const { preRaceEvents, raceEvents } = useMemo(() => {
+    const preRace = schedule.filter(e => e.timeMin < 0);
+    const race = schedule.filter(e => e.timeMin >= 0);
+    return { preRaceEvents: preRace, raceEvents: race };
+  }, [schedule]);
 
-  // Calculate totals from CarbsInEvent (sum of individual events) for accuracy
-  const totalCarbs = schedule.reduce((sum, e) => sum + (e.carbsInEvent ?? 0), 0) ||
-    (schedule.length > 0 ? schedule.at(-1)!.totalCarbsSoFar : 0);
-  const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
-  const raceDuration = plan.race?.durationHours ?? 0;
+  // Generate plan title - memoized
+  const planTitle = useMemo(() => {
+    return `${getSportTypeDisplay(sportType)} ${sportType} | ${athleteWeight}kg | ${formatDuration(duration)} | ${intensity} | ${getTemperatureDisplay(temperature)}`;
+  }, [sportType, athleteWeight, duration, intensity, temperature]);
 
-  const getSportTypeDisplay = (type: string) => {
-    switch(type) {
-      case 'Run': return '🏃';
-      case 'Bike': return '🚴';
-      case 'Triathlon': return '🏊‍♂️🚴🏃';
-      default: return type;
-    }
-  };
+  // Generate text for clipboard - useCallback to prevent recreation
+  const generatePlanText = useCallback(() => {
+    if (!plan) return '';
 
-  const getTemperatureDisplay = (temp: string) => {
-    switch(temp) {
-      case 'Cold': return '❄️ Cold';
-      case 'Moderate': return '🌤️ Moderate';
-      case 'Hot': return '🌡️ Hot';
-      default: return temp;
-    }
-  };
-
-  const planTitle = `${getSportTypeDisplay(sportType)} ${sportType} | ${athleteWeight}kg | ${formatDuration(duration)} | ${intensity} | ${getTemperatureDisplay(temperature)}`;
-
-  const copyPlanToClipboard = () => {
-    const planText = generatePlanText();
-    navigator.clipboard.writeText(planText).then(() => {
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    }).catch(err => {
-      console.error('Failed to copy:', err);
-    });
-  };
-
-  const generatePlanText = () => {
     const lines: string[] = [];
+    const raceDuration = plan.race?.durationHours ?? 0;
+    const totalCarbs = schedule.reduce((sum, e) => sum + (e.carbsInEvent ?? 0), 0);
+    const totalCaffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
 
     lines.push('═══════════════════════════════════════════════');
     lines.push('           RACE NUTRITION PLAN');
@@ -180,12 +122,13 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
     lines.push('');
 
     schedule.forEach((event, index) => {
-      const timeStr = event.timeMin < 0 ? `Pre-race (${Math.abs(event.timeMin)}min before)` : formatDuration(event.timeMin / 60);
-      const phaseStr = formatPhase(event.phase);
-      const actionStr = formatAction(event);
-      lines.push(`[${timeStr}] ${phaseStr}`);
+      const timeStr = event.timeMin < 0 
+        ? `Pre-race (${Math.abs(event.timeMin)}min before)` 
+        : formatDuration(event.timeMin / 60);
+      
+      lines.push(`[${timeStr}] ${event.phase}`);
       lines.push(`  Product: ${event.productName}`);
-      lines.push(`  ${actionStr}`);
+      lines.push(`  Action: ${event.action}`);
       if (event.carbsInEvent) {
         lines.push(`  Carbs: ${event.carbsInEvent.toFixed(1)}g (cumulative: ${event.totalCarbsSoFar.toFixed(0)}g)`);
       } else {
@@ -205,10 +148,32 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
     lines.push('═══════════════════════════════════════════════');
 
     return lines.join('\n');
-  };
+  }, [plan, schedule, targets, useCaffeine, athleteWeight, sportType, duration, intensity, temperature]);
 
-  const carbsPercentage = targets?.totalCarbsG && targets.totalCarbsG > 0 ? (totalCarbs / targets.totalCarbsG) * 100 : 0;
-  const caffeinePercentage = (totalCaffeine / MAX_CAFFEINE_MG) * 100;
+  // Copy to clipboard handler - useCallback
+  const copyPlanToClipboard = useCallback(() => {
+    const planText = generatePlanText();
+    navigator.clipboard.writeText(planText).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }, [generatePlanText]);
+
+  if (!plan?.nutritionSchedule) {
+    return null;
+  }
+
+  if (schedule.length === 0) {
+    return (
+      <div className="results-card">
+        <p className="empty-message">No schedule generated</p>
+      </div>
+    );
+  }
+
+  // Unique key for forcing re-render when plan changes significantly
   const planKey = `${plan.race?.durationHours}-${plan.race?.intensity}-${schedule.length}`;
 
   return (
@@ -217,91 +182,44 @@ export const PlanResults: React.FC<PlanResultsProps> = ({
         {/* Sticky header with title and copy button */}
         <div className="plan-header-sticky">
           <h2 className="plan-title">{planTitle}</h2>
-          <button
+          <Button
             onClick={copyPlanToClipboard}
-            className="btn btn-secondary btn-compact"
+            variant="secondary"
+            size="sm"
             title="Copy plan to clipboard"
           >
             {copySuccess ? '✓ Copied!' : '📋 Copy'}
-          </button>
+          </Button>
         </div>
 
-        {schedule.length === 0 ? (
-          <p className="empty-message">No schedule generated</p>
-        ) : (
-          <>
-            {/* Targets Section - compact */}
-            <div className="targets-section">
-              {loadingTargets && <p className="loading">Loading targets...</p>}
-              {!loadingTargets && targets && (
-                <div className="targets-container">
-                  <div className="target-info">
-                    <span className="info-label">Target:</span>
-                    <span className="info-value">{targets.carbsGPerHour.toFixed(0)}g/h × {formatDuration(raceDuration)} = {targets.totalCarbsG.toFixed(0)}g</span>
-                    <span className="info-label" style={{ marginLeft: '1rem' }}>Plan:</span>
-                    <span className="info-value"><strong>{totalCarbs.toFixed(0)}g</strong></span>
-                  </div>
-
-                  <ProgressBar
-                    value={totalCarbs}
-                    max={targets.totalCarbsG}
-                    percentage={carbsPercentage}
-                    label="Carbs"
-                  />
-
-                  {useCaffeine && (
-                    <ProgressBar
-                      value={totalCaffeine}
-                      max={MAX_CAFFEINE_MG}
-                      percentage={caffeinePercentage}
-                      label="Caffeine"
-                    />
-                  )}
-                </div>
-              )}
-              {!loadingTargets && !targets && (
-                <p className="error">Failed to load nutrition targets</p>
-              )}
-            </div>
-
-            {/* Schedule table - compact */}
-            <div className="schedule-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Phase</th>
-                    <th>Product</th>
-                    <th>Action</th>
-                    <th className="text-right">Carbs</th>
-                    <th className="text-right">Total</th>
-                    {useCaffeine && <th>Caffeine</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {schedule.map((event, index) => {
-                    const isSip = event.action === 'Sip';
-                    return (
-                      <tr
-                        key={`${index}-${event.timeMin}-${event.productName}`}
-                        title={event.phaseDescription}
-                        className={isSip ? 'sip-row' : ''}
-                      >
-                        <td><strong>{event.timeMin < 0 ? `Pre (${Math.abs(event.timeMin)}m)` : formatDuration(event.timeMin / 60)}</strong></td>
-                        <td>{formatPhase(event.phase)}</td>
-                        <td>{event.productName}</td>
-                        <td>{formatAction(event)}</td>
-                        <td className="text-right">{(event.carbsInEvent ?? 0).toFixed(1)}g</td>
-                        <td className="text-right">{event.totalCarbsSoFar.toFixed(0)}g</td>
-                        {useCaffeine && <td>{event.hasCaffeine ? `☕ ${event.caffeineMg || '?'}mg` : '-'}</td>}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
+        {/* Nutrition summary with progress bars */}
+        {plan && (
+          <NutritionSummary
+            plan={plan}
+            targets={targets}
+            useCaffeine={useCaffeine}
+            loadingTargets={loadingTargets}
+          />
         )}
+
+        {/* Timeline view - replaces dense table */}
+        <div className="plan-timeline">
+          {preRaceEvents.length > 0 && (
+            <TimelineSection
+              title="Pre-Race Nutrition"
+              events={preRaceEvents}
+              showCaffeine={useCaffeine}
+            />
+          )}
+          
+          {raceEvents.length > 0 && (
+            <TimelineSection
+              title="Race Nutrition"
+              events={raceEvents}
+              showCaffeine={useCaffeine}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

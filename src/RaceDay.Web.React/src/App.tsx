@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { SportType, IntensityLevel, TemperatureCondition, type RaceNutritionPlan } from './types';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { type RaceNutritionPlan } from './types';
 import { api } from './api';
 import { AthleteProfileForm } from './components/AthleteProfileForm';
 import { RaceDetailsForm } from './components/RaceDetailsForm';
@@ -8,42 +8,52 @@ import { IntensitySelector } from './components/IntensitySelector';
 import { AdvancedProductSelector } from './components/AdvancedProductSelector';
 import { PlanResults } from './components/PlanResults';
 import { ShoppingList } from './components/ShoppingList';
+import { usePlannerForm } from './hooks/usePlannerForm';
+import { 
+  LOADING_MESSAGES, 
+  MIN_LOADING_MS,
+  getSportEmojiList 
+} from './constants';
+
+// Import all CSS modules
+import './styles/tokens.css';
+import './styles/base.css';
+import './styles/buttons.css';
+import './styles/components.css';
+import './styles/timeline.css';
+import './styles/progress.css';
 import './App.css';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'dev';
-
-const LOADING_MESSAGES = [
-  'Thinking...',
-  'Analyzing your race profile...',
-  'Calculating nutrition targets...',
-  'Building your fuel schedule...',
-  'Optimizing timing and portions...',
-  'Finalizing your plan...',
-];
-
-const MIN_LOADING_MS = 5000;
 const MSG_INTERVAL_MS = Math.floor(MIN_LOADING_MS / LOADING_MESSAGES.length);
 
-const SPORT_EMOJI: Record<string, string[]> = {
-  [SportType.Run]:       ['🏃'],
-  [SportType.Bike]:      ['🚴'],
-  [SportType.Triathlon]: ['🏊', '🚴', '🏃'],
-};
-
 function App() {
-  const [athleteWeight, setAthleteWeight] = useState(75);
-  const [sportType, setSportType] = useState<SportType>(SportType.Run);
-  const [duration, setDuration] = useState(1.5);
-  const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
-  const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
-  const [useCaffeine, setUseCaffeine] = useState(true);
+  // Use custom hook for form state management
+  const {
+    athleteWeight,
+    sportType,
+    duration,
+    temperature,
+    intensity,
+    useCaffeine,
+    selectedProducts,
+    setAthleteWeight,
+    setSportType,
+    setDuration,
+    setTemperature,
+    setIntensity,
+    setUseCaffeine,
+    setSelectedProducts,
+    isFormValid,
+  } = usePlannerForm();
 
-  const [selectedProducts, setSelectedProducts] = useState<{ name: string; productType: string; carbsG: number; sodiumMg: number; volumeMl?: number; caffeineMg?: number }[]>([]);
+  // Plan generation state
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messageIdx, setMessageIdx] = useState(0);
 
+  // Cycle through loading messages
   useEffect(() => {
     if (!loading) return;
     setMessageIdx(0);
@@ -54,18 +64,15 @@ function App() {
     return () => clearInterval(interval);
   }, [loading]);
 
-  const isFormValid = () => {
-    return (
-      athleteWeight > 0 &&
-      sportType &&
-      duration > 0 &&
-      temperature &&
-      intensity &&
-      selectedProducts.length > 0
-    );
-  };
+  // Get loading emoji based on sport type - memoized
+  const emojiList = useMemo(() => getSportEmojiList(sportType), [sportType]);
+  const loadingEmoji = useMemo(
+    () => emojiList[messageIdx % emojiList.length],
+    [emojiList, messageIdx]
+  );
 
-  const generatePlan = async () => {
+  // Generate plan handler - useCallback to prevent recreation
+  const generatePlan = useCallback(async () => {
     if (selectedProducts.length === 0) {
       setError('Please select at least one product');
       return;
@@ -83,6 +90,7 @@ function App() {
         intensity
       };
 
+      // Transform products to API format
       const products = selectedProducts.map(p => ({
         name: p.name,
         productType: p.productType,
@@ -92,10 +100,12 @@ function App() {
         caffeineMg: p.caffeineMg ?? undefined
       }));
 
+      // Generate plan with minimum loading time for UX
       const [newPlan] = await Promise.all([
         api.generatePlan(athlete, race, products, useCaffeine),
         new Promise<void>(resolve => setTimeout(resolve, MIN_LOADING_MS)),
       ]);
+      
       setPlan(newPlan);
       setError(null);
     } catch (err) {
@@ -105,18 +115,17 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const emojiList = SPORT_EMOJI[sportType] ?? ['🏃'];
-  const loadingEmoji = emojiList[messageIdx % emojiList.length];
+  }, [selectedProducts, athleteWeight, sportType, duration, temperature, intensity, useCaffeine]);
 
   return (
     <div className="planner-container">
+      {/* Header */}
       <div className="header">
         <span className="version-badge">{APP_VERSION}</span>
         <h1>Race Day Nutrition Planner</h1>
       </div>
 
+      {/* Loading overlay */}
       {loading && (
         <div className="loading-overlay">
           <div className="loading-card">
