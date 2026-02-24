@@ -99,11 +99,9 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
         )}
       </div>
 
-      <div className="form-group inline-group">
-        <label htmlFor="duration">Duration</label>
-        <div className="duration-display">{formatDuration(currentDisplayDuration)}</div>
-      </div>
       <div className="form-group">
+        <label htmlFor="duration">Duration</label>
+        <div className="duration-center-display">{formatDuration(currentDisplayDuration)}</div>
         <div className="slider-group">
           <input
             type="range"
@@ -116,6 +114,13 @@ export const RaceDetailsForm: React.FC<RaceDetailsFormProps> = ({
             max={maxDuration}
             step="0.01667"
           />
+          <div className="slider-markers">
+            {Array.from({ length: Math.floor(maxDuration) }, (_, i) => i + 1).map((hour) => (
+              <span key={hour} className="slider-marker" style={{ left: `${((hour - minDuration) / (maxDuration - minDuration)) * 100}%` }}>
+                {hour}h
+              </span>
+            ))}
+          </div>
           <div className="slider-labels">
             <span>{formatDuration(minDuration)}</span>
             <span>{formatDuration(maxDuration)}</span>

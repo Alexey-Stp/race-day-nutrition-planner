@@ -8,6 +8,12 @@ interface IntensitySelectorProps {
   onIntensityChange: (intensity: IntensityLevel) => void;
 }
 
+const INTENSITY_LABELS: Record<string, string> = {
+  Easy: 'Easy',
+  Moderate: 'Training',
+  Hard: 'Race',
+};
+
 export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
   intensity,
   onIntensityChange
@@ -42,7 +48,7 @@ export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
       <div className="intensity-buttons">
         {metadata.map((meta) => {
           const isSelected = intensity === meta.level;
-          const shortZone = meta.heartRateZone.split(' (')[0];
+          const label = INTENSITY_LABELS[meta.level] || meta.level;
 
           return (
             <button
@@ -52,7 +58,7 @@ export const IntensitySelector: React.FC<IntensitySelectorProps> = ({
               data-tooltip={meta.effects.join(' · ')}
             >
               <span className="intensity-icon">{meta.icon}</span>
-              <span>{shortZone}</span>
+              <span>{label}</span>
             </button>
           );
         })}
