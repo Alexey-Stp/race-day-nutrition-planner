@@ -5,9 +5,27 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
+  # Check which files changed to determine if ui_screenshots should run
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui_screenshots: ${{ steps.filter.outputs.ui_screenshots }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          ui_screenshots:
+            - 'src/RaceDay.Web.React/**'
+            - '.github/workflows/pr_check.yml'
+
   build-and-test:
     runs-on: ubuntu-latest
     name: Build, Test & Quality Check
+    outputs:
+      dotnet-build-cache-key: ${{ steps.dotnet-cache.outputs.cache-hit }}
+      npm-build-cache-key: ${{ steps.npm-cache.outputs.cache-hit }}
 
     steps:
     - uses: actions/checkout@v4
@@ -17,10 +35,21 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
+    - name: Cache NuGet packages
+      id: dotnet-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
     - name: Restore .NET dependencies
       run: dotnet restore
@@ -116,6 +145,22 @@ jobs:
       working-directory: src/RaceDay.Web.React
       continue-on-error: false
     
+    - name: Upload React Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: react-build
+        path: src/RaceDay.Web.React/dist
+        retention-days: 1
+    
+    - name: Upload .NET Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dotnet-build
+        path: |
+          src/RaceDay.API/bin/Release
+          src/RaceDay.Core/bin/Release
+        retention-days: 1
+    
     - name: Verify Code Quality
       run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
       continue-on-error: false
@@ -131,6 +176,14 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
+    
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
     
     - name: Restore dependencies
       run: dotnet restore
@@ -150,6 +203,8 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
     - name: Install dependencies
       run: npm ci --ignore-scripts
@@ -163,6 +218,8 @@ jobs:
   ui_screenshots:
     runs-on: ubuntu-latest
     name: UI Screenshots (Mobile & Desktop)
+    needs: [changes, build-and-test]
+    if: needs.changes.outputs.ui_screenshots == 'true'
     permissions:
       contents: write
       pull-requests: write
@@ -175,24 +232,83 @@ jobs:
       with:
         dotnet-version: '10.0.x'
     
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: src/RaceDay.Web.React/package-lock.json
+    
+    - name: Download React Build Artifacts
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: react-build
+        path: src/RaceDay.Web.React/dist
+    
+    - name: Download .NET Build Artifacts
+      uses: actions/download-artifact@v4
+      continue-on-error: true
+      with:
+        name: dotnet-build
+        path: build-artifacts
+    
+    - name: Restore .NET Build from Artifacts
+      continue-on-error: true
+      run: |
+        if [ -d "build-artifacts" ]; then
+          mkdir -p src/RaceDay.API/bin/Release
+          mkdir -p src/RaceDay.Core/bin/Release
+          cp -r build-artifacts/src/RaceDay.API/bin/Release/* src/RaceDay.API/bin/Release/ 2>/dev/null || true
+          cp -r build-artifacts/src/RaceDay.Core/bin/Release/* src/RaceDay.Core/bin/Release/ 2>/dev/null || true
+          echo "Build artifacts restored from previous job"
+        fi
+    
+    - name: Check if builds are needed
+      id: check-builds
+      run: |
+        if [ -f "src/RaceDay.Web.React/dist/index.html" ] && [ -f "src/RaceDay.API/bin/Release/net10.0/RaceDay.API.dll" ]; then
+          echo "builds_exist=true" >> $GITHUB_OUTPUT
+          echo "✅ Build artifacts exist, skipping rebuild"
+        else
+          echo "builds_exist=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Build artifacts missing, will rebuild"
+        fi
     
     - name: Restore .NET dependencies
+      if: steps.check-builds.outputs.builds_exist != 'true'
       run: dotnet restore
     
     - name: Build .NET Solution
+      if: steps.check-builds.outputs.builds_exist != 'true'
       run: dotnet build --configuration Release --no-restore
     
     - name: Install React dependencies
+      if: steps.check-builds.outputs.builds_exist != 'true'
       run: npm ci --ignore-scripts
       working-directory: src/RaceDay.Web.React
     
     - name: Build React Application
+      if: steps.check-builds.outputs.builds_exist != 'true'
       run: npm run build
       working-directory: src/RaceDay.Web.React
+    
+    - name: Cache Playwright Browsers
+      id: playwright-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('src/RaceDay.Web.React/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
     
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
