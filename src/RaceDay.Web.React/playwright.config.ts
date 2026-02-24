@@ -5,7 +5,7 @@ import { defineConfig } from '@playwright/test';
  * Generates both mobile and desktop screenshots for PR preview
  */
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests',
   
   // Maximum time one test can run
   timeout: 30 * 1000,
