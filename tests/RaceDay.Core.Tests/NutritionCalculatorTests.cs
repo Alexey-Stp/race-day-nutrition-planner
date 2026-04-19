@@ -15,7 +15,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(50, targets.CarbsGPerHour);
+        targets.CarbsGPerHour.ShouldBe(50);
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(70, targets.CarbsGPerHour);
+        targets.CarbsGPerHour.ShouldBe(70);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(90, targets.CarbsGPerHour);
+        targets.CarbsGPerHour.ShouldBe(90);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(80, targets.CarbsGPerHour); // 70 + 10 for long race
+        targets.CarbsGPerHour.ShouldBe(80); // 70 + 10 for long race
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(700, targets.FluidsMlPerHour); // 500 + 200 for hot weather
+        targets.FluidsMlPerHour.ShouldBe(700); // 500 + 200 for hot weather
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(400, targets.FluidsMlPerHour); // 500 - 100 for cold weather
+        targets.FluidsMlPerHour.ShouldBe(400); // 500 - 100 for cold weather
     }
 
     [Fact]
@@ -99,8 +99,8 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(550, targets.FluidsMlPerHour); // 500 + 50 for heavy athlete
-        Assert.Equal(500, targets.SodiumMgPerHour); // 400 + 100 for heavy athlete
+        targets.FluidsMlPerHour.ShouldBe(550); // 500 + 50 for heavy athlete
+        targets.SodiumMgPerHour.ShouldBe(500); // 400 + 100 for heavy athlete
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(450, targets.FluidsMlPerHour); // 500 - 50 for light athlete
+        targets.FluidsMlPerHour.ShouldBe(450); // 500 - 50 for light athlete
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert - 500 - 100 (cold) - 50 (light) = 350
-        Assert.Equal(350, targets.FluidsMlPerHour);
+        targets.FluidsMlPerHour.ShouldBe(350);
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
 
         // Assert
-        Assert.Equal(700, targets.SodiumMgPerHour); // 400 + 200 (hot) + 100 (heavy)
+        targets.SodiumMgPerHour.ShouldBe(700); // 400 + 200 (hot) + 100 (heavy)
     }
 }
 

@@ -64,4 +64,8 @@ public static class SchedulingConstraints
     // Cannot allocate more than this fraction of total carbs in the first 25% of time
     public const double MaxFrontLoadFraction = 0.40;
     public const double FrontLoadWindowFraction = 0.25;
+
+    // === Temperature condition thresholds (degrees Celsius) ===
+    public const double ColdTemperatureThresholdC = 5.0;
+    public const double HotTemperatureThresholdC = 25.0;
 }

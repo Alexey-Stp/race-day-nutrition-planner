@@ -150,7 +150,6 @@ function App() {
 
           <div className="selector-group">
             <RaceDetailsForm
-              sportType={sportType}
               duration={duration}
               onSportTypeChange={setSportType}
               onDurationChange={setDuration}

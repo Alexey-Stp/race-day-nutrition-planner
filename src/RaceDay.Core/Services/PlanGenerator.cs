@@ -45,7 +45,6 @@ public class PlanGenerator
         RaceProfile race,
         AthleteProfile athlete,
         List<ProductEnhanced> products,
-        int intervalMinutes = 22,
         bool caffeineEnabled = false)
     {
         var raceMode = DetermineRaceMode(race.SportType);
@@ -97,10 +96,9 @@ public class PlanGenerator
         RaceProfile race,
         AthleteProfile athlete,
         List<ProductEnhanced> products,
-        int intervalMinutes = 22,
         bool caffeineEnabled = false)
     {
-        var plan = GeneratePlan(race, athlete, products, intervalMinutes, caffeineEnabled);
+        var plan = GeneratePlan(race, athlete, products, caffeineEnabled);
         var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled);
         var durationMinutes = (int)(race.DurationHours * 60);
         var validationResult = ValidateAndAutoFix(plan, targets, products, durationMinutes, caffeineEnabled);
@@ -469,6 +467,39 @@ public class PlanGenerator
                 TotalCaffeineSoFar = Math.Round(cumulativeCaffeine, 1),
                 CarbsInEvent = Math.Round(eventCarbs, 1)
             };
+        }
+    }
+
+    // ─── Phase 5b: Front-load constraint ──────────────────────────
+
+    private static void EnforceFrontLoadConstraint(List<NutritionEvent> plan, int durationMinutes)
+    {
+        if (plan.Count == 0) return;
+
+        var windowEnd = (int)(durationMinutes * SchedulingConstraints.FrontLoadWindowFraction);
+        var totalCarbs = plan.Sum(e => e.CarbsInEvent);
+        if (totalCarbs <= 0) return;
+
+        var frontCarbs = plan
+            .Where(e => e.TimeMin <= windowEnd && e.SipMl == null)
+            .Sum(e => e.CarbsInEvent);
+
+        if (frontCarbs <= totalCarbs * SchedulingConstraints.MaxFrontLoadFraction) return;
+
+        // Remove highest-carb events in the window until constraint is met
+        var candidates = plan
+            .Where(e => e.TimeMin <= windowEnd && e.SipMl == null)
+            .OrderByDescending(e => e.CarbsInEvent)
+            .ToList();
+
+        foreach (var evt in candidates)
+        {
+            plan.Remove(evt);
+            frontCarbs -= evt.CarbsInEvent;
+            totalCarbs -= evt.CarbsInEvent;
+            if (totalCarbs <= 0 ||
+                frontCarbs <= totalCarbs * SchedulingConstraints.MaxFrontLoadFraction)
+                break;
         }
     }
 
@@ -985,9 +1016,9 @@ public class PlanGenerator
             if (isTriathlon)
             {
                 if (currentPhase?.Phase == RacePhase.Bike)
-                    currentTime += 18;
+                    currentTime += GetSlotInterval(RaceMode.Cycling);
                 else if (currentPhase?.Phase == RacePhase.Run)
-                    currentTime += 25;
+                    currentTime += GetSlotInterval(RaceMode.Running);
                 else
                     currentTime += slotInterval;
             }

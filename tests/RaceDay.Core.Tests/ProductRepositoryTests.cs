@@ -13,8 +13,8 @@ public class ProductRepositoryTests
         var products = await _repository.GetAllProductsAsync();
 
         // Assert
-        Assert.NotNull(products);
-        Assert.NotEmpty(products);
+        products.ShouldNotBeNull();
+        products.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -26,10 +26,10 @@ public class ProductRepositoryTests
         // Assert
         Assert.All(products, p =>
         {
-            Assert.NotNull(p.Name);
-            Assert.NotNull(p.ProductType);
-            Assert.True(p.CarbsG >= 0);
-            Assert.True(p.SodiumMg >= 0);
+            p.Name.ShouldNotBeNull();
+            p.ProductType.ShouldNotBeNull();
+            (p.CarbsG >= 0).ShouldBeTrue();
+            (p.SodiumMg >= 0).ShouldBeTrue();
         });
     }
 
@@ -44,8 +44,8 @@ public class ProductRepositoryTests
         var product = await _repository.GetProductByIdAsync(firstProduct.Id);
 
         // Assert
-        Assert.NotNull(product);
-        Assert.Equal(firstProduct.Id, product.Id);
+        product.ShouldNotBeNull();
+        product.Id.ShouldBe(firstProduct.Id);
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class ProductRepositoryTests
         var product = await _repository.GetProductByIdAsync("NonExistentProduct123");
 
         // Assert
-        Assert.Null(product);
+        product.ShouldBeNull();
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public class ProductRepositoryTests
         var products = await _repository.GetProductsByTypeAsync("gel");
 
         // Assert
-        Assert.NotNull(products);
-        Assert.NotEmpty(products);
+        products.ShouldNotBeNull();
+        products.ShouldNotBeEmpty();
         Assert.All(products, p => Assert.Contains("gel", p.ProductType.ToLower()));
     }
 
@@ -77,9 +77,9 @@ public class ProductRepositoryTests
         var products = await _repository.GetProductsByTypeAsync("drink");
 
         // Assert
-        Assert.NotNull(products);
+        products.ShouldNotBeNull();
         // Drinks may or may not exist in test data, but method should work
-        Assert.True(products == null || products.All(p => p.ProductType.ToLower().Contains("drink")));
+        (products == null || products.All(p => p.ProductType.ToLower().Contains("drink"))).ShouldBeTrue();
     }
 
     [Fact]
@@ -91,8 +91,8 @@ public class ProductRepositoryTests
         var productsMixed = await _repository.GetProductsByTypeAsync("Gel");
 
         // Assert
-        Assert.Equal(productsLower?.Count ?? 0, productsUpper?.Count ?? 0);
-        Assert.Equal(productsLower?.Count ?? 0, productsMixed?.Count ?? 0);
+        (productsUpper?.Count ?? 0).ShouldBe(productsLower?.Count ?? 0);
+        (productsMixed?.Count ?? 0).ShouldBe(productsLower?.Count ?? 0);
     }
 
     [Fact]
@@ -106,9 +106,9 @@ public class ProductRepositoryTests
         var results = await _repository.SearchProductsAsync(firstProductName);
 
         // Assert
-        Assert.NotNull(results);
-        Assert.NotEmpty(results);
-        Assert.Contains(firstProductName, results.Select(p => p.Name), StringComparer.OrdinalIgnoreCase);
+        results.ShouldNotBeNull();
+        results.ShouldNotBeEmpty();
+        results.Select(p => p.Name).ShouldContain(firstProductName);
     }
 
     [Fact]
@@ -118,8 +118,8 @@ public class ProductRepositoryTests
         var results = await _repository.SearchProductsAsync("XYZ123NonExistent");
 
         // Assert
-        Assert.NotNull(results);
-        Assert.Empty(results);
+        results.ShouldNotBeNull();
+        results.ShouldBeEmpty();
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class ProductRepositoryTests
         var resultsUpper = await _repository.SearchProductsAsync(testName.ToUpper());
 
         // Assert
-        Assert.Equal(resultsLower.Count, resultsUpper.Count);
+        resultsUpper.Count.ShouldBe(resultsLower.Count);
     }
 
     [Fact]
@@ -147,8 +147,8 @@ public class ProductRepositoryTests
         var products = await _repository.GetFilteredProductsAsync(filter);
 
         // Assert
-        Assert.NotNull(products);
-        Assert.NotEmpty(products);
+        products.ShouldNotBeNull();
+        products.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class ProductRepositoryTests
         var products = await _repository.GetFilteredProductsAsync(filter);
 
         // Assert
-        Assert.NotNull(products);
+        products.ShouldNotBeNull();
         // May or may not have SiS products in data, but method should work
     }
 
@@ -175,7 +175,7 @@ public class ProductRepositoryTests
         var products = await _repository.GetFilteredProductsAsync(filter);
 
         // Assert
-        Assert.NotNull(products);
+        products.ShouldNotBeNull();
         if (products.Any())
         {
             Assert.All(products, p => Assert.DoesNotContain("gel", p.ProductType.ToLower()));
@@ -193,7 +193,7 @@ public class ProductRepositoryTests
         var filtered = await _repository.GetFilteredProductsAsync(filter);
 
         // Assert
-        Assert.NotNull(filtered);
-        Assert.Equal(allProducts.Count, filtered.Count);
+        filtered.ShouldNotBeNull();
+        filtered.Count.ShouldBe(allProducts.Count);
     }
 }

@@ -70,70 +70,44 @@ jobs:
     
     - name: Check Coverage Threshold & Report Low Coverage
       run: |
-        COVERAGE_FILE=$(find ./coverage -name "coverage.cobertura.xml" | head -1)
-        
-        if [ -z "$COVERAGE_FILE" ]; then
-          echo "❌ No coverage report found!"
-          exit 1
-        fi
-        
-        # Extract overall coverage
-        OVERALL_COVERAGE=$(grep -o 'line-rate="[^"]*"' "$COVERAGE_FILE" | head -1 | grep -o '[0-9]*\.[0-9]*')
-        OVERALL_PERCENT=$(echo "$OVERALL_COVERAGE * 100" | bc -l | cut -d. -f1)
-        
-        echo ""
-        echo "════════════════════════════════════════════════════════════"
-        echo "📊 CODE COVERAGE REPORT"
-        echo "════════════════════════════════════════════════════════════"
-        echo ""
-        
-        # Show overall coverage
-        if (( $(echo "$OVERALL_COVERAGE < 0.80" | bc -l) )); then
-          echo "❌ Overall Coverage: $OVERALL_PERCENT% (Target: 80%)"
-        else
-          echo "✅ Overall Coverage: $OVERALL_PERCENT% (Target: 80%)"
-        fi
-        echo ""
-        
-        # Extract and show low coverage files
-        echo "📁 Classes/Files with Low Coverage (< 50%):"
-        echo "────────────────────────────────────────────────────────────"
-        
-        grep '<class' "$COVERAGE_FILE" | while read line; do
-          CLASS_NAME=$(echo "$line" | grep -o 'name="[^"]*"' | cut -d'"' -f2)
-          LINE_RATE=$(echo "$line" | grep -o 'line-rate="[^"]*"' | cut -d'"' -f2)
-          LINE_PERCENT=$(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)
-          
-          if (( $(echo "$LINE_RATE < 0.50" | bc -l) )); then
-            echo "  🔴 $CLASS_NAME: $LINE_PERCENT%"
-          fi
-        done
-        
-        echo ""
-        echo "📁 Classes/Files with Medium Coverage (50-79%):"
-        echo "────────────────────────────────────────────────────────────"
-        
-        grep '<class' "$COVERAGE_FILE" | while read line; do
-          CLASS_NAME=$(echo "$line" | grep -o 'name="[^"]*"' | cut -d'"' -f2)
-          LINE_RATE=$(echo "$line" | grep -o 'line-rate="[^"]*"' | cut -d'"' -f2)
-          LINE_PERCENT=$(echo "$LINE_RATE * 100" | bc -l | cut -d. -f1)
-          
-          if (( $(echo "$LINE_RATE >= 0.50 && $LINE_RATE < 0.80" | bc -l) )); then
-            echo "  🟡 $CLASS_NAME: $LINE_PERCENT%"
-          fi
-        done
-        
-        echo ""
-        echo "════════════════════════════════════════════════════════════"
-        
-        # Fail if below threshold
-        if (( $(echo "$OVERALL_COVERAGE < 0.80" | bc -l) )); then
-          echo ""
-          echo "⚠️  Coverage check FAILED - Write tests for uncovered code above"
-          exit 1
-        else
-          echo "✅ Coverage check PASSED"
-        fi
+        python3 - <<'EOF'
+        import sys, xml.etree.ElementTree as ET, subprocess
+
+        result = subprocess.check_output(['find', './coverage', '-name', 'coverage.cobertura.xml'])
+        paths = [l.strip() for l in result.decode().splitlines() if l.strip()]
+        if not paths:
+            print("❌ No coverage report found!")
+            sys.exit(1)
+        path = paths[0]
+
+        root = ET.parse(path).getroot()
+        overall = float(root.attrib.get('line-rate', '0'))
+        pct = round(overall * 100, 1)
+
+        print("\n" + "=" * 60)
+        print("📊 CODE COVERAGE REPORT")
+        print("=" * 60)
+        icon = "✅" if overall >= 0.80 else "❌"
+        print(f"{icon} Overall Coverage: {pct}% (Target: 80%)\n")
+
+        print("📁 Classes with Low Coverage (< 50%):")
+        for cls in root.iter('class'):
+            rate = float(cls.attrib.get('line-rate', '0'))
+            if rate < 0.50:
+                print(f"  🔴 {cls.attrib['name']}: {round(rate*100,1)}%")
+
+        print("\n📁 Classes with Medium Coverage (50–79%):")
+        for cls in root.iter('class'):
+            rate = float(cls.attrib.get('line-rate', '0'))
+            if 0.50 <= rate < 0.80:
+                print(f"  🟡 {cls.attrib['name']}: {round(rate*100,1)}%")
+
+        print("=" * 60)
+        if overall < 0.80:
+            print("⚠️  Coverage check FAILED")
+            sys.exit(1)
+        print("✅ Coverage check PASSED")
+        EOF
     
     - name: Install React dependencies
       run: npm ci --ignore-scripts

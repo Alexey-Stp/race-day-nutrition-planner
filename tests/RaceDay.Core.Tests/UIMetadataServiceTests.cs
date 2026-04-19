@@ -12,10 +12,10 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetUIMetadata();
 
         // Assert
-        Assert.NotNull(metadata);
-        Assert.NotNull(metadata.Temperatures);
-        Assert.NotNull(metadata.Intensities);
-        Assert.NotEmpty(metadata.DefaultActivityId);
+        metadata.ShouldNotBeNull();
+        metadata.Temperatures.ShouldNotBeNull();
+        metadata.Intensities.ShouldNotBeNull();
+        metadata.DefaultActivityId.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetUIMetadata();
 
         // Assert
-        Assert.Equal("run", metadata.DefaultActivityId);
+        metadata.DefaultActivityId.ShouldBe("run");
     }
 
     [Fact]
@@ -35,8 +35,8 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetTemperatureMetadata();
 
         // Assert
-        Assert.NotNull(metadata);
-        Assert.Equal(3, metadata.Count);
+        metadata.ShouldNotBeNull();
+        metadata.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -47,10 +47,10 @@ public class UIMetadataServiceTests
         var coldMeta = metadata.FirstOrDefault(m => m.Condition == TemperatureCondition.Cold);
 
         // Assert
-        Assert.NotNull(coldMeta);
-        Assert.Equal("< 5°C", coldMeta.Range);
-        Assert.Contains("Reduced fluid needs", coldMeta.Effects);
-        Assert.Equal(4, coldMeta.Effects.Length);
+        coldMeta.ShouldNotBeNull();
+        coldMeta.Range.ShouldBe("< 5°C");
+        coldMeta.Effects.ShouldContain("Reduced fluid needs");
+        coldMeta.Effects.Length.ShouldBe(4);
     }
 
     [Fact]
@@ -61,10 +61,10 @@ public class UIMetadataServiceTests
         var moderateMeta = metadata.FirstOrDefault(m => m.Condition == TemperatureCondition.Moderate);
 
         // Assert
-        Assert.NotNull(moderateMeta);
-        Assert.Equal("5–25°C", moderateMeta.Range);
-        Assert.Contains("Baseline nutrition targets", moderateMeta.Effects);
-        Assert.Equal(4, moderateMeta.Effects.Length);
+        moderateMeta.ShouldNotBeNull();
+        moderateMeta.Range.ShouldBe("5–25°C");
+        moderateMeta.Effects.ShouldContain("Baseline nutrition targets");
+        moderateMeta.Effects.Length.ShouldBe(4);
     }
 
     [Fact]
@@ -75,10 +75,10 @@ public class UIMetadataServiceTests
         var hotMeta = metadata.FirstOrDefault(m => m.Condition == TemperatureCondition.Hot);
 
         // Assert
-        Assert.NotNull(hotMeta);
-        Assert.Equal("> 25°C", hotMeta.Range);
-        Assert.Contains("Increased fluid needs", hotMeta.Effects);
-        Assert.Equal(4, hotMeta.Effects.Length);
+        hotMeta.ShouldNotBeNull();
+        hotMeta.Range.ShouldBe("> 25°C");
+        hotMeta.Effects.ShouldContain("Increased fluid needs");
+        hotMeta.Effects.Length.ShouldBe(4);
     }
 
     [Fact]
@@ -90,9 +90,9 @@ public class UIMetadataServiceTests
         // Assert
         Assert.All(metadata, m =>
         {
-            Assert.NotNull(m.Effects);
-            Assert.NotEmpty(m.Effects);
-            Assert.True(m.Effects.Length > 0);
+            m.Effects.ShouldNotBeNull();
+            m.Effects.ShouldNotBeEmpty();
+            (m.Effects.Length > 0).ShouldBeTrue();
         });
     }
 
@@ -103,8 +103,8 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetIntensityMetadata();
 
         // Assert
-        Assert.NotNull(metadata);
-        Assert.Equal(3, metadata.Count);
+        metadata.ShouldNotBeNull();
+        metadata.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -115,11 +115,11 @@ public class UIMetadataServiceTests
         var easyMeta = metadata.FirstOrDefault(m => m.Level == IntensityLevel.Easy);
 
         // Assert
-        Assert.NotNull(easyMeta);
-        Assert.Equal("🟢", easyMeta.Icon);
-        Assert.Equal("45 g/hr", easyMeta.CarbRange);
-        Assert.Equal("Zone 1-2 (60-75% max HR)", easyMeta.HeartRateZone);
-        Assert.Equal(4, easyMeta.Effects.Length);
+        easyMeta.ShouldNotBeNull();
+        easyMeta.Icon.ShouldBe("🟢");
+        easyMeta.CarbRange.ShouldBe("45 g/hr");
+        easyMeta.HeartRateZone.ShouldBe("Zone 1-2 (60-75% max HR)");
+        easyMeta.Effects.Length.ShouldBe(4);
     }
 
     [Fact]
@@ -130,11 +130,11 @@ public class UIMetadataServiceTests
         var moderateMeta = metadata.FirstOrDefault(m => m.Level == IntensityLevel.Moderate);
 
         // Assert
-        Assert.NotNull(moderateMeta);
-        Assert.Equal("🟡", moderateMeta.Icon);
-        Assert.Equal("75 g/hr", moderateMeta.CarbRange);
-        Assert.Equal("Zone 3 (75-85% max HR)", moderateMeta.HeartRateZone);
-        Assert.Equal(4, moderateMeta.Effects.Length);
+        moderateMeta.ShouldNotBeNull();
+        moderateMeta.Icon.ShouldBe("🟡");
+        moderateMeta.CarbRange.ShouldBe("75 g/hr");
+        moderateMeta.HeartRateZone.ShouldBe("Zone 3 (75-85% max HR)");
+        moderateMeta.Effects.Length.ShouldBe(4);
     }
 
     [Fact]
@@ -145,11 +145,11 @@ public class UIMetadataServiceTests
         var hardMeta = metadata.FirstOrDefault(m => m.Level == IntensityLevel.Hard);
 
         // Assert
-        Assert.NotNull(hardMeta);
-        Assert.Equal("🔴", hardMeta.Icon);
-        Assert.Equal("105 g/hr", hardMeta.CarbRange);
-        Assert.Equal("Zone 4-5 (85-100% max HR)", hardMeta.HeartRateZone);
-        Assert.Equal(4, hardMeta.Effects.Length);
+        hardMeta.ShouldNotBeNull();
+        hardMeta.Icon.ShouldBe("🔴");
+        hardMeta.CarbRange.ShouldBe("105 g/hr");
+        hardMeta.HeartRateZone.ShouldBe("Zone 4-5 (85-100% max HR)");
+        hardMeta.Effects.Length.ShouldBe(4);
     }
 
     [Fact]
@@ -161,8 +161,8 @@ public class UIMetadataServiceTests
         // Assert
         Assert.All(metadata, m =>
         {
-            Assert.NotNull(m.Icon);
-            Assert.NotEmpty(m.Icon);
+            m.Icon.ShouldNotBeNull();
+            m.Icon.ShouldNotBeEmpty();
         });
     }
 
@@ -175,9 +175,9 @@ public class UIMetadataServiceTests
         // Assert
         Assert.All(metadata, m =>
         {
-            Assert.NotNull(m.CarbRange);
-            Assert.NotEmpty(m.CarbRange);
-            Assert.Contains("g/hr", m.CarbRange);
+            m.CarbRange.ShouldNotBeNull();
+            m.CarbRange.ShouldNotBeEmpty();
+            m.CarbRange.ShouldContain("g/hr");
         });
     }
 
@@ -190,9 +190,9 @@ public class UIMetadataServiceTests
         // Assert
         Assert.All(metadata, m =>
         {
-            Assert.NotNull(m.HeartRateZone);
-            Assert.NotEmpty(m.HeartRateZone);
-            Assert.Contains("Zone", m.HeartRateZone);
+            m.HeartRateZone.ShouldNotBeNull();
+            m.HeartRateZone.ShouldNotBeEmpty();
+            m.HeartRateZone.ShouldContain("Zone");
         });
     }
 
@@ -205,9 +205,9 @@ public class UIMetadataServiceTests
         // Assert
         Assert.All(metadata, m =>
         {
-            Assert.NotNull(m.Effects);
-            Assert.NotEmpty(m.Effects);
-            Assert.True(m.Effects.Length > 0);
+            m.Effects.ShouldNotBeNull();
+            m.Effects.ShouldNotBeEmpty();
+            (m.Effects.Length > 0).ShouldBeTrue();
         });
     }
 
@@ -218,8 +218,8 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetUIMetadata();
 
         // Assert
-        Assert.Equal(3, metadata.Temperatures.Count);
-        Assert.Equal(3, metadata.Intensities.Count);
+        metadata.Temperatures.Count.ShouldBe(3);
+        metadata.Intensities.Count.ShouldBe(3);
     }
 
     [Fact]
@@ -229,7 +229,7 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetTemperatureMetadata();
 
         // Assert
-        Assert.Equal(TemperatureCondition.Cold, metadata[0].Condition);
+        metadata[0].Condition.ShouldBe(TemperatureCondition.Cold);
     }
 
     [Fact]
@@ -239,7 +239,7 @@ public class UIMetadataServiceTests
         var metadata = UIMetadataService.GetIntensityMetadata();
 
         // Assert
-        Assert.Equal(IntensityLevel.Easy, metadata[0].Level);
+        metadata[0].Level.ShouldBe(IntensityLevel.Easy);
     }
 
     [Fact]
@@ -250,7 +250,7 @@ public class UIMetadataServiceTests
         var conditions = metadata.Select(m => m.Condition).Distinct().Count();
 
         // Assert
-        Assert.Equal(3, conditions);
+        conditions.ShouldBe(3);
     }
 
     [Fact]
@@ -261,6 +261,6 @@ public class UIMetadataServiceTests
         var levels = metadata.Select(m => m.Level).Distinct().Count();
 
         // Assert
-        Assert.Equal(3, levels);
+        levels.ShouldBe(3);
     }
 }

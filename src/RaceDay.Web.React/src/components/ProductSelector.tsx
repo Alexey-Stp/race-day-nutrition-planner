@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import type { ProductInfo } from '../types';
 import { api } from '../api';
 
@@ -7,7 +7,6 @@ interface ProductSelectorProps {
 }
 
 export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded }) => {
-  const [products, setProducts] = useState<ProductInfo[]>([]);
   const [allProducts, setAllProducts] = useState<ProductInfo[]>([]);
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [selectedBrand, setSelectedBrand] = useState('');
@@ -34,7 +33,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
     }
   }, [extractBrands]);
 
-  const filterProducts = useCallback(() => {
+  const filteredProducts = useMemo(() => {
     let filtered = allProducts;
 
     // Filter by brand
@@ -52,21 +51,17 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
       filtered = filtered.filter(p => typeFilter.includes(p.productType));
     }
 
-    setProducts(filtered);
+    return filtered;
   }, [allProducts, selectedBrand, showGels, showDrinks, showBars]);
 
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
 
-  useEffect(() => {
-    filterProducts();
-  }, [filterProducts]);
-
   return (
     <div className="product-selector">
       <h3>Select Products for Your Race</h3>
-      
+
       <div className="filter-section">
         <div className="filter-group">
           <label htmlFor="brand-select">Brand:</label>
@@ -77,7 +72,7 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
             ))}
           </select>
         </div>
-        
+
         <div className="filter-group">
           <fieldset>
             <legend>Product Types:</legend>
@@ -115,12 +110,12 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({ onProductAdded
         if (loading) {
           return <p className="loading">Loading products...</p>;
         }
-        if (products.length === 0) {
+        if (filteredProducts.length === 0) {
           return <p className="no-products">No products found</p>;
         }
         return (
         <div className="products-grid">
-          {products.map(product => (
+          {filteredProducts.map(product => (
             <div key={product.id} className="product-card">
               <div className="product-header">
                 <h4>{product.name}</h4>
