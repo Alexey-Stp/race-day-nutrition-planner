@@ -77,6 +77,9 @@ public class PlanGenerator
         // === PHASE 5: Recalculate cumulative totals ===
         RecalculateCumulativeTotals(plan, products);
 
+        // === PHASE 5b: Enforce front-load constraint ===
+        EnforceFrontLoadConstraint(plan, durationMinutes);
+
         // === PHASE 6: Target reconciliation ===
         ReconcileToTarget(plan, products, targets, durationMinutes, phases);
 
