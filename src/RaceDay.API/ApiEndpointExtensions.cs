@@ -18,8 +18,6 @@ public static class ApiEndpointExtensions
     /// </summary>
     private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
 
-    // Used as ILogger<T> category marker; cannot use the static class itself as a type argument.
-    private sealed class Log { }
     /// <summary>
     /// Map product-related API endpoints
     /// </summary>
@@ -292,21 +290,23 @@ public static class ApiEndpointExtensions
         if (request.Products == null && request.Filter == null)
             return Results.BadRequest("Either 'products' or 'filter' must be provided");
 
-        if (request.AthleteWeightKg <= 0 || request.AthleteWeightKg > 200)
-            return Results.BadRequest("AthleteWeightKg must be between 1 and 200.");
-        if (request.DurationHours <= 0 || request.DurationHours > 24)
-            return Results.BadRequest("DurationHours must be between 0.1 and 24.");
+        var athleteError = ValidateAthleteAndRace(request.AthleteWeightKg, request.DurationHours);
+        if (athleteError != null) return athleteError;
+
         if (request.TemperatureC < -20 || request.TemperatureC > 55)
             return Results.BadRequest("TemperatureC must be between -20 and 55.");
 
         return null;
     }
 
-    private static IResult? ValidateTargetsRequest(TargetsRequest request)
+    private static IResult? ValidateTargetsRequest(TargetsRequest request) =>
+        ValidateAthleteAndRace(request.AthleteWeightKg, request.DurationHours);
+
+    private static IResult? ValidateAthleteAndRace(double weightKg, double durationHours)
     {
-        if (request.AthleteWeightKg <= 0 || request.AthleteWeightKg > 200)
+        if (weightKg < 1 || weightKg > 200)
             return Results.BadRequest("AthleteWeightKg must be between 1 and 200.");
-        if (request.DurationHours <= 0 || request.DurationHours > 24)
+        if (durationHours < 0.1 || durationHours > 24)
             return Results.BadRequest("DurationHours must be between 0.1 and 24.");
         return null;
     }
