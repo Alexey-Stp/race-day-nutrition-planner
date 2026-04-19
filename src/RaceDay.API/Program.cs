@@ -1,9 +1,24 @@
 using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.API;
+using Serilog;
 using System.Text.Json.Serialization;
 
+// Bootstrap logger for startup errors (before DI is available)
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Replace the default MEL providers with Serilog, reading config from appsettings.json
+builder.Host.UseSerilog((context, services, configuration) =>
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithMachineName()
+        .Enrich.WithEnvironmentName());
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
@@ -30,6 +45,7 @@ builder.Services.AddCors(options =>
 
 // Register application services
 builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+builder.Services.AddTransient<NutritionPlanService>();
 
 // Support Railway's dynamic PORT injection (falls back to 8080 for docker-compose)
 builder.WebHost.UseUrls($"http://+:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");

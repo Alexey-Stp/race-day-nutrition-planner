@@ -17,6 +17,5 @@ public interface INutritionPlanService
     List<NutritionEvent> GeneratePlan(
         RaceProfile race,
         AthleteProfile athlete,
-        List<Product> products,
-        int intervalMin = 22);
+        List<Product> products);
 }

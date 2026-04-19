@@ -34,26 +34,26 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, intervalMinutes: 22, caffeineEnabled: true);
+        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         // Assert
         var caffeineEvents = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue && e.CaffeineMg > 0).ToList();
 
         // Should have at least one caffeine event
-        Assert.NotEmpty(caffeineEvents);
+        caffeineEvents.ShouldNotBeEmpty();
 
         // Total caffeine from all events should be > 0
         var totalCaffeine = plan.Sum(e => e.CaffeineMg ?? 0);
-        Assert.True(totalCaffeine > 0,
+        (totalCaffeine > 0).ShouldBeTrue(
             $"Expected total caffeine > 0 when caffeinated products are used, got {totalCaffeine}mg");
 
         // TotalCaffeineSoFar should be correctly accumulated
         var lastEvent = plan.Last();
-        Assert.True(lastEvent.TotalCaffeineSoFar > 0,
+        (lastEvent.TotalCaffeineSoFar > 0).ShouldBeTrue(
             $"Expected cumulative caffeine > 0 at end of plan, got {lastEvent.TotalCaffeineSoFar}mg");
 
         // The sum should match the last cumulative value
-        Assert.Equal(totalCaffeine, lastEvent.TotalCaffeineSoFar, precision: 1);
+        lastEvent.TotalCaffeineSoFar.ShouldBe(totalCaffeine, 1.0);
     }
 
     [Fact]
@@ -82,14 +82,14 @@ public class RegressionTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
 
         var lastEventTime = plan.Max(e => e.TimeMin);
         var raceDuration = race.DurationHours * 60;  // 240 minutes
 
         // Last event should be in the final 25% of the race (after 180 min / 3h)
         var minExpectedTime = raceDuration * 0.75;  // 180 minutes
-        Assert.True(lastEventTime >= minExpectedTime,
+        (lastEventTime >= minExpectedTime).ShouldBeTrue(
             $"Expected last event after {minExpectedTime}min (75% of {raceDuration}min race), " +
             $"but last event was at {lastEventTime}min");
 
@@ -97,12 +97,12 @@ public class RegressionTests
         var eventsInFirstHalf = plan.Count(e => e.TimeMin < raceDuration / 2);
         var eventsInSecondHalf = plan.Count(e => e.TimeMin >= raceDuration / 2);
 
-        Assert.True(eventsInSecondHalf > 0,
+        (eventsInSecondHalf > 0).ShouldBeTrue(
             "Expected some nutrition events in second half of race");
 
         // Should not be extremely front-loaded (>80% in first half would be bad)
         var firstHalfPercent = (double)eventsInFirstHalf / plan.Count;
-        Assert.True(firstHalfPercent < 0.85,
+        (firstHalfPercent < 0.85).ShouldBeTrue(
             $"Plan is too front-loaded: {firstHalfPercent:P0} of events in first half");
     }
 
@@ -137,8 +137,8 @@ public class RegressionTests
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run).ToList();
 
         // Must have events in Run segment
-        Assert.NotEmpty(runEvents);
-        Assert.True(runEvents.Count > 0,
+        runEvents.ShouldNotBeEmpty();
+        (runEvents.Count > 0).ShouldBeTrue(
             $"Expected Run phase events in triathlon, but found 0. " +
             $"Swim: {swimEvents.Count}, Bike: {bikeEvents.Count}, Run: {runEvents.Count}");
 
@@ -147,7 +147,7 @@ public class RegressionTests
         var expectedRunStartMin = 4.5 * 60 * 0.70;  // Run starts at 70% of race
         foreach (var runEvent in runEvents)
         {
-            Assert.True(runEvent.TimeMin >= expectedRunStartMin - 10,  // Allow 10min margin for transitions
+            (runEvent.TimeMin >= expectedRunStartMin - 10).ShouldBeTrue(
                 $"Run event at {runEvent.TimeMin}min is before run segment starts at ~{expectedRunStartMin}min");
         }
     }
@@ -179,8 +179,8 @@ public class RegressionTests
         var caffeineEvents = plan.Where(e => e.HasCaffeine).ToList();
         var totalCaffeine = plan.Sum(e => e.CaffeineMg ?? 0);
 
-        Assert.Empty(caffeineEvents);
-        Assert.Equal(0, totalCaffeine);
+        caffeineEvents.ShouldBeEmpty();
+        totalCaffeine.ShouldBe(0);
     }
 
     [Fact]
@@ -213,7 +213,7 @@ public class RegressionTests
         var lastEvent = plan.Last();
 
         // Cumulative totals at end should equal sum of individual events
-        Assert.Equal(sumCarbs, lastEvent.TotalCarbsSoFar, precision: 1);
-        Assert.Equal(sumCaffeine, lastEvent.TotalCaffeineSoFar, precision: 1);
+        lastEvent.TotalCarbsSoFar.ShouldBe(sumCarbs, 1.0);
+        lastEvent.TotalCaffeineSoFar.ShouldBe(sumCaffeine, 1.0);
     }
 }

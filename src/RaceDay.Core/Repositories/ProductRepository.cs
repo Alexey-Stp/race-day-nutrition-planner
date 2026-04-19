@@ -1,5 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RaceDay.Core.Models;
 
 namespace RaceDay.Core.Repositories;
@@ -9,11 +11,18 @@ namespace RaceDay.Core.Repositories;
 /// </summary>
 public class ProductRepository : IProductRepository
 {
-    private static readonly Lazy<List<ProductInfo>> _productsLazy = new Lazy<List<ProductInfo>>(() => LoadProductsFromJsonFiles());
+    private readonly Lazy<List<ProductInfo>> _productsLazy;
+    private readonly ILogger<ProductRepository> _logger;
+
+    public ProductRepository(ILogger<ProductRepository>? logger = null)
+    {
+        _logger = logger ?? NullLogger<ProductRepository>.Instance;
+        _productsLazy = new Lazy<List<ProductInfo>>(() => LoadProductsSafely(_logger));
+    }
 
     public Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(_productsLazy.Value);
+        return Task.FromResult(new List<ProductInfo>(_productsLazy.Value));
     }
 
     public async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType, CancellationToken cancellationToken = default)
@@ -33,8 +42,8 @@ public class ProductRepository : IProductRepository
     {
         var all = await GetAllProductsAsync(cancellationToken);
         var lowerQuery = query.ToLower();
-        
-        return all.Where(p => 
+
+        return all.Where(p =>
             p.Name.ToLower().Contains(lowerQuery) ||
             p.Brand.ToLower().Contains(lowerQuery) ||
             p.Id.ToLower().Contains(lowerQuery))
@@ -68,43 +77,45 @@ public class ProductRepository : IProductRepository
         return filtered;
     }
 
-    private static List<ProductInfo> LoadProductsFromJsonFiles()
+    private static List<ProductInfo> LoadProductsSafely(ILogger logger)
     {
         try
         {
-            var assembly = typeof(ProductRepository).Assembly;
-            var products = new List<ProductInfo>();
-            
-            // Get all embedded resource names that match the pattern
-            var resourceNames = assembly.GetManifestResourceNames()
-                .Where(name => name.StartsWith("RaceDay.Core.Data.") && name.EndsWith("-products.json"))
-                .OrderBy(name => name)
-                .ToList();
-
-            foreach (var resourceName in resourceNames)
-            {
-                using (var stream = assembly.GetManifestResourceStream(resourceName))
-                {
-                    if (stream == null)
-                        continue;
-
-                    using (var reader = new StreamReader(stream))
-                    {
-                        var json = reader.ReadToEnd();
-                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                        var brandProducts = JsonSerializer.Deserialize<List<ProductInfo>>(json, options);
-                        
-                        if (brandProducts != null)
-                            products.AddRange(brandProducts);
-                    }
-                }
-            }
-
-            return products;
+            return LoadProductsFromJsonFiles();
         }
-        catch
+        catch (Exception ex)
         {
-            return new List<ProductInfo>();
+            logger.LogError(ex, "Failed to load products from embedded resources");
+            return [];
         }
+    }
+
+    private static List<ProductInfo> LoadProductsFromJsonFiles()
+    {
+        var assembly = typeof(ProductRepository).Assembly;
+        var products = new List<ProductInfo>();
+
+        // Get all embedded resource names that match the pattern
+        var resourceNames = assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith("RaceDay.Core.Data.") && name.EndsWith("-products.json"))
+            .OrderBy(name => name)
+            .ToList();
+
+        foreach (var resourceName in resourceNames)
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null)
+                continue;
+
+            using var reader = new StreamReader(stream);
+            var json = reader.ReadToEnd();
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var brandProducts = JsonSerializer.Deserialize<List<ProductInfo>>(json, options);
+
+            if (brandProducts != null)
+                products.AddRange(brandProducts);
+        }
+
+        return products;
     }
 }

@@ -1,4 +1,5 @@
 namespace RaceDay.Core.Tests;
+using Microsoft.Extensions.Logging.Abstractions;
 using RaceDay.Core.Models;
 using RaceDay.Core.Services;
 using Xunit.Abstractions;
@@ -25,7 +26,7 @@ public class TriathlonPhaseTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Debug output
@@ -44,7 +45,7 @@ public class TriathlonPhaseTests
         _output.WriteLine($"Run events: {runEvents.Count}");
 
         // Assert - just to make test pass for now
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -61,7 +62,7 @@ public class TriathlonPhaseTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Debug output
@@ -80,6 +81,6 @@ public class TriathlonPhaseTests
         _output.WriteLine($"Run events: {runEvents.Count}");
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
     }
 }

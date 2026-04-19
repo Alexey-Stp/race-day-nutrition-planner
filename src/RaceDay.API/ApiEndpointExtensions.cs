@@ -1,8 +1,10 @@
+using Microsoft.Extensions.Logging;
 using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.Core.Models;
 using RaceDay.Core.Exceptions;
 using RaceDay.Core.Utilities;
+using RaceDay.Core.Constants;
 
 namespace RaceDay.API;
 
@@ -15,6 +17,7 @@ public static class ApiEndpointExtensions
     /// Product types to exclude for running activities (runners typically don't carry bottles)
     /// </summary>
     private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
+
     /// <summary>
     /// Map product-related API endpoints
     /// </summary>
@@ -113,7 +116,7 @@ public static class ApiEndpointExtensions
     }
 
     // Product Handlers
-    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -122,11 +125,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading products: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllProductsAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -135,11 +139,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading product: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductByIdAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -148,11 +153,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading products: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductsByTypeAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -164,12 +170,13 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error searching products: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchProductsAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
     // Activity Handlers
-    private static async Task<IResult> GetAllActivitiesAsync(CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllActivitiesAsync(ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -178,11 +185,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading activities: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllActivitiesAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetActivityByIdAsync(string id, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivityByIdAsync(string id, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -191,11 +199,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading activity: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivityByIdAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -207,11 +216,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading activities: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivitiesByTypeAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> SearchActivitiesAsync(string query, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchActivitiesAsync(string query, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -223,12 +233,18 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error searching activities: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchActivitiesAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
     // Plan Generation Handlers
-    private static async Task<IResult> GeneratePlanAsync(PlanGenerationRequest request, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GeneratePlanAsync(
+        PlanGenerationRequest request,
+        IProductRepository repository,
+        NutritionPlanService planService,
+        ILogger<ApiEndpointsLog> logger,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -241,7 +257,9 @@ public static class ApiEndpointExtensions
                 return productsResult.Error;
 
             var profiles = CreateProfiles(request);
-            var planResult = GenerateNutritionPlanWithDiagnostics(profiles.athlete, profiles.race, productsResult.Products!, request.CaffeineEnabled ?? false);
+            var planResult = planService.GeneratePlanWithDiagnostics(
+                profiles.race, profiles.athlete, productsResult.Products!,
+                request.CaffeineEnabled ?? false);
             var response = BuildResponseWithDiagnostics(profiles.athlete, profiles.race, planResult);
 
             return Results.Ok(response);
@@ -256,7 +274,8 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error generating plan: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GeneratePlanAsync));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
@@ -271,6 +290,24 @@ public static class ApiEndpointExtensions
         if (request.Products == null && request.Filter == null)
             return Results.BadRequest("Either 'products' or 'filter' must be provided");
 
+        var athleteError = ValidateAthleteAndRace(request.AthleteWeightKg, request.DurationHours);
+        if (athleteError != null) return athleteError;
+
+        if (request.TemperatureC < -20 || request.TemperatureC > 55)
+            return Results.BadRequest("TemperatureC must be between -20 and 55.");
+
+        return null;
+    }
+
+    private static IResult? ValidateTargetsRequest(TargetsRequest request) =>
+        ValidateAthleteAndRace(request.AthleteWeightKg, request.DurationHours);
+
+    private static IResult? ValidateAthleteAndRace(double weightKg, double durationHours)
+    {
+        if (weightKg < 1 || weightKg > 200)
+            return Results.BadRequest("AthleteWeightKg must be between 1 and 200.");
+        if (durationHours < 0.1 || durationHours > 24)
+            return Results.BadRequest("DurationHours must be between 0.1 and 24.");
         return null;
     }
 
@@ -349,47 +386,10 @@ public static class ApiEndpointExtensions
     private static TemperatureCondition MapTemperature(double temperatureC) =>
         temperatureC switch
         {
-            <= 5 => TemperatureCondition.Cold,
-            >= 25 => TemperatureCondition.Hot,
+            <= SchedulingConstraints.ColdTemperatureThresholdC => TemperatureCondition.Cold,
+            >= SchedulingConstraints.HotTemperatureThresholdC => TemperatureCondition.Hot,
             _ => TemperatureCondition.Moderate
         };
-
-    /// <summary>
-    /// Generate the nutrition plan using the service
-    /// </summary>
-    private static List<NutritionEvent> GenerateNutritionPlan(
-        AthleteProfile athlete,
-        RaceProfile race,
-        List<Product> products)
-    {
-        var service = new NutritionPlanService();
-        return service.GeneratePlan(race, athlete, products);
-    }
-
-    /// <summary>
-    /// Generate the nutrition plan with diagnostics (warnings/errors)
-    /// </summary>
-    private static PlanResult GenerateNutritionPlanWithDiagnostics(
-        AthleteProfile athlete,
-        RaceProfile race,
-        List<Product> products,
-        bool caffeineEnabled)
-    {
-        var service = new NutritionPlanService();
-        return service.GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled: caffeineEnabled);
-    }
-
-    /// <summary>
-    /// Build the API response with plan and shopping summary
-    /// </summary>
-    private static AdvancedPlanResponse BuildResponse(
-        AthleteProfile athlete,
-        RaceProfile race,
-        List<NutritionEvent> nutritionEvents)
-    {
-        var shoppingSummary = nutritionEvents.CalculateShoppingList();
-        return new AdvancedPlanResponse(race, athlete, nutritionEvents, shoppingSummary);
-    }
 
     /// <summary>
     /// Build the API response with plan, shopping summary, and diagnostics
@@ -412,7 +412,7 @@ public static class ApiEndpointExtensions
     }
 
     // Metadata Handlers
-    private static IResult GetUIMetadata()
+    private static IResult GetUIMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -421,11 +421,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading metadata: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetUIMetadata));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetTemperatureMetadata()
+    private static IResult GetTemperatureMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -434,11 +435,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading temperature metadata: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetTemperatureMetadata));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetIntensityMetadata()
+    private static IResult GetIntensityMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -447,11 +449,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading intensity metadata: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetIntensityMetadata));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetDefaults()
+    private static IResult GetDefaults(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -460,11 +463,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading defaults: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetDefaults));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetConfigurationMetadata()
+    private static IResult GetConfigurationMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -473,12 +477,17 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error loading configuration metadata: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetConfigurationMetadata));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult CalculateNutritionTargets(TargetsRequest request)
+    private static IResult CalculateNutritionTargets(TargetsRequest request, ILogger<ApiEndpointsLog> logger)
     {
+        var validationError = ValidateTargetsRequest(request);
+        if (validationError != null)
+            return validationError;
+
         try
         {
             var athlete = new AthleteProfile(WeightKg: request.AthleteWeightKg);
@@ -503,10 +512,14 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            return Results.Problem($"Error calculating nutrition targets: {ex.Message}");
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(CalculateNutritionTargets));
+            return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
+
 }
+
+internal sealed class ApiEndpointsLog { }
 
 public record TargetsRequest(
     double AthleteWeightKg,
@@ -524,7 +537,7 @@ public record PlanGenerationRequest(
     IntensityLevel Intensity,
     List<ProductRequest>? Products = null,
     ProductFilter? Filter = null,
-    int? IntervalMin = null,
+    int? IntervalMin = null,  // Reserved for future use; currently has no effect
     bool? CaffeineEnabled = null
 );
 

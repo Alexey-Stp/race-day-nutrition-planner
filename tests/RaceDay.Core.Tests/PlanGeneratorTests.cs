@@ -3,6 +3,7 @@ using RaceDay.Core.Models;
 using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.Core.Exceptions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 public class PlanGeneratorTests
 {
@@ -22,7 +23,7 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         Assert.All(plan, @event =>
         {
             Assert.NotNull(@event.ProductName);
@@ -44,16 +45,15 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         // Cycling should have more variety (gels, drinks, chews)
         var uniqueProducts = plan.Select(e => e.ProductName).Distinct().Count();
-        Assert.True(uniqueProducts > 1, "Cycling plan should use multiple product types");
+        (uniqueProducts > 1).ShouldBeTrue("Cycling plan should use multiple product types");
         
         // Validate plan meets carb target
         var target = NutritionCalculator.CalculateTargets(race, athlete);
         var actualTotal = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(actualTotal >= target.CarbsGPerHour * race.DurationHours, 
-            $"Cycling plan ({actualTotal}g) should meet or exceed target ({target.CarbsGPerHour * race.DurationHours}g)");
+        (actualTotal >= target.CarbsGPerHour * race.DurationHours).ShouldBeTrue($"Cycling plan ({actualTotal}g) should meet or exceed target ({target.CarbsGPerHour * race.DurationHours}g)");
     }
 
     [Fact]
@@ -69,8 +69,8 @@ public class PlanGeneratorTests
 
         // Assert
         var preRaceEvent = plan.FirstOrDefault(e => e.TimeMin == -15);
-        Assert.NotNull(preRaceEvent);
-        Assert.Equal("Eat", preRaceEvent.Action);
+        preRaceEvent.ShouldNotBeNull();
+        preRaceEvent.Action.ShouldBe("Eat");
     }
 
     [Fact]
@@ -87,9 +87,7 @@ public class PlanGeneratorTests
         // Assert - Carbs should never decrease
         for (int i = 1; i < plan.Count; i++)
         {
-            Assert.True(
-                plan[i].TotalCarbsSoFar >= plan[i - 1].TotalCarbsSoFar,
-                $"Event {i}: Carbs went from {plan[i - 1].TotalCarbsSoFar} to {plan[i].TotalCarbsSoFar}");
+            (plan[i].TotalCarbsSoFar >= plan[i - 1].TotalCarbsSoFar).ShouldBeTrue($"Event {i}: Carbs went from {plan[i - 1].TotalCarbsSoFar} to {plan[i].TotalCarbsSoFar}");
         }
     }
 
@@ -110,15 +108,13 @@ public class PlanGeneratorTests
         var heavyTotal = heavyPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         var lightTotal = lightPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         
-        Assert.True(heavyTotal >= lightTotal, "Heavier athlete should consume at least as many carbs");
+        (heavyTotal >= lightTotal).ShouldBeTrue("Heavier athlete should consume at least as many carbs");
         
         // Validate both meet their respective targets
         var heavyTarget = NutritionCalculator.CalculateTargets(race, heavyAthlete);
         var lightTarget = NutritionCalculator.CalculateTargets(race, lightAthlete);
-        Assert.True(heavyTotal >= heavyTarget.CarbsGPerHour * race.DurationHours, 
-            $"Heavy athlete plan ({heavyTotal}g) should meet or exceed target ({heavyTarget.CarbsGPerHour * race.DurationHours}g)");
-        Assert.True(lightTotal >= lightTarget.CarbsGPerHour * race.DurationHours, 
-            $"Light athlete plan ({lightTotal}g) should meet or exceed target ({lightTarget.CarbsGPerHour * race.DurationHours}g)");
+        (heavyTotal >= heavyTarget.CarbsGPerHour * race.DurationHours).ShouldBeTrue($"Heavy athlete plan ({heavyTotal}g) should meet or exceed target ({heavyTarget.CarbsGPerHour * race.DurationHours}g)");
+        (lightTotal >= lightTarget.CarbsGPerHour * race.DurationHours).ShouldBeTrue($"Light athlete plan ({lightTotal}g) should meet or exceed target ({lightTarget.CarbsGPerHour * race.DurationHours}g)");
     }
 
     [Fact]
@@ -138,15 +134,13 @@ public class PlanGeneratorTests
         var shortTotal = shortPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         var longTotal = longPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         
-        Assert.True(longTotal > shortTotal, "Longer races should require more nutrition");
+        (longTotal > shortTotal).ShouldBeTrue("Longer races should require more nutrition");
         
         // Validate both meet their respective targets
         var shortTarget = NutritionCalculator.CalculateTargets(shortRace, athlete);
         var longTarget = NutritionCalculator.CalculateTargets(longRace, athlete);
-        Assert.True(shortTotal >= shortTarget.CarbsGPerHour * shortRace.DurationHours, 
-            $"Short race plan ({shortTotal}g) should meet or exceed target ({shortTarget.CarbsGPerHour * shortRace.DurationHours}g)");
-        Assert.True(longTotal >= longTarget.CarbsGPerHour * longRace.DurationHours, 
-            $"Long race plan ({longTotal}g) should meet or exceed target ({longTarget.CarbsGPerHour * longRace.DurationHours}g)");
+        (shortTotal >= shortTarget.CarbsGPerHour * shortRace.DurationHours).ShouldBeTrue($"Short race plan ({shortTotal}g) should meet or exceed target ({shortTarget.CarbsGPerHour * shortRace.DurationHours}g)");
+        (longTotal >= longTarget.CarbsGPerHour * longRace.DurationHours).ShouldBeTrue($"Long race plan ({longTotal}g) should meet or exceed target ({longTarget.CarbsGPerHour * longRace.DurationHours}g)");
     }
 
     [Fact]
@@ -166,7 +160,7 @@ public class PlanGeneratorTests
         var easyTotal = easyPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         var hardTotal = hardPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         
-        Assert.True(hardTotal >= easyTotal, "Hard intensity should require at least as much nutrition");
+        (hardTotal >= easyTotal).ShouldBeTrue("Hard intensity should require at least as much nutrition");
     }
 
     [Fact]
@@ -221,7 +215,7 @@ public class PlanGeneratorTests
 
         // Assert - Should have at least one caffeinated product for long hard races
         var hasCaffeine = plan.Any(e => e.HasCaffeine);
-        Assert.True(hasCaffeine || plan.Count > 0, "Should include products in plan");
+        (hasCaffeine || plan.Count > 0).ShouldBeTrue("Should include products in plan");
     }
 
     [Fact]
@@ -237,11 +231,11 @@ public class PlanGeneratorTests
         var plan2 = _generator.GeneratePlan(race, athlete, products);
 
         // Assert - Same inputs should produce same plan (deterministic)
-        Assert.Equal(plan1.Count, plan2.Count);
+        plan2.Count.ShouldBe(plan1.Count);
         for (int i = 0; i < plan1.Count; i++)
         {
-            Assert.Equal(plan1[i].ProductName, plan2[i].ProductName);
-            Assert.Equal(plan1[i].TimeMin, plan2[i].TimeMin);
+            plan2[i].ProductName.ShouldBe(plan1[i].ProductName);
+            plan2[i].TimeMin.ShouldBe(plan1[i].TimeMin);
         }
     }
 
@@ -257,9 +251,9 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert - Plan should have events throughout the race
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         var lastEvent = plan.Last();
-        Assert.True(lastEvent.TimeMin <= 180, "Last event should be within race duration");
+        (lastEvent.TimeMin <= 180).ShouldBeTrue("Last event should be within race duration");
     }
 
     [Fact]
@@ -274,34 +268,34 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         
         // Triathlon creates separate Swim -> Bike -> Run phase segments
         var mainEvents = plan.Where(e => e.TimeMin > 0).ToList();
-        Assert.NotEmpty(mainEvents);
+        mainEvents.ShouldNotBeEmpty();
         
         // All events should have a phase description
         foreach (var @event in mainEvents)
         {
-            Assert.NotNull(@event.PhaseDescription);
-            Assert.NotEmpty(@event.PhaseDescription);
+            @event.PhaseDescription.ShouldNotBeNull();
+            @event.PhaseDescription.ShouldNotBeEmpty();
             
             // Phase should match the description
             string phaseName = @event.Phase.ToString();
-            Assert.Contains(phaseName, @event.PhaseDescription);
+            @event.PhaseDescription.ShouldContain(phaseName);
             
             // Should not have nutrition during swim phase
-            Assert.NotEqual(RacePhase.Swim, @event.Phase);
+            @event.Phase.ShouldNotBe(RacePhase.Swim);
         }
         
         // Current: Triathlon maps to Run phase
         var runEvents = mainEvents.Where(e => e.Phase == RacePhase.Run).ToList();
-        Assert.NotEmpty(runEvents);
+        runEvents.ShouldNotBeEmpty();
         
         // Pre-race event should exist with appropriate phase
         var preRaceEvent = plan.FirstOrDefault(e => e.TimeMin == -15);
-        Assert.NotNull(preRaceEvent);
-        Assert.NotNull(preRaceEvent.PhaseDescription);
+        preRaceEvent.ShouldNotBeNull();
+        preRaceEvent.PhaseDescription.ShouldNotBeNull();
     }
 
     [Fact]
@@ -317,26 +311,25 @@ public class PlanGeneratorTests
 
         // Assert
         var mainEvents = plan.Where(e => e.TimeMin > 0).ToList();
-        Assert.NotEmpty(mainEvents);
+        mainEvents.ShouldNotBeEmpty();
         
         // Get events for each phase
         var bikeEvents = mainEvents.Where(e => e.Phase == RacePhase.Bike).ToList();
         var runEvents = mainEvents.Where(e => e.Phase == RacePhase.Run).ToList();
         
         // Both phases should have events
-        Assert.NotEmpty(bikeEvents);
-        Assert.NotEmpty(runEvents);
+        bikeEvents.ShouldNotBeEmpty();
+        runEvents.ShouldNotBeEmpty();
         
         // Bike phase should come before Run phase
         var lastBikeTime = bikeEvents.Max(e => e.TimeMin);
         var firstRunTime = runEvents.Min(e => e.TimeMin);
         
-        Assert.True(lastBikeTime <= firstRunTime, 
-            $"Bike phase (last event at {lastBikeTime} min) should come before Run phase (first event at {firstRunTime} min)");
+        (lastBikeTime <= firstRunTime).ShouldBeTrue($"Bike phase (last event at {lastBikeTime} min) should come before Run phase (first event at {firstRunTime} min)");
         
         // Verify chronological order within each phase
-        Assert.Equal(bikeEvents.OrderBy(e => e.TimeMin).Select(e => e.TimeMin), bikeEvents.Select(e => e.TimeMin));
-        Assert.Equal(runEvents.OrderBy(e => e.TimeMin).Select(e => e.TimeMin), runEvents.Select(e => e.TimeMin));
+        bikeEvents.Select(e => e.TimeMin).ShouldBe(bikeEvents.OrderBy(e => e.TimeMin).Select(e => e.TimeMin));
+        runEvents.Select(e => e.TimeMin).ShouldBe(runEvents.OrderBy(e => e.TimeMin).Select(e => e.TimeMin));
     }
 
     [Fact]
@@ -352,7 +345,7 @@ public class PlanGeneratorTests
 
         // Assert
         var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike && e.TimeMin > 0).ToList();
-        Assert.NotEmpty(bikeEvents);
+        bikeEvents.ShouldNotBeEmpty();
         
         // Get the transition time from bike to run (assuming it's when run phase starts)
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
@@ -362,12 +355,11 @@ public class PlanGeneratorTests
             
             // No nutrition should be scheduled in the last minute before transition
             var lastMinuteEvents = bikeEvents.Where(e => e.TimeMin >= bikeToRunTransitionTime - 1).ToList();
-            Assert.Empty(lastMinuteEvents);
+            lastMinuteEvents.ShouldBeEmpty();
             
             // Last bike nutrition should be at least 5 minutes before transition (reasonable safety margin)
             var lastBikeNutrition = bikeEvents.Max(e => e.TimeMin);
-            Assert.True(lastBikeNutrition <= bikeToRunTransitionTime - 5, 
-                $"Last bike nutrition at {lastBikeNutrition} min should be at least 5 minutes before transition at {bikeToRunTransitionTime} min");
+            (lastBikeNutrition <= bikeToRunTransitionTime - 5).ShouldBeTrue($"Last bike nutrition at {lastBikeNutrition} min should be at least 5 minutes before transition at {bikeToRunTransitionTime} min");
         }
     }
 
@@ -384,17 +376,16 @@ public class PlanGeneratorTests
 
         // Assert
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
-        Assert.NotEmpty(runEvents);
+        runEvents.ShouldNotBeEmpty();
         
         // Last nutrition should not be in the final minute of the race
         var raceDurationMinutes = race.DurationHours * 60;
         var lastMinuteEvents = runEvents.Where(e => e.TimeMin >= raceDurationMinutes - 1).ToList();
-        Assert.Empty(lastMinuteEvents);
+        lastMinuteEvents.ShouldBeEmpty();
         
         // Last nutrition should be at least 5 minutes before race end
         var lastRunNutrition = runEvents.Max(e => e.TimeMin);
-        Assert.True(lastRunNutrition <= raceDurationMinutes - 5, 
-            $"Last run nutrition at {lastRunNutrition} min should be at least 5 minutes before race end at {raceDurationMinutes} min");
+        (lastRunNutrition <= raceDurationMinutes - 5).ShouldBeTrue($"Last run nutrition at {lastRunNutrition} min should be at least 5 minutes before race end at {raceDurationMinutes} min");
     }
 
     [Fact]
@@ -422,20 +413,18 @@ public class PlanGeneratorTests
         var expectedRunEnd = race.DurationHours * 60; // 270 min
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, intervalMinutes: 22, caffeineEnabled: false);
+        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
 
         // Assert - COMPREHENSIVE VALIDATION
 
         // 1. Plan exists and has events
-        Assert.NotEmpty(plan);
-        Assert.True(plan.Count >= 5, $"Plan should have at least 5 events for a 5-hour triathlon, got {plan.Count}");
+        plan.ShouldNotBeEmpty();
+        (plan.Count >= 5).ShouldBeTrue($"Plan should have at least 5 events for a 5-hour triathlon, got {plan.Count}");
 
         // 2. Carb target validation
         var actualTotalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(actualTotalCarbs >= targetTotalCarbs * 0.95, 
-            $"Plan carbs ({actualTotalCarbs:F0}g) should be at least 95% of target ({targetTotalCarbs:F0}g)");
-        Assert.True(actualTotalCarbs <= targetTotalCarbs * 1.15, 
-            $"Plan carbs ({actualTotalCarbs:F0}g) should not exceed 115% of target ({targetTotalCarbs:F0}g)");
+        (actualTotalCarbs >= targetTotalCarbs * 0.95).ShouldBeTrue($"Plan carbs ({actualTotalCarbs:F0}g) should be at least 95% of target ({targetTotalCarbs:F0}g)");
+        (actualTotalCarbs <= targetTotalCarbs * 1.15).ShouldBeTrue($"Plan carbs ({actualTotalCarbs:F0}g) should not exceed 115% of target ({targetTotalCarbs:F0}g)");
 
         // 3. Phase validation - separate events by phase
         var swimEvents = plan.Where(e => e.Phase == RacePhase.Swim && e.TimeMin > 0).ToList();
@@ -443,13 +432,13 @@ public class PlanGeneratorTests
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
         
         // No nutrition during swim (too difficult to consume)
-        Assert.Empty(swimEvents);
+        swimEvents.ShouldBeEmpty();
         
         // Both bike and run phases should have events
-        Assert.NotEmpty(bikeEvents);
-        Assert.NotEmpty(runEvents);
-        Assert.True(bikeEvents.Count >= 3, $"Bike phase should have at least 3 nutrition events, got {bikeEvents.Count}");
-        Assert.True(runEvents.Count >= 2, $"Run phase should have at least 2 nutrition events, got {runEvents.Count}");
+        bikeEvents.ShouldNotBeEmpty();
+        runEvents.ShouldNotBeEmpty();
+        (bikeEvents.Count >= 3).ShouldBeTrue($"Bike phase should have at least 3 nutrition events, got {bikeEvents.Count}");
+        (runEvents.Count >= 2).ShouldBeTrue($"Run phase should have at least 2 nutrition events, got {runEvents.Count}");
 
         // 4. Phase timing validation
         var firstBikeTime = bikeEvents.Min(e => e.TimeMin);
@@ -457,18 +446,13 @@ public class PlanGeneratorTests
         var firstRunTime = runEvents.Min(e => e.TimeMin);
         var lastRunTime = runEvents.Max(e => e.TimeMin);
         
-        Assert.True(firstBikeTime >= expectedBikeStart, 
-            $"First bike nutrition ({firstBikeTime} min) should be after swim phase ends (~{expectedBikeStart} min)");
-        Assert.True(lastBikeTime <= expectedBikeEnd - 10, 
-            $"Last bike nutrition ({lastBikeTime} min) should end at least 10 min before transition (~{expectedBikeEnd} min)");
-        Assert.True(firstRunTime >= expectedRunStart, 
-            $"First run nutrition ({firstRunTime} min) should be after bike phase ends (~{expectedRunStart} min)");
-        Assert.True(lastRunTime <= expectedRunEnd - 5, 
-            $"Last run nutrition ({lastRunTime} min) should end at least 5 min before race finish (~{expectedRunEnd} min)");
+        (firstBikeTime >= expectedBikeStart).ShouldBeTrue($"First bike nutrition ({firstBikeTime} min) should be after swim phase ends (~{expectedBikeStart} min)");
+        (lastBikeTime <= expectedBikeEnd - 10).ShouldBeTrue($"Last bike nutrition ({lastBikeTime} min) should end at least 10 min before transition (~{expectedBikeEnd} min)");
+        (firstRunTime >= expectedRunStart).ShouldBeTrue($"First run nutrition ({firstRunTime} min) should be after bike phase ends (~{expectedRunStart} min)");
+        (lastRunTime <= expectedRunEnd - 5).ShouldBeTrue($"Last run nutrition ({lastRunTime} min) should end at least 5 min before race finish (~{expectedRunEnd} min)");
 
         // 5. Phase chronological order
-        Assert.True(lastBikeTime <= firstRunTime, 
-            $"Bike phase (ends {lastBikeTime} min) must complete before Run phase (starts {firstRunTime} min)");
+        (lastBikeTime <= firstRunTime).ShouldBeTrue($"Bike phase (ends {lastBikeTime} min) must complete before Run phase (starts {firstRunTime} min)");
 
         // 6. Carb distribution validation (bike-heavy strategy)
         var bikeCarbs = 0.0;
@@ -492,25 +476,22 @@ public class PlanGeneratorTests
         var bikePercentage = bikeCarbs / totalPhaseCarbs;
         
         // Triathlon strategy: bike should have significantly more carbs than run (aim for 60-75% on bike)
-        Assert.True(bikePercentage >= 0.55, 
-            $"Bike phase should have at least 55% of carbs (triathlon bike-heavy strategy), got {bikePercentage:P0}");
-        Assert.True(bikePercentage <= 0.80, 
-            $"Bike phase should have at most 80% of carbs (run still needs fuel), got {bikePercentage:P0}");
+        (bikePercentage >= 0.55).ShouldBeTrue($"Bike phase should have at least 55% of carbs (triathlon bike-heavy strategy), got {bikePercentage:P0}");
+        (bikePercentage <= 0.80).ShouldBeTrue($"Bike phase should have at most 80% of carbs (run still needs fuel), got {bikePercentage:P0}");
 
         // 7. Progressive carb tracking validation
         previousCarbs = 0.0;
         foreach (var evt in plan.OrderBy(e => e.TimeMin))
         {
-            Assert.True(evt.TotalCarbsSoFar >= previousCarbs, 
-                $"Carbs must increase progressively: {evt.TimeMin} min has {evt.TotalCarbsSoFar:F0}g but previous had {previousCarbs:F0}g");
+            (evt.TotalCarbsSoFar >= previousCarbs).ShouldBeTrue($"Carbs must increase progressively: {evt.TimeMin} min has {evt.TotalCarbsSoFar:F0}g but previous had {previousCarbs:F0}g");
             previousCarbs = evt.TotalCarbsSoFar;
         }
 
         // 8. Pre-race nutrition
         var preRaceEvent = plan.FirstOrDefault(e => e.TimeMin == -15);
-        Assert.NotNull(preRaceEvent);
-        Assert.NotNull(preRaceEvent.ProductName);
-        Assert.True(preRaceEvent.TotalCarbsSoFar > 0, "Pre-race event should contribute carbs");
+        preRaceEvent.ShouldNotBeNull();
+        preRaceEvent.ProductName.ShouldNotBeNull();
+        (preRaceEvent.TotalCarbsSoFar > 0).ShouldBeTrue("Pre-race event should contribute carbs");
 
         // 9. Event field validation
         Assert.All(plan, evt =>
@@ -527,36 +508,35 @@ public class PlanGeneratorTests
 
         // 10. Product variety validation
         var uniqueProducts = plan.Select(e => e.ProductName).Distinct().Count();
-        Assert.True(uniqueProducts >= 2, 
-            $"Plan should use at least 2 different products for variety, got {uniqueProducts}");
+        (uniqueProducts >= 2).ShouldBeTrue($"Plan should use at least 2 different products for variety, got {uniqueProducts}");
 
         // 11. Texture/product type appropriateness
         foreach (var bikeEvent in bikeEvents)
         {
             var product = products.FirstOrDefault(p => p.Name == bikeEvent.ProductName);
-            Assert.NotNull(product);
+            product.ShouldNotBeNull();
             
             // Bike phase can use any product type (bars, gels, drinks, chews)
-            Assert.Contains(product.Texture, new[] { 
+            new[] { 
                 ProductTexture.Bake, 
                 ProductTexture.Gel, 
                 ProductTexture.LightGel, 
                 ProductTexture.Drink, 
                 ProductTexture.Chew 
-            });
+            }.ShouldContain(product.Texture);
         }
         
         foreach (var runEvent in runEvents)
         {
             var product = products.FirstOrDefault(p => p.Name == runEvent.ProductName);
-            Assert.NotNull(product);
+            product.ShouldNotBeNull();
             
             // Run phase should prefer gels and drinks (no bars/chews due to GI stress)
-            Assert.Contains(product.Texture, new[] { 
+            new[] { 
                 ProductTexture.Gel, 
                 ProductTexture.LightGel, 
                 ProductTexture.Drink 
-            });
+            }.ShouldContain(product.Texture);
         }
 
         // 12. Timing interval validation (no clustering among non-sip events)
@@ -565,8 +545,7 @@ public class PlanGeneratorTests
         for (int i = 1; i < mainEvents.Count; i++)
         {
             var spacing = mainEvents[i].TimeMin - mainEvents[i - 1].TimeMin;
-            Assert.True(spacing >= 10,
-                $"Non-sip events should be spaced at least 10 min apart, found {spacing} min between {mainEvents[i - 1].TimeMin} and {mainEvents[i].TimeMin}");
+            (spacing >= 10).ShouldBeTrue($"Non-sip events should be spaced at least 10 min apart, found {spacing} min between {mainEvents[i - 1].TimeMin} and {mainEvents[i].TimeMin}");
         }
 
         // 13. Caffeine validation (when disabled)
@@ -579,8 +558,7 @@ public class PlanGeneratorTests
         // 14. Final summary validation (non-sip events should be 1.5-6 per hour)
         var nonSipEvents = plan.Where(e => e.Action != "Sip").Count();
         var nonSipEventsPerHour = nonSipEvents / race.DurationHours;
-        Assert.True(nonSipEventsPerHour >= 1.0 && nonSipEventsPerHour <= 6.0,
-            $"Should have 1-6 non-sip nutrition events per hour, got {nonSipEventsPerHour:F1}");
+        (nonSipEventsPerHour >= 1.0 && nonSipEventsPerHour <= 6.0).ShouldBeTrue($"Should have 1-6 non-sip nutrition events per hour, got {nonSipEventsPerHour:F1}");
     }
 
     [Fact]
@@ -596,18 +574,17 @@ public class PlanGeneratorTests
 
         // Assert
         var raceEvents = plan.Where(e => e.TimeMin > 0).ToList();
-        Assert.NotEmpty(raceEvents);
+        raceEvents.ShouldNotBeEmpty();
         
         var raceDurationMinutes = race.DurationHours * 60;
         
         // No nutrition in the last minute
         var lastMinuteEvents = raceEvents.Where(e => e.TimeMin >= raceDurationMinutes - 1).ToList();
-        Assert.Empty(lastMinuteEvents);
+        lastMinuteEvents.ShouldBeEmpty();
         
         // Last nutrition should be at least 5 minutes before race end
         var lastNutrition = raceEvents.Max(e => e.TimeMin);
-        Assert.True(lastNutrition <= raceDurationMinutes - 5, 
-            $"Last nutrition at {lastNutrition} min should be at least 5 minutes before race end at {raceDurationMinutes} min");
+        (lastNutrition <= raceDurationMinutes - 5).ShouldBeTrue($"Last nutrition at {lastNutrition} min should be at least 5 minutes before race end at {raceDurationMinutes} min");
     }
 
     [Fact]
@@ -623,18 +600,17 @@ public class PlanGeneratorTests
 
         // Assert
         var raceEvents = plan.Where(e => e.TimeMin > 0).ToList();
-        Assert.NotEmpty(raceEvents);
+        raceEvents.ShouldNotBeEmpty();
         
         var raceDurationMinutes = race.DurationHours * 60;
         
         // No nutrition in the last minute
         var lastMinuteEvents = raceEvents.Where(e => e.TimeMin >= raceDurationMinutes - 1).ToList();
-        Assert.Empty(lastMinuteEvents);
+        lastMinuteEvents.ShouldBeEmpty();
         
         // Last nutrition should be at least 5 minutes before race end
         var lastNutrition = raceEvents.Max(e => e.TimeMin);
-        Assert.True(lastNutrition <= raceDurationMinutes - 5, 
-            $"Last nutrition at {lastNutrition} min should be at least 5 minutes before race end at {raceDurationMinutes} min");
+        (lastNutrition <= raceDurationMinutes - 5).ShouldBeTrue($"Last nutrition at {lastNutrition} min should be at least 5 minutes before race end at {raceDurationMinutes} min");
     }
 
     [Theory]
@@ -667,11 +643,10 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         var actualTotalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         
-        Assert.True(actualTotalCarbs >= targetTotalCarbs, 
-            $"Scenario ({scenario}): Plan total carbs ({actualTotalCarbs}g) should meet or exceed target ({targetTotalCarbs}g)");
+        (actualTotalCarbs >= targetTotalCarbs).ShouldBeTrue($"Scenario ({scenario}): Plan total carbs ({actualTotalCarbs}g) should meet or exceed target ({targetTotalCarbs}g)");
     }
 
     [Theory]
@@ -695,11 +670,10 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         var actualTotalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         
-        Assert.True(actualTotalCarbs >= targetTotalCarbs, 
-            $"Scenario ({scenario}): Plan ({actualTotalCarbs}g) should meet or exceed target ({targetTotalCarbs}g)");
+        (actualTotalCarbs >= targetTotalCarbs).ShouldBeTrue($"Scenario ({scenario}): Plan ({actualTotalCarbs}g) should meet or exceed target ({targetTotalCarbs}g)");
     }
 
     [Fact]
@@ -720,11 +694,11 @@ public class PlanGeneratorTests
         var targetCarbsAll = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
         var targetCarbsBars = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
         
-        Assert.Equal(targetCarbsAll, targetCarbsBars);
+        targetCarbsBars.ShouldBe(targetCarbsAll);
         
         // Final carb totals might differ due to available products, but both should aim for target
-        Assert.NotEmpty(planAll);
-        Assert.NotEmpty(planBars);
+        planAll.ShouldNotBeEmpty();
+        planBars.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -745,11 +719,11 @@ public class PlanGeneratorTests
         var targetCarbsAll = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
         var targetCarbsGels = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
         
-        Assert.Equal(targetCarbsAll, targetCarbsGels);
+        targetCarbsGels.ShouldBe(targetCarbsAll);
         
         // Both plans should exist
-        Assert.NotEmpty(planAll);
-        Assert.NotEmpty(planGels);
+        planAll.ShouldNotBeEmpty();
+        planGels.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -770,11 +744,11 @@ public class PlanGeneratorTests
         var targetCarbsAll = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
         var targetCarbsDrinks = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
         
-        Assert.Equal(targetCarbsAll, targetCarbsDrinks);
+        targetCarbsDrinks.ShouldBe(targetCarbsAll);
         
         // Both plans should exist
-        Assert.NotEmpty(planAll);
-        Assert.NotEmpty(planDrinks);
+        planAll.ShouldNotBeEmpty();
+        planDrinks.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -794,22 +768,22 @@ public class PlanGeneratorTests
         var drinkProducts = allProducts.Where(p => p.Texture == ProductTexture.Drink).ToList();
 
         // Assert - All filters should have products and target should remain same
-        Assert.NotEmpty(barProducts);
-        Assert.NotEmpty(gelProducts);
-        Assert.NotEmpty(drinkProducts);
+        barProducts.ShouldNotBeEmpty();
+        gelProducts.ShouldNotBeEmpty();
+        drinkProducts.ShouldNotBeEmpty();
         
         var planBars = _generator.GeneratePlan(race, athlete, barProducts);
         var planGels = _generator.GeneratePlan(race, athlete, gelProducts);
         var planDrinks = _generator.GeneratePlan(race, athlete, drinkProducts);
         
         // All should generate plans
-        Assert.NotEmpty(planBars);
-        Assert.NotEmpty(planGels);
-        Assert.NotEmpty(planDrinks);
+        planBars.ShouldNotBeEmpty();
+        planGels.ShouldNotBeEmpty();
+        planDrinks.ShouldNotBeEmpty();
         
         // Target should remain consistent
         var recalculatedTarget = NutritionCalculator.CalculateTargets(race, athlete);
-        Assert.Equal(targetTotalCarbs, recalculatedTarget.CarbsGPerHour * race.DurationHours);
+        (recalculatedTarget.CarbsGPerHour * race.DurationHours).ShouldBe(targetTotalCarbs);
     }
 
     [Fact]
@@ -827,9 +801,9 @@ public class PlanGeneratorTests
         var products3 = allProducts.Where(p => p.Texture == ProductTexture.Drink).ToList();
 
         // Ensure all product types have items
-        Assert.NotEmpty(products1);
-        Assert.NotEmpty(products2);
-        Assert.NotEmpty(products3);
+        products1.ShouldNotBeEmpty();
+        products2.ShouldNotBeEmpty();
+        products3.ShouldNotBeEmpty();
 
         // Act
         var planBars = _generator.GeneratePlan(race, athlete, products1);
@@ -837,13 +811,12 @@ public class PlanGeneratorTests
         var planDrinks = _generator.GeneratePlan(race, athlete, products3);
 
         // Assert - Target is same, but plans use different products
-        Assert.NotEmpty(planBars);
-        Assert.NotEmpty(planGels);
-        Assert.NotEmpty(planDrinks);
+        planBars.ShouldNotBeEmpty();
+        planGels.ShouldNotBeEmpty();
+        planDrinks.ShouldNotBeEmpty();
         
         // All should aim for same carb target per hour
-        Assert.True(planBars.Count > 0 && planGels.Count > 0 && planDrinks.Count > 0,
-            "All product types should generate valid plans");
+        (planBars.Count > 0 && planGels.Count > 0 && planDrinks.Count > 0).ShouldBeTrue("All product types should generate valid plans");
         
         // Key assertion: Target carbs per hour should be the same regardless of product filter
         var carbsPerHourTarget = target.CarbsGPerHour;
@@ -854,7 +827,7 @@ public class PlanGeneratorTests
         var drinkProductNames = planDrinks.Select(e => e.ProductName).Distinct().ToList();
         
         // Each should use products from their respective type
-        Assert.True(barProductNames.Any() && gelProductNames.Any() && drinkProductNames.Any());
+        (barProductNames.Any() && gelProductNames.Any() && drinkProductNames.Any()).ShouldBeTrue();
     }
 
     [Fact]
@@ -875,14 +848,14 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, singleProductType);
 
         // Assert
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
         
         // Should still aim to meet nutrition target with available products
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         var expectedCarbs = target.CarbsGPerHour * race.DurationHours;
         
         // May not reach exact target with limited products, but should try
-        Assert.True(totalCarbs > 0, "Should include nutrition in plan");
+        (totalCarbs > 0).ShouldBeTrue("Should include nutrition in plan");
     }
 
     #endregion
@@ -902,12 +875,12 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
         Assert.All(plan, @event => Assert.NotNull(@event.ProductName));
         Assert.All(plan, @event => Assert.True(@event.TotalCarbsSoFar > 0));
     }
@@ -925,13 +898,13 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
-        Assert.True(plan.Count > 0, "Plan should contain events");
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
+        (plan.Count > 0).ShouldBeTrue("Plan should contain events");
     }
 
     [Fact]
@@ -947,12 +920,12 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
         Assert.All(plan, @event => Assert.True(@event.TimeMin >= -15));
     }
 
@@ -970,12 +943,12 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -990,7 +963,7 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert - Carbs should increase or stay same, never decrease
@@ -998,9 +971,7 @@ public class PlanGeneratorTests
         {
             for (int i = 1; i < plan.Count; i++)
             {
-                Assert.True(
-                    plan[i].TotalCarbsSoFar >= plan[i - 1].TotalCarbsSoFar,
-                    "Carb totals should increase or stay same");
+                (plan[i].TotalCarbsSoFar >= plan[i - 1].TotalCarbsSoFar).ShouldBeTrue("Carb totals should increase or stay same");
             }
         }
     }
@@ -1018,14 +989,14 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert - Should have pre-race event at -15 minutes
         var preRaceEvent = plan.FirstOrDefault(e => e.TimeMin == -15);
         if (preRaceEvent != null)
         {
-            Assert.NotNull(preRaceEvent.ProductName);
+            preRaceEvent.ProductName.ShouldNotBeNull();
         }
     }
 
@@ -1042,7 +1013,7 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var heavyPlan = service.GeneratePlan(race, heavyAthlete, products);
         var lightPlan = service.GeneratePlan(race, lightAthlete, products);
 
@@ -1050,7 +1021,7 @@ public class PlanGeneratorTests
         var heavyTotalCarbs = heavyPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         var lightTotalCarbs = lightPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
         
-        Assert.True(heavyTotalCarbs >= lightTotalCarbs, "Heavier athlete should consume at least as much nutrition");
+        (heavyTotalCarbs >= lightTotalCarbs).ShouldBeTrue("Heavier athlete should consume at least as much nutrition");
     }
 
     [Fact]
@@ -1065,7 +1036,7 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert - All events should have required fields
@@ -1095,12 +1066,12 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert - Basic plan structure
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // Calculate expected targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1110,10 +1081,9 @@ public class PlanGeneratorTests
 
         // Validate total carbs consumed (document actual behavior - plans may be conservative)
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(totalCarbs > 0, "Should have some carb intake");
+        (totalCarbs > 0).ShouldBeTrue("Should have some carb intake");
         // Plans should provide at least 18% of target (conservative but safe approach)
-        Assert.True(totalCarbs >= expectedTotalCarbs * 0.18, 
-            $"Plan provides {totalCarbs}g but target is {expectedTotalCarbs}g/hour * {race.DurationHours}h = {expectedTotalCarbs}g total");
+        (totalCarbs >= expectedTotalCarbs * 0.18).ShouldBeTrue($"Plan provides {totalCarbs}g but target is {expectedTotalCarbs}g/hour * {race.DurationHours}h = {expectedTotalCarbs}g total");
         // Document: Actual plans may be conservative, typically 18-75% of calculated targets
 
         // Validate triathlon has all three phases
@@ -1132,14 +1102,13 @@ public class PlanGeneratorTests
         var sortedPlan = plan.OrderBy(e => e.TimeMin).ToList();
         for (int i = 1; i < sortedPlan.Count; i++)
         {
-            Assert.True(sortedPlan[i].TimeMin >= sortedPlan[i - 1].TimeMin, "Events should be in chronological order");
+            (sortedPlan[i].TimeMin >= sortedPlan[i - 1].TimeMin).ShouldBeTrue("Events should be in chronological order");
         }
 
         // Validate carbs progression is monotonic
         for (int i = 1; i < sortedPlan.Count; i++)
         {
-            Assert.True(sortedPlan[i].TotalCarbsSoFar >= sortedPlan[i - 1].TotalCarbsSoFar, 
-                "Cumulative carbs should never decrease");
+            (sortedPlan[i].TotalCarbsSoFar >= sortedPlan[i - 1].TotalCarbsSoFar).ShouldBeTrue("Cumulative carbs should never decrease");
         }
     }
 
@@ -1157,16 +1126,16 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // For long races, expect multiple nutrition events
         var duringRaceEvents = plan.Where(e => e.TimeMin >= 0).ToList();
-        Assert.True(duringRaceEvents.Count >= 5, "10-hour race should have multiple nutrition events");
+        (duringRaceEvents.Count >= 5).ShouldBeTrue("10-hour race should have multiple nutrition events");
 
         // Calculate expected targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1174,14 +1143,13 @@ public class PlanGeneratorTests
 
         // Validate total carbs (long races - document actual behavior)
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(totalCarbs > 100, "10-hour race should have substantial carb intake");
+        (totalCarbs > 100).ShouldBeTrue("10-hour race should have substantial carb intake");
         // Plans may be conservative - verify at least 20% of target
-        Assert.True(totalCarbs >= expectedTotalCarbs * 0.2,
-            $"Plan provides {totalCarbs}g but expected around {expectedTotalCarbs}g");
+        (totalCarbs >= expectedTotalCarbs * 0.2).ShouldBeTrue($"Plan provides {totalCarbs}g but expected around {expectedTotalCarbs}g");
 
         // Validate product variety in long races (should use bars for variety)
         var barEvents = plan.Where(e => e.ProductName.Contains("Bar")).ToList();
-        Assert.NotEmpty(barEvents);
+        barEvents.ShouldNotBeEmpty();
 
         // Validate triathlon has all three phases
         ValidateTriathlonPhases(plan);
@@ -1203,15 +1171,15 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // Validate reasonable event count for 2-hour race (includes sip events)
-        Assert.InRange(plan.Count, 3, 30);
+        plan.Count.ShouldBeInRange(3, 30);
 
         // Calculate targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1219,10 +1187,9 @@ public class PlanGeneratorTests
 
         // Validate carb intake
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(totalCarbs > 0, "Should have some carb intake");
+        (totalCarbs > 0).ShouldBeTrue("Should have some carb intake");
         // Verify at least 25% of target for 2-hour race
-        Assert.True(totalCarbs >= expectedTotalCarbs * 0.25,
-            $"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
+        (totalCarbs >= expectedTotalCarbs * 0.25).ShouldBeTrue($"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
 
         // Validate all events are properly formed
         ValidateEventIntegrity(plan);
@@ -1243,15 +1210,15 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // Validate reasonable event count for 4-hour marathon (includes sip events)
-        Assert.InRange(plan.Count, 2, 40);
+        plan.Count.ShouldBeInRange(2, 40);
 
         // Calculate targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1259,10 +1226,9 @@ public class PlanGeneratorTests
 
         // Validate carb intake
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(totalCarbs > 0, "Should have carb intake");
+        (totalCarbs > 0).ShouldBeTrue("Should have carb intake");
         // Verify at least 20% of target for 4-hour marathon
-        Assert.True(totalCarbs >= expectedTotalCarbs * 0.2,
-            $"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
+        (totalCarbs >= expectedTotalCarbs * 0.2).ShouldBeTrue($"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
 
         // Validate comprehensive requirements
         ValidateEventIntegrity(plan);
@@ -1284,12 +1250,12 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // Calculate targets
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
@@ -1297,15 +1263,14 @@ public class PlanGeneratorTests
 
         // Validate carb intake
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(totalCarbs > 0, "Should have carb intake");
+        (totalCarbs > 0).ShouldBeTrue("Should have carb intake");
         // Verify at least 25% of target for bike race
-        Assert.True(totalCarbs >= expectedTotalCarbs * 0.25,
-            $"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
+        (totalCarbs >= expectedTotalCarbs * 0.25).ShouldBeTrue($"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
 
         // Cycling allows for more diverse products - validate product distribution
         var gelEvents = plan.Where(e => e.ProductName.Contains("Gel")).ToList();
         var drinkEvents = plan.Where(e => e.ProductName.Contains("Drink")).ToList();
-        Assert.True(gelEvents.Any() || drinkEvents.Any(), "Should have nutrition products");
+        (gelEvents.Any() || drinkEvents.Any()).ShouldBeTrue("Should have nutrition products");
 
         // Validate comprehensive requirements
         ValidateEventIntegrity(plan);
@@ -1326,22 +1291,22 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // Hot weather should increase fluid intake - verify we have nutrition products
         var nutritionEvents = plan.Where(e => e.TimeMin >= 0).ToList();
-        Assert.NotEmpty(nutritionEvents);
+        nutritionEvents.ShouldNotBeEmpty();
 
         // Calculate targets (hot weather adjusts fluid requirements)
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
         
         // Hot weather targets should be higher
-        Assert.True(targets.FluidsMlPerHour > 600, "Hot weather should increase fluid requirements");
+        (targets.FluidsMlPerHour > 600).ShouldBeTrue("Hot weather should increase fluid requirements");
 
         // Validate triathlon has all three phases
         ValidateTriathlonPhases(plan);
@@ -1365,26 +1330,25 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var service = new NutritionPlanService();
+        var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
         var plan = service.GeneratePlan(race, athlete, products);
 
         // Assert
-        Assert.NotNull(plan);
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeNull();
+        plan.ShouldNotBeEmpty();
 
         // Calculate targets (easy intensity = lower carb requirements)
         var targets = NutritionCalculator.CalculateTargets(race, athlete);
         var expectedTotalCarbs = targets.CarbsGPerHour * race.DurationHours;
 
         // Easy intensity should have lower carb targets
-        Assert.True(targets.CarbsGPerHour < 80, "Easy intensity should have lower carb/hour target");
+        (targets.CarbsGPerHour < 80).ShouldBeTrue("Easy intensity should have lower carb/hour target");
 
         // Validate total carbs
         var totalCarbs = plan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
-        Assert.True(totalCarbs > 0, "Should have some carb intake");
+        (totalCarbs > 0).ShouldBeTrue("Should have some carb intake");
         // Verify at least 25% of target for easy intensity
-        Assert.True(totalCarbs >= expectedTotalCarbs * 0.25,
-            $"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
+        (totalCarbs >= expectedTotalCarbs * 0.25).ShouldBeTrue($"Plan provides {totalCarbs}g but expected ~{expectedTotalCarbs}g");
 
         // Validate comprehensive requirements
         ValidateEventIntegrity(plan);
@@ -1415,9 +1379,7 @@ public class PlanGeneratorTests
         var sortedPlan = plan.OrderBy(e => e.TimeMin).ToList();
         for (int i = 1; i < sortedPlan.Count; i++)
         {
-            Assert.True(
-                sortedPlan[i].TotalCarbsSoFar >= sortedPlan[i - 1].TotalCarbsSoFar,
-                $"Cumulative carbs decreased from {sortedPlan[i - 1].TotalCarbsSoFar}g to {sortedPlan[i].TotalCarbsSoFar}g");
+            (sortedPlan[i].TotalCarbsSoFar >= sortedPlan[i - 1].TotalCarbsSoFar).ShouldBeTrue($"Cumulative carbs decreased from {sortedPlan[i - 1].TotalCarbsSoFar}g to {sortedPlan[i].TotalCarbsSoFar}g");
         }
     }
 
@@ -1426,9 +1388,7 @@ public class PlanGeneratorTests
         var sortedPlan = plan.OrderBy(e => e.TimeMin).ToList();
         for (int i = 1; i < sortedPlan.Count; i++)
         {
-            Assert.True(
-                sortedPlan[i].TimeMin >= sortedPlan[i - 1].TimeMin,
-                $"Events out of order: {sortedPlan[i - 1].TimeMin}min followed by {sortedPlan[i].TimeMin}min");
+            (sortedPlan[i].TimeMin >= sortedPlan[i - 1].TimeMin).ShouldBeTrue($"Events out of order: {sortedPlan[i - 1].TimeMin}min followed by {sortedPlan[i].TimeMin}min");
         }
     }
 
@@ -1442,8 +1402,7 @@ public class PlanGeneratorTests
             {
                 var interval = duringRaceEvents[i].TimeMin - duringRaceEvents[i - 1].TimeMin;
                 // Allow simultaneous events (interval = 0) or reasonable spacing (5-50 minutes)
-                Assert.True(interval >= 0 && interval <= 50, 
-                    $"Interval between events should be 0-50 min, got {interval}min");
+                (interval >= 0 && interval <= 50).ShouldBeTrue($"Interval between events should be 0-50 min, got {interval}min");
             }
         }
     }
@@ -1456,14 +1415,14 @@ public class PlanGeneratorTests
         var runPhaseEvents = plan.Where(e => e.Phase == RacePhase.Run).ToList();
 
         // Should have bike and run phases with nutrition events
-        Assert.NotEmpty(bikePhaseEvents);
-        Assert.NotEmpty(runPhaseEvents);
+        bikePhaseEvents.ShouldNotBeEmpty();
+        runPhaseEvents.ShouldNotBeEmpty();
         
         // Swim phase may not have nutrition events (can't eat while swimming)
         // But pre-race events should be assigned to swim phase
         var allPhases = plan.Select(e => e.Phase).Distinct().ToList();
-        Assert.Contains(RacePhase.Bike, allPhases);
-        Assert.Contains(RacePhase.Run, allPhases);
+        allPhases.ShouldContain(RacePhase.Bike);
+        allPhases.ShouldContain(RacePhase.Run);
         
         // Verify phase descriptions are appropriate
         Assert.All(bikePhaseEvents, e => Assert.Contains("Bike", e.PhaseDescription));
@@ -1516,7 +1475,7 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         var drinkEvents = plan.Where(e => e.ProductName.Contains("Drink")).ToList();
-        Assert.NotEmpty(drinkEvents);
+        drinkEvents.ShouldNotBeEmpty();
 
         // No drink event should be AmountPortions == 1 (full bottle at once)
         Assert.All(drinkEvents, e =>
@@ -1549,7 +1508,7 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         var sipEvents = plan.Where(e => e.Action == "Sip").ToList();
-        Assert.NotEmpty(sipEvents);
+        sipEvents.ShouldNotBeEmpty();
 
         // Each sip should contribute a small amount of carbs (not the full product carbs)
         Assert.All(sipEvents, e =>
@@ -1574,20 +1533,18 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         var positiveTimeEvents = plan.Where(e => e.TimeMin > 0).OrderBy(e => e.TimeMin).ToList();
-        Assert.NotEmpty(positiveTimeEvents);
+        positiveTimeEvents.ShouldNotBeEmpty();
 
         int durationMinutes = (int)(durationHours * 60);
         int lastEventTime = positiveTimeEvents.Last().TimeMin;
 
         // Last event should be in the second half of the race
-        Assert.True(lastEventTime > durationMinutes / 2,
-            $"Scenario ({scenario}): Last event at {lastEventTime}min, but race is {durationMinutes}min. " +
+        (lastEventTime > durationMinutes / 2).ShouldBeTrue($"Scenario ({scenario}): Last event at {lastEventTime}min, but race is {durationMinutes}min. " +
             $"Events should extend beyond the halfway point ({durationMinutes / 2}min)");
 
         // Should have events beyond the first hour
         var eventsAfterFirstHour = positiveTimeEvents.Where(e => e.TimeMin > 60).ToList();
-        Assert.True(eventsAfterFirstHour.Count >= 1,
-            $"Scenario ({scenario}): No events after minute 60 for a {durationHours}h race");
+        (eventsAfterFirstHour.Count >= 1).ShouldBeTrue($"Scenario ({scenario}): No events after minute 60 for a {durationHours}h race");
     }
 
     [Theory]
@@ -1612,8 +1569,7 @@ public class PlanGeneratorTests
 
         // First quarter should not exceed 50% of total carbs
         double maxAllowed = totalPlanCarbs * 0.50;
-        Assert.True(firstQuarterCarbs <= maxAllowed,
-            $"Front-loading: {firstQuarterCarbs:F0}g in first {firstQuarterEnd}min " +
+        (firstQuarterCarbs <= maxAllowed).ShouldBeTrue($"Front-loading: {firstQuarterCarbs:F0}g in first {firstQuarterEnd}min " +
             $"exceeds 50% of total ({totalPlanCarbs:F0}g). Max allowed: {maxAllowed:F0}g");
     }
 
@@ -1637,8 +1593,7 @@ public class PlanGeneratorTests
         double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
         double lastCumulative = plan.Last().TotalCarbsSoFar;
 
-        Assert.True(Math.Abs(sumOfEvents - lastCumulative) < 1.0,
-            $"Sum of CarbsInEvent ({sumOfEvents:F1}g) != last TotalCarbsSoFar ({lastCumulative:F1}g)");
+        (Math.Abs(sumOfEvents - lastCumulative) < 1.0).ShouldBeTrue($"Sum of CarbsInEvent ({sumOfEvents:F1}g) != last TotalCarbsSoFar ({lastCumulative:F1}g)");
     }
 
     [Theory]
@@ -1657,10 +1612,8 @@ public class PlanGeneratorTests
         double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
         double tolerance = targets.CarbsG * 0.15; // 15% tolerance
 
-        Assert.True(sumOfEvents >= targets.CarbsG - tolerance,
-            $"Plan total ({sumOfEvents:F0}g) too far below target ({targets.CarbsG:F0}g). Min: {targets.CarbsG - tolerance:F0}g");
-        Assert.True(sumOfEvents <= targets.CarbsG + tolerance,
-            $"Plan total ({sumOfEvents:F0}g) too far above target ({targets.CarbsG:F0}g). Max: {targets.CarbsG + tolerance:F0}g");
+        (sumOfEvents >= targets.CarbsG - tolerance).ShouldBeTrue($"Plan total ({sumOfEvents:F0}g) too far below target ({targets.CarbsG:F0}g). Min: {targets.CarbsG - tolerance:F0}g");
+        (sumOfEvents <= targets.CarbsG + tolerance).ShouldBeTrue($"Plan total ({sumOfEvents:F0}g) too far above target ({targets.CarbsG:F0}g). Max: {targets.CarbsG + tolerance:F0}g");
     }
 
     // --- BUG 4: No clustering among non-sip events ---
@@ -1682,8 +1635,7 @@ public class PlanGeneratorTests
         for (int i = 1; i < nonSipEvents.Count; i++)
         {
             int spacing = nonSipEvents[i].TimeMin - nonSipEvents[i - 1].TimeMin;
-            Assert.True(spacing >= 5,
-                $"Non-sip events at {nonSipEvents[i - 1].TimeMin}min and {nonSipEvents[i].TimeMin}min " +
+            (spacing >= 5).ShouldBeTrue($"Non-sip events at {nonSipEvents[i - 1].TimeMin}min and {nonSipEvents[i].TimeMin}min " +
                 $"are only {spacing}min apart (min 5min)");
         }
     }
@@ -1702,8 +1654,8 @@ public class PlanGeneratorTests
         var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike && e.TimeMin > 0).ToList();
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
 
-        Assert.NotEmpty(bikeEvents);
-        Assert.NotEmpty(runEvents);
+        bikeEvents.ShouldNotBeEmpty();
+        runEvents.ShouldNotBeEmpty();
 
         // Bike events should span the bike phase, not cluster at start
         int bikeStartMin = (int)(5 * 0.20 * 60); // 60min
@@ -1711,8 +1663,7 @@ public class PlanGeneratorTests
         int bikeFirst = bikeEvents.Min(e => e.TimeMin);
         int bikeLast = bikeEvents.Max(e => e.TimeMin);
 
-        Assert.True(bikeLast > (bikeStartMin + bikeEndMin) / 2,
-            $"Bike events should extend past bike midpoint ({(bikeStartMin + bikeEndMin) / 2}min), last at {bikeLast}min");
+        (bikeLast > (bikeStartMin + bikeEndMin) / 2).ShouldBeTrue($"Bike events should extend past bike midpoint ({(bikeStartMin + bikeEndMin) / 2}min), last at {bikeLast}min");
 
         // Run events should also span the run phase
         int runStartMin = bikeEndMin;
@@ -1720,10 +1671,8 @@ public class PlanGeneratorTests
         int runFirst = runEvents.Min(e => e.TimeMin);
         int runLast = runEvents.Max(e => e.TimeMin);
 
-        Assert.True(runFirst >= runStartMin,
-            $"First run event ({runFirst}min) should be after run phase start ({runStartMin}min)");
-        Assert.True(runLast <= runEndMin - 5,
-            $"Last run event ({runLast}min) should be before race end ({runEndMin}min)");
+        (runFirst >= runStartMin).ShouldBeTrue($"First run event ({runFirst}min) should be after run phase start ({runStartMin}min)");
+        (runLast <= runEndMin - 5).ShouldBeTrue($"Last run event ({runLast}min) should be before race end ({runEndMin}min)");
     }
 
     // --- BUG 6: Duration formatting ---
@@ -1748,7 +1697,7 @@ public class PlanGeneratorTests
         else
             result = $"{wholeHours}h {minutes:D2}m";
 
-        Assert.Equal(expected, result);
+        result.ShouldBe(expected);
     }
 
     // --- Table-driven: Multiple scenarios must pass all invariants ---
@@ -1770,7 +1719,7 @@ public class PlanGeneratorTests
         var plan = _generator.GeneratePlan(race, athlete, products);
 
         // 1. Plan is non-empty
-        Assert.NotEmpty(plan);
+        plan.ShouldNotBeEmpty();
 
         // 2. Cumulative carbs never decrease
         ValidateMonotonicCarbs(plan);
@@ -1781,8 +1730,7 @@ public class PlanGeneratorTests
         // 4. Sum of CarbsInEvent matches last cumulative
         double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
         double lastCumulative = plan.Last().TotalCarbsSoFar;
-        Assert.True(Math.Abs(sumOfEvents - lastCumulative) < 1.0,
-            $"Sum mismatch: events={sumOfEvents:F1}, cumulative={lastCumulative:F1}");
+        (Math.Abs(sumOfEvents - lastCumulative) < 1.0).ShouldBeTrue($"Sum mismatch: events={sumOfEvents:F1}, cumulative={lastCumulative:F1}");
 
         // 5. No events after race end
         int durationMinutes = (int)(durationHours * 60);
@@ -1823,8 +1771,7 @@ public class PlanGeneratorTests
         int finalThirdStart = durationMinutes * 2 / 3; // ~206 min
 
         var finalThirdEvents = plan.Where(e => e.TimeMin >= finalThirdStart && e.TimeMin > 0).ToList();
-        Assert.True(finalThirdEvents.Count >= 1,
-            $"5h run must have at least one intake event in final third (after {finalThirdStart}min), " +
+        (finalThirdEvents.Count >= 1).ShouldBeTrue($"5h run must have at least one intake event in final third (after {finalThirdStart}min), " +
             $"but last event is at {plan.Where(e => e.TimeMin > 0).Max(e => e.TimeMin)}min");
     }
 
@@ -1847,8 +1794,7 @@ public class PlanGeneratorTests
         double minCoverageRatio = 0.85;
         int minLastEventTime = (int)(durationMinutes * minCoverageRatio);
 
-        Assert.True(lastEventTime >= minLastEventTime,
-            $"Last event at {lastEventTime}min but must be >= {minLastEventTime}min " +
+        (lastEventTime >= minLastEventTime).ShouldBeTrue($"Last event at {lastEventTime}min but must be >= {minLastEventTime}min " +
             $"({minCoverageRatio:P0} of {durationMinutes}min race)");
     }
 
@@ -1878,7 +1824,7 @@ public class PlanGeneratorTests
         double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
         double ceiling = weightKg * maxMgPerKg;
 
-        Assert.True(totalCaffeine <= ceiling + 1, // +1 for rounding tolerance
+        (totalCaffeine <= ceiling + 1).ShouldBeTrue(// +1 for rounding tolerance
             $"Intensity={intensity}: Total caffeine {totalCaffeine:F0}mg exceeds ceiling {ceiling:F0}mg ({maxMgPerKg} mg/kg × {weightKg}kg)");
     }
 
@@ -1903,8 +1849,7 @@ public class PlanGeneratorTests
         double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
         double ceiling = weightKg * 1.0; // Easy = 1 mg/kg
 
-        Assert.True(totalCaffeine <= ceiling + 1,
-            $"Easy intensity: caffeine {totalCaffeine:F0}mg must not exceed {ceiling:F0}mg (1 mg/kg × {weightKg}kg)");
+        (totalCaffeine <= ceiling + 1).ShouldBeTrue($"Easy intensity: caffeine {totalCaffeine:F0}mg must not exceed {ceiling:F0}mg (1 mg/kg × {weightKg}kg)");
     }
 
     [Fact]
@@ -1919,8 +1864,7 @@ public class PlanGeneratorTests
         double sumCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
         double lastCumulativeCaffeine = plan.Last().TotalCaffeineSoFar;
 
-        Assert.True(Math.Abs(sumCaffeine - lastCumulativeCaffeine) < 1.0,
-            $"Caffeine sum ({sumCaffeine:F1}mg) != last cumulative ({lastCumulativeCaffeine:F1}mg)");
+        (Math.Abs(sumCaffeine - lastCumulativeCaffeine) < 1.0).ShouldBeTrue($"Caffeine sum ({sumCaffeine:F1}mg) != last cumulative ({lastCumulativeCaffeine:F1}mg)");
     }
 
     // --- ISSUE 3: Plan quality check (warnings) ---
@@ -1940,7 +1884,7 @@ public class PlanGeneratorTests
         var result = _generator.GeneratePlanWithDiagnostics(race, athlete, products);
 
         // Should have at least one quality warning (front-loading, coverage, or density)
-        Assert.NotEmpty(result.Warnings);
+        result.Warnings.ShouldNotBeEmpty();
     }
 
     #endregion

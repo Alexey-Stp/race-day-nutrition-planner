@@ -24,7 +24,7 @@ public class ValidationTests
         var race = new RaceProfile(SportType.Run, DurationHours: 0, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateRaceProfile(race));
         Assert.Contains("Duration must be greater than 0", exception.Message);
     }
 
@@ -35,7 +35,7 @@ public class ValidationTests
         var race = new RaceProfile(SportType.Run, DurationHours: -1, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateRaceProfile(race));
         Assert.Contains("Duration must be greater than 0", exception.Message);
     }
 
@@ -46,7 +46,7 @@ public class ValidationTests
         var race = new RaceProfile(SportType.Run, DurationHours: 25, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateRaceProfile(race));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateRaceProfile(race));
         Assert.Contains("Duration cannot exceed 24 hours", exception.Message);
     }
 
@@ -91,7 +91,7 @@ public class ValidationTests
         var athlete = new AthleteProfile(WeightKg: 0);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
         Assert.Contains("Weight must be greater than 0", exception.Message);
     }
 
@@ -102,7 +102,7 @@ public class ValidationTests
         var athlete = new AthleteProfile(WeightKg: -10);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
         Assert.Contains("Weight must be greater than 0", exception.Message);
     }
 
@@ -113,7 +113,7 @@ public class ValidationTests
         var athlete = new AthleteProfile(WeightKg: 300);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
         Assert.Contains("Weight cannot exceed 250 kg", exception.Message);
     }
 
@@ -150,7 +150,7 @@ public class ValidationTests
         var product = new Product("", "gel", CarbsG: 25, SodiumMg: 100);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Product name cannot be empty", exception.Message);
     }
 
@@ -161,7 +161,7 @@ public class ValidationTests
         var product = new Product(null!, "gel", CarbsG: 25, SodiumMg: 100);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Product name cannot be empty", exception.Message);
     }
 
@@ -172,7 +172,7 @@ public class ValidationTests
         var product = new Product("Test", "", CarbsG: 25, SodiumMg: 100);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Product type cannot be empty", exception.Message);
     }
 
@@ -183,7 +183,7 @@ public class ValidationTests
         var product = new Product("Test", "gel", CarbsG: -5, SodiumMg: 100);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Carbohydrates cannot be negative", exception.Message);
     }
 
@@ -194,7 +194,7 @@ public class ValidationTests
         var product = new Product("Test", "gel", CarbsG: 25, SodiumMg: -10);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Sodium cannot be negative", exception.Message);
     }
 
@@ -205,7 +205,7 @@ public class ValidationTests
         var product = new Product("Test Drink", "drink", CarbsG: 30, SodiumMg: 200, VolumeMl: -500);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Volume cannot be negative", exception.Message);
     }
 
@@ -216,7 +216,7 @@ public class ValidationTests
         var product = new Product("Test Drink", "drink", CarbsG: 30, SodiumMg: 200, VolumeMl: 0);
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateProduct(product));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
         Assert.Contains("Drink products must have a positive volume", exception.Message);
     }
 
@@ -251,7 +251,7 @@ public class ValidationTests
         int interval = 0;
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateInterval(interval));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateInterval(interval));
         Assert.Contains("Interval must be greater than 0", exception.Message);
     }
 
@@ -262,7 +262,7 @@ public class ValidationTests
         int interval = -15;
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateInterval(interval));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateInterval(interval));
         Assert.Contains("Interval must be greater than 0", exception.Message);
     }
 
@@ -273,7 +273,7 @@ public class ValidationTests
         int interval = 150;
 
         // Act & Assert
-        var exception = Assert.Throws<ValidationException>(() => Validation.ValidateInterval(interval));
+        var exception = Should.Throw<ValidationException>(() => Validation.ValidateInterval(interval));
         Assert.Contains("Interval cannot exceed 120 minutes", exception.Message);
     }
 

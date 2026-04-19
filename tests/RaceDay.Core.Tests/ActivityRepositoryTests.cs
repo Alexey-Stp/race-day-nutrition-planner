@@ -13,8 +13,8 @@ public class ActivityRepositoryTests
         var activities = await ActivityRepository.GetAllActivitiesAsync();
 
         // Assert
-        Assert.NotNull(activities);
-        Assert.NotEmpty(activities);
+        activities.ShouldNotBeNull();
+        activities.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -27,8 +27,8 @@ public class ActivityRepositoryTests
         var activities = await ActivityRepository.GetAllActivitiesAsync(cts.Token);
 
         // Assert
-        Assert.NotNull(activities);
-        Assert.NotEmpty(activities);
+        activities.ShouldNotBeNull();
+        activities.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -40,12 +40,12 @@ public class ActivityRepositoryTests
         // Assert
         foreach (var activity in activities)
         {
-            Assert.False(string.IsNullOrWhiteSpace(activity.Id));
-            Assert.False(string.IsNullOrWhiteSpace(activity.Name));
-            Assert.False(string.IsNullOrWhiteSpace(activity.Description));
-            Assert.NotEqual(0, activity.MinDurationHours);
-            Assert.NotEqual(0, activity.MaxDurationHours);
-            Assert.True(activity.MinDurationHours <= activity.MaxDurationHours, 
+            (string.IsNullOrWhiteSpace(activity.Id)).ShouldBeFalse();
+            (string.IsNullOrWhiteSpace(activity.Name)).ShouldBeFalse();
+            (string.IsNullOrWhiteSpace(activity.Description)).ShouldBeFalse();
+            activity.MinDurationHours.ShouldNotBe(0);
+            activity.MaxDurationHours.ShouldNotBe(0);
+            (activity.MinDurationHours <= activity.MaxDurationHours).ShouldBeTrue(
                 "MinDuration should be <= MaxDuration");
         }
     }
@@ -58,7 +58,7 @@ public class ActivityRepositoryTests
         var second = await ActivityRepository.GetAllActivitiesAsync();
 
         // Assert - should return the same cached instance
-        Assert.Same(first, second);
+        first.ShouldBeSameAs(second);
     }
 
     [Fact]
@@ -69,9 +69,9 @@ public class ActivityRepositoryTests
         var activityIds = activities.Select(a => a.Id).ToList();
 
         // Assert - verify some known activities exist
-        Assert.Contains("run", activityIds);
-        Assert.Contains("bike", activityIds);
-        Assert.Contains("triathlon", activityIds);
+        activityIds.ShouldContain("run");
+        activityIds.ShouldContain("bike");
+        activityIds.ShouldContain("triathlon");
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class ActivityRepositoryTests
         // Assert
         var ids = activities.Select(a => a.Id).ToList();
         var uniqueIds = ids.Distinct().ToList();
-        Assert.Equal(ids.Count, uniqueIds.Count);
+        uniqueIds.Count.ShouldBe(ids.Count);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class ActivityRepositoryTests
         foreach (var activity in activities)
         {
             var isValidSportType = Enum.IsDefined(typeof(SportType), activity.SportType);
-            Assert.True(isValidSportType, $"Invalid SportType: {activity.SportType}");
+            (isValidSportType).ShouldBeTrue($"Invalid SportType: {activity.SportType}");
         }
     }
 
@@ -108,7 +108,7 @@ public class ActivityRepositoryTests
         var sportTypes = activities.Select(a => a.SportType).Distinct().ToList();
 
         // Assert - should have at least 2 different sport types
-        Assert.True(sportTypes.Count >= 2, 
+        (sportTypes.Count >= 2).ShouldBeTrue(
             $"Expected at least 2 sport types, but found {sportTypes.Count}");
     }
 
@@ -123,8 +123,8 @@ public class ActivityRepositoryTests
         var activity = await ActivityRepository.GetActivityByIdAsync("run");
 
         // Assert
-        Assert.NotNull(activity);
-        Assert.Equal("run", activity.Id);
+        activity.ShouldNotBeNull();
+        activity.Id.ShouldBe("run");
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class ActivityRepositoryTests
         var activity = await ActivityRepository.GetActivityByIdAsync("nonexistent-activity");
 
         // Assert
-        Assert.Null(activity);
+        activity.ShouldBeNull();
     }
 
     [Fact]
@@ -145,8 +145,8 @@ public class ActivityRepositoryTests
         var upperCase = await ActivityRepository.GetActivityByIdAsync("RUN");
 
         // Assert
-        Assert.NotNull(lowerCase);
-        Assert.Null(upperCase);
+        lowerCase.ShouldNotBeNull();
+        upperCase.ShouldBeNull();
     }
 
     #endregion
@@ -160,8 +160,8 @@ public class ActivityRepositoryTests
         var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(SportType.Run);
 
         // Assert
-        Assert.NotNull(activities);
-        Assert.NotEmpty(activities);
+        activities.ShouldNotBeNull();
+        activities.ShouldNotBeEmpty();
         Assert.All(activities, a => Assert.Equal(SportType.Run, a.SportType));
     }
 
@@ -173,7 +173,7 @@ public class ActivityRepositoryTests
             (SportType)999); // Invalid sport type
 
         // Assert
-        Assert.Empty(activities);
+        activities.ShouldBeEmpty();
     }
 
     [Fact]
@@ -197,8 +197,8 @@ public class ActivityRepositoryTests
         var results = await ActivityRepository.SearchActivitiesAsync("run");
 
         // Assert
-        Assert.NotNull(results);
-        Assert.NotEmpty(results);
+        results.ShouldNotBeNull();
+        results.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public class ActivityRepositoryTests
         var results = await ActivityRepository.SearchActivitiesAsync("nonexistentactivity123");
 
         // Assert
-        Assert.Empty(results);
+        results.ShouldBeEmpty();
     }
 
     [Fact]
@@ -220,10 +220,10 @@ public class ActivityRepositoryTests
         var mixedCase = await ActivityRepository.SearchActivitiesAsync("RuN");
 
         // Assert
-        Assert.Equal(lowerCase.Count, upperCase.Count);
-        Assert.Equal(lowerCase.Count, mixedCase.Count);
-        Assert.All(new[] { lowerCase, upperCase, mixedCase }, 
-            results => Assert.NotEmpty(results));
+        upperCase.Count.ShouldBe(lowerCase.Count);
+        mixedCase.Count.ShouldBe(lowerCase.Count);
+        Assert.All(new[] { lowerCase, upperCase, mixedCase },
+            results => results.ShouldNotBeEmpty());
     }
 
     #endregion

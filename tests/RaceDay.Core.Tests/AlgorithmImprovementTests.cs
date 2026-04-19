@@ -25,7 +25,7 @@ public class AlgorithmImprovementTests
         for (int i = 0; i < plan.Count - 1; i++)
         {
             var timeDiff = plan[i + 1].TimeMin - plan[i].TimeMin;
-            Assert.True(timeDiff >= SchedulingConstraints.ClusterWindow, 
+            (timeDiff >= SchedulingConstraints.ClusterWindow).ShouldBeTrue(
                 $"Items at {plan[i].TimeMin}min and {plan[i + 1].TimeMin}min are too close ({timeDiff}min < {SchedulingConstraints.ClusterWindow}min)");
         }
     }
@@ -43,14 +43,14 @@ public class AlgorithmImprovementTests
 
         // Assert - Should include drink products
         var drinkItems = plan.Where(e => products.FirstOrDefault(p => p.Name == e.ProductName)?.Texture == ProductTexture.Drink).ToList();
-        Assert.NotEmpty(drinkItems);
+        drinkItems.ShouldNotBeEmpty();
         
         // Drinks should provide significant portion of carbs
         var drinkCarbs = drinkItems.Sum(e => products.FirstOrDefault(p => p.Name == e.ProductName)?.CarbsG ?? 0);
         var totalCarbs = plan.Last().TotalCarbsSoFar;
         var drinkPercent = drinkCarbs / totalCarbs;
         
-        Assert.True(drinkPercent >= 0.2, $"Drinks should provide at least 20% of carbs, actual: {drinkPercent:P0}");
+        (drinkPercent >= 0.2).ShouldBeTrue($"Drinks should provide at least 20% of carbs, actual: {drinkPercent:P0}");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class AlgorithmImprovementTests
             
             foreach (var item in caffeineItems)
             {
-                Assert.True(item.TimeMin >= minCaffeineTime, 
+                (item.TimeMin >= minCaffeineTime).ShouldBeTrue(
                     $"Caffeine item at {item.TimeMin}min is before preferred start at {minCaffeineTime}min");
             }
         }
@@ -94,7 +94,7 @@ public class AlgorithmImprovementTests
 
         // Assert
         var totalCaffeine = plan.Where(e => e.HasCaffeine).Sum(e => e.CaffeineMg ?? 0);
-        Assert.Equal(0, totalCaffeine);
+        totalCaffeine.ShouldBe(0);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public class AlgorithmImprovementTests
         var runCarbs = plan.Where(e => e.Phase == RacePhase.Run)
             .Sum(e => products.FirstOrDefault(p => p.Name == e.ProductName)?.CarbsG ?? 0);
 
-        Assert.True(bikeCarbs > runCarbs, 
+        (bikeCarbs > runCarbs).ShouldBeTrue(
             $"Bike phase should have more carbs than run. Bike: {bikeCarbs}g, Run: {runCarbs}g");
         
         // Should be roughly 70/30 split (with some tolerance)
@@ -122,7 +122,7 @@ public class AlgorithmImprovementTests
         if (totalPhaseCarbs > 0)
         {
             var bikeRatio = bikeCarbs / totalPhaseCarbs;
-            Assert.True(bikeRatio >= 0.55, $"Bike should have at least 55% of carbs, actual: {bikeRatio:P0}");
+            (bikeRatio >= 0.55).ShouldBeTrue($"Bike should have at least 55% of carbs, actual: {bikeRatio:P0}");
         }
     }
 
@@ -146,9 +146,90 @@ public class AlgorithmImprovementTests
             var mostUsed = productCounts.Values.Max();
             var mostUsedPercent = (double)mostUsed / plan.Count;
             
-            Assert.True(mostUsedPercent < 0.75, 
+            (mostUsedPercent < 0.75).ShouldBeTrue(
                 $"Single product used {mostUsedPercent:P0} of time - diversity should be better");
         }
+    }
+
+    [Fact]
+    public void BuildSlots_Triathlon_ProducesEventsInBothBikeAndRunPhases()
+    {
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(SportType.Triathlon, DurationHours: 4, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = CreateProductsWithDrinks();
+
+        // Act
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        // Assert — plan is generated successfully with events in both sport-specific phases.
+        // The slot intervals used per phase (CyclingSlotIntervalMin for Bike, RunningSlotIntervalMin for Run)
+        // drive the base schedule density, so both phases must be populated.
+        var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike).ToList();
+        var runEvents = plan.Where(e => e.Phase == RacePhase.Run).ToList();
+
+        bikeEvents.ShouldNotBeEmpty();
+        runEvents.ShouldNotBeEmpty();
+
+        // Drink events must respect MinDrinkSpacing within each phase
+        var bikeDrinks = bikeEvents.Where(e => e.SipMl != null).OrderBy(e => e.TimeMin).ToList();
+        for (int i = 1; i < bikeDrinks.Count; i++)
+        {
+            var gap = bikeDrinks[i].TimeMin - bikeDrinks[i - 1].TimeMin;
+            (gap >= SchedulingConstraints.SipIntervalMinutes).ShouldBeTrue(
+                $"Bike sip events at {bikeDrinks[i - 1].TimeMin}min and {bikeDrinks[i].TimeMin}min are closer than {SchedulingConstraints.SipIntervalMinutes}min");
+        }
+
+        var runDrinks = runEvents.Where(e => e.SipMl != null).OrderBy(e => e.TimeMin).ToList();
+        for (int i = 1; i < runDrinks.Count; i++)
+        {
+            var gap = runDrinks[i].TimeMin - runDrinks[i - 1].TimeMin;
+            (gap >= SchedulingConstraints.SipIntervalMinutes).ShouldBeTrue(
+                $"Run sip events at {runDrinks[i - 1].TimeMin}min and {runDrinks[i].TimeMin}min are closer than {SchedulingConstraints.SipIntervalMinutes}min");
+        }
+    }
+
+    [Fact]
+    public void EnforceFrontLoadConstraint_ExcessiveFrontLoading_ConstraintRespected()
+    {
+        // Arrange — build a synthetic plan with intentionally excessive front-loading
+        // and call EnforceFrontLoadConstraint directly via reflection.
+        int durationMinutes = 240; // 4-hour race
+        int windowEnd = (int)(durationMinutes * SchedulingConstraints.FrontLoadWindowFraction); // first 60 min
+
+        var plan = new List<NutritionEvent>
+        {
+            // 200g in first 60 min — far exceeds 40% of 250g total
+            new(TimeMin: 0,  Phase: RacePhase.Bike, PhaseDescription: "Bike", ProductName: "Bar", AmountPortions: 1, Action: "Eat", TotalCarbsSoFar: 80,  HasCaffeine: false, CaffeineMg: null, TotalCaffeineSoFar: 0, CarbsInEvent: 80),
+            new(TimeMin: 20, Phase: RacePhase.Bike, PhaseDescription: "Bike", ProductName: "Bar", AmountPortions: 1, Action: "Eat", TotalCarbsSoFar: 160, HasCaffeine: false, CaffeineMg: null, TotalCaffeineSoFar: 0, CarbsInEvent: 80),
+            new(TimeMin: 50, Phase: RacePhase.Bike, PhaseDescription: "Bike", ProductName: "Gel", AmountPortions: 1, Action: "Eat", TotalCarbsSoFar: 190, HasCaffeine: false, CaffeineMg: null, TotalCaffeineSoFar: 0, CarbsInEvent: 30),
+            // 50g after window — must be kept
+            new(TimeMin: 120, Phase: RacePhase.Bike, PhaseDescription: "Bike", ProductName: "Gel", AmountPortions: 1, Action: "Eat", TotalCarbsSoFar: 215, HasCaffeine: false, CaffeineMg: null, TotalCaffeineSoFar: 0, CarbsInEvent: 25),
+            new(TimeMin: 180, Phase: RacePhase.Run,  PhaseDescription: "Run",  ProductName: "Gel", AmountPortions: 1, Action: "Eat", TotalCarbsSoFar: 240, HasCaffeine: false, CaffeineMg: null, TotalCaffeineSoFar: 0, CarbsInEvent: 25),
+        };
+
+        // Act — call private static method via reflection
+        var method = typeof(PlanGenerator).GetMethod(
+            "EnforceFrontLoadConstraint",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        method.ShouldNotBeNull(); // guard: method must exist
+        method.Invoke(null, [plan, durationMinutes, 0.0]);
+
+        // Assert — constraint respected
+        var totalCarbs = plan.Sum(e => e.CarbsInEvent);
+        var frontCarbs = plan.Where(e => e.TimeMin <= windowEnd && e.SipMl == null).Sum(e => e.CarbsInEvent);
+
+        if (totalCarbs > 0)
+        {
+            var ratio = frontCarbs / totalCarbs;
+            (ratio <= SchedulingConstraints.MaxFrontLoadFraction).ShouldBeTrue(
+                $"Front-load ratio {ratio:P1} still exceeds {SchedulingConstraints.MaxFrontLoadFraction:P0} after enforcement. " +
+                $"Front: {frontCarbs}g / Total: {totalCarbs}g");
+        }
+
+        // Events after the window must all be preserved
+        (plan.Any(e => e.TimeMin > windowEnd)).ShouldBeTrue(
+            "Events after front-load window should not be removed");
     }
 
     private List<ProductEnhanced> CreateTestProducts()

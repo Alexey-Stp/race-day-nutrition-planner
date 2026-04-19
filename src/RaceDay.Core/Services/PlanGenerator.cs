@@ -25,12 +25,29 @@ public class PlanGenerator
         public int TotalIntakes { get; set; }
         public Queue<string> LastProductNames { get; set; } = new();
 
+        // Dynamic selection context fields (sentinel -1 = no event recorded yet)
+        public int LastDrinkTimeMin { get; set; } = -1;
+        public ProductEnhanced? LastNonSipProduct { get; set; }
+        public int LastNonSipTimeMin { get; set; } = -1;
+
         public void RecordProduct(string productName)
         {
             LastProductNames.Enqueue(productName);
             if (LastProductNames.Count > 5)
                 LastProductNames.Dequeue();
             TotalIntakes++;
+        }
+
+        public void RecordProduct(string productName, int timeMin, ProductEnhanced product, bool isSip)
+        {
+            RecordProduct(productName);
+            if (isSip)
+                LastDrinkTimeMin = timeMin;
+            else
+            {
+                LastNonSipProduct = product;
+                LastNonSipTimeMin = timeMin;
+            }
         }
 
         public int GetConsecutiveUseCount(string productName)
@@ -45,7 +62,6 @@ public class PlanGenerator
         RaceProfile race,
         AthleteProfile athlete,
         List<ProductEnhanced> products,
-        int intervalMinutes = 22,
         bool caffeineEnabled = false)
     {
         var raceMode = DetermineRaceMode(race.SportType);
@@ -73,10 +89,13 @@ public class PlanGenerator
         FillSlotsWithScoredProducts(plan, state, products, slots, targets, durationHours, caffeineEnabled);
 
         // === PHASE 4: Fill gaps if under target ===
-        FillGapsIfUnderTarget(plan, state, products, phases, targets, durationMinutes, raceMode);
+        FillGapsIfUnderTarget(plan, state, products, phases, targets, durationMinutes, raceMode, caffeineEnabled);
 
         // === PHASE 5: Recalculate cumulative totals ===
         RecalculateCumulativeTotals(plan, products);
+
+        // === PHASE 5b: Enforce front-load constraint ===
+        EnforceFrontLoadConstraint(plan, durationMinutes, targets.CarbsG);
 
         // === PHASE 6: Target reconciliation ===
         ReconcileToTarget(plan, products, targets, durationMinutes, phases);
@@ -88,6 +107,9 @@ public class PlanGenerator
         // === PHASE 6c: Ensure full-duration coverage ===
         EnsureFullDurationCoverage(plan, products, phases, targets, durationMinutes);
 
+        // === PHASE 6d: Guarantee at least one event at or after 85% of race duration ===
+        EnsureMinimumLastEventTime(plan, products, phases, durationMinutes);
+
         // === PHASE 7: Validate ===
         var validationResult = ValidateAndAutoFix(plan, targets, products, durationMinutes, caffeineEnabled);
         return validationResult.Plan;
@@ -97,10 +119,9 @@ public class PlanGenerator
         RaceProfile race,
         AthleteProfile athlete,
         List<ProductEnhanced> products,
-        int intervalMinutes = 22,
         bool caffeineEnabled = false)
     {
-        var plan = GeneratePlan(race, athlete, products, intervalMinutes, caffeineEnabled);
+        var plan = GeneratePlan(race, athlete, products, caffeineEnabled);
         var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled);
         var durationMinutes = (int)(race.DurationHours * 60);
         var validationResult = ValidateAndAutoFix(plan, targets, products, durationMinutes, caffeineEnabled);
@@ -132,7 +153,7 @@ public class PlanGenerator
 
         state.TotalCarbs += preRaceProduct.CarbsG;
         state.TotalSodium += preRaceProduct.SodiumMg;
-        state.RecordProduct(preRaceProduct.Name);
+        state.RecordProduct(preRaceProduct.Name, -15, preRaceProduct, isSip: false);
         plan.Add(new NutritionEvent(
             TimeMin: -15,
             Phase: mainPhase,
@@ -256,7 +277,7 @@ public class PlanGenerator
             state.TotalFluid += actualSipMl;
             if (drink.HasCaffeine)
                 state.TotalCaffeineMg += drink.CaffeineMg * portionFraction;
-            state.RecordProduct(drink.Name);
+            state.RecordProduct(drink.Name, timeMin, drink, isSip: true);
 
             plan.Add(new NutritionEvent(
                 TimeMin: timeMin,
@@ -316,11 +337,11 @@ public class PlanGenerator
 
             // Select non-drink product (drinks handled by sip backbone)
             var nonDrinkProducts = products.Where(p => p.Texture != ProductTexture.Drink).ToList();
-            var product = SelectBestProduct(nonDrinkProducts, slot.Phase, remainingNeeds, state, raceProgress, caffeineEnabled);
+            var product = SelectBestProduct(nonDrinkProducts, slot.Phase, remainingNeeds, state, raceProgress, caffeineEnabled, slot.TimeMin);
             if (product == null)
             {
                 // Fall back to any product if no non-drink available
-                product = SelectBestProduct(products, slot.Phase, remainingNeeds, state, raceProgress, caffeineEnabled);
+                product = SelectBestProduct(products, slot.Phase, remainingNeeds, state, raceProgress, caffeineEnabled, slot.TimeMin);
             }
             if (product == null)
                 continue;
@@ -328,7 +349,7 @@ public class PlanGenerator
             state.TotalCarbs += product.CarbsG;
             state.TotalSodium += product.SodiumMg;
             state.TotalFluid += product.VolumeMl;
-            state.RecordProduct(product.Name);
+            state.RecordProduct(product.Name, slot.TimeMin, product, isSip: false);
 
             if (product.HasCaffeine)
             {
@@ -361,7 +382,8 @@ public class PlanGenerator
         List<PhaseSegment> phases,
         MultiNutrientTargets targets,
         int durationMinutes,
-        RaceMode raceMode)
+        RaceMode raceMode,
+        bool caffeineEnabled)
     {
         int safetyMarginMinutes = 5;
         int maxExtraTimeMin = durationMinutes - safetyMarginMinutes;
@@ -382,17 +404,17 @@ public class PlanGenerator
             int bikeEndMin = (int)(bikePhase.EndHour * 60) - AdvancedNutritionConfig.BikeToRunTransitionMarginMin;
             int bikeStartMin = (int)(bikePhase.StartHour * 60);
 
-            AddExtraProducts(plan, state, products, raceMode, bikeStartMin, bikeEndMin, RacePhase.Bike, bikeTargetCarbs, targets.CarbsG, 15);
+            AddExtraProducts(plan, state, products, raceMode, bikeStartMin, bikeEndMin, RacePhase.Bike, bikeTargetCarbs, targets.CarbsG, 15, caffeineEnabled);
 
             int runStartMin = (int)(runPhase.StartHour * 60);
             int runEndMin = Math.Min((int)(runPhase.EndHour * 60), maxExtraTimeMin);
-            AddExtraProducts(plan, state, products, raceMode, runStartMin, runEndMin, RacePhase.Run, targets.CarbsG, targets.CarbsG, 20);
+            AddExtraProducts(plan, state, products, raceMode, runStartMin, runEndMin, RacePhase.Run, targets.CarbsG, targets.CarbsG, 20, caffeineEnabled);
         }
         else
         {
             // Distribute across full duration, not just from end
             int startMin = 10;
-            AddExtraProducts(plan, state, products, raceMode, startMin, maxExtraTimeMin, finalPhase, targets.CarbsG, targets.CarbsG, 15);
+            AddExtraProducts(plan, state, products, raceMode, startMin, maxExtraTimeMin, finalPhase, targets.CarbsG, targets.CarbsG, 15, caffeineEnabled);
         }
     }
 
@@ -405,12 +427,13 @@ public class PlanGenerator
         RacePhase phase,
         double phaseTargetCarbs,
         double totalTargetCarbs,
-        int minSpacing)
+        int minSpacing,
+        bool caffeineEnabled)
     {
         int attempts = 0;
         while (state.TotalCarbs < phaseTargetCarbs && state.TotalCarbs < totalTargetCarbs && attempts < 30)
         {
-            var extraProduct = SelectExtraProduct(raceMode, products);
+            var extraProduct = SelectExtraProduct(raceMode, products, caffeineEnabled);
             if (extraProduct == null) break;
 
             var existingTimes = plan.Where(e => e.Phase == phase && e.Action != "Sip")
@@ -469,6 +492,41 @@ public class PlanGenerator
                 TotalCaffeineSoFar = Math.Round(cumulativeCaffeine, 1),
                 CarbsInEvent = Math.Round(eventCarbs, 1)
             };
+        }
+    }
+
+    // ─── Phase 5b: Front-load constraint ──────────────────────────
+
+    private static void EnforceFrontLoadConstraint(List<NutritionEvent> plan, int durationMinutes, double targetCarbsG)
+    {
+        if (plan.Count == 0) return;
+
+        var windowEnd = (int)(durationMinutes * SchedulingConstraints.FrontLoadWindowFraction);
+        var totalCarbs = plan.Sum(e => e.CarbsInEvent);
+        if (totalCarbs <= 0) return;
+
+        var frontCarbs = plan
+            .Where(e => e.TimeMin >= 0 && e.TimeMin <= windowEnd && e.SipMl == null)
+            .Sum(e => e.CarbsInEvent);
+
+        if (frontCarbs <= totalCarbs * SchedulingConstraints.MaxFrontLoadFraction) return;
+
+        // Remove highest-carb events in the window until constraint is met,
+        // but never drop total carbs below the carb target.
+        var candidates = plan
+            .Where(e => e.TimeMin >= 0 && e.TimeMin <= windowEnd && e.SipMl == null)
+            .OrderByDescending(e => e.CarbsInEvent)
+            .ToList();
+
+        foreach (var evt in candidates)
+        {
+            if (totalCarbs - evt.CarbsInEvent < targetCarbsG) break;
+            plan.Remove(evt);
+            frontCarbs -= evt.CarbsInEvent;
+            totalCarbs -= evt.CarbsInEvent;
+            if (totalCarbs <= 0 ||
+                frontCarbs <= totalCarbs * SchedulingConstraints.MaxFrontLoadFraction)
+                break;
         }
     }
 
@@ -739,9 +797,48 @@ public class PlanGenerator
         }
 
         RecalculateCumulativeTotals(plan, products);
+    }
 
-        // Re-reconcile if we've overshot due to the added events
-        ReconcileToTarget(plan, products, targets, durationMinutes, phases);
+    // ─── Phase 6d: Guarantee minimum last event time ──────────────
+
+    private static void EnsureMinimumLastEventTime(
+        List<NutritionEvent> plan,
+        List<ProductEnhanced> products,
+        List<PhaseSegment> phases,
+        int durationMinutes)
+    {
+        int minLastEventTime = (int)(durationMinutes * SchedulingConstraints.MinCoverageRatio);
+        int lastEventTime = plan.Where(e => e.TimeMin > 0).Select(e => e.TimeMin).DefaultIfEmpty(0).Max();
+        if (lastEventTime >= minLastEventTime) return;
+
+        var lastPhase = phases.LastOrDefault()?.Phase ?? RacePhase.Run;
+        double hour = minLastEventTime / 60.0;
+        var segment = phases.FirstOrDefault(p => hour >= p.StartHour && hour < p.EndHour)
+                   ?? phases.LastOrDefault();
+        var phase = segment?.Phase ?? lastPhase;
+
+        var product = products.FirstOrDefault(p => !p.HasCaffeine &&
+                          (p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel))
+                   ?? products.FirstOrDefault(p => p.Texture == ProductTexture.Drink);
+        if (product == null) return;
+
+        bool isSip = product.Texture == ProductTexture.Drink;
+        double drinkVolume = product.VolumeMl > 0 ? product.VolumeMl : SchedulingConstraints.DefaultDrinkVolumeMl;
+        plan.Add(new NutritionEvent(
+            TimeMin: minLastEventTime,
+            Phase: phase,
+            PhaseDescription: GetPhaseDescription(phase),
+            ProductName: product.Name,
+            AmountPortions: isSip ? Math.Round((double)SchedulingConstraints.SipVolumeMl / drinkVolume, 2) : 1,
+            Action: isSip ? "Sip" : GetAction(product.Texture),
+            TotalCarbsSoFar: 0,
+            HasCaffeine: false,
+            CaffeineMg: null,
+            TotalCaffeineSoFar: 0,
+            CarbsInEvent: isSip ? Math.Round(product.CarbsG * SchedulingConstraints.SipVolumeMl / drinkVolume, 1) : product.CarbsG,
+            SipMl: isSip ? SchedulingConstraints.SipVolumeMl : null
+        ));
+        RecalculateCumulativeTotals(plan, products);
     }
 
     // ─── Product scoring & selection ──────────────────────────────
@@ -752,7 +849,8 @@ public class PlanGenerator
         MultiNutrientTargets remainingNeeds,
         PlannerState state,
         double raceProgressPercent,
-        bool caffeineEnabled)
+        bool caffeineEnabled,
+        int currentTimeMin = 0)
     {
         bool caffeineAllowedNow = caffeineEnabled && raceProgressPercent >= SchedulingConstraints.CaffeinePreferredStartPercent;
 
@@ -762,7 +860,7 @@ public class PlanGenerator
             .Select(p => new
             {
                 Product = p,
-                Score = ScoreProduct(p, segment, remainingNeeds, state, raceProgressPercent)
+                Score = ScoreProduct(p, segment, remainingNeeds, state, raceProgressPercent, currentTimeMin)
             })
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
@@ -786,7 +884,8 @@ public class PlanGenerator
         RacePhase segment,
         MultiNutrientTargets remainingNeeds,
         PlannerState state,
-        double raceProgressPercent)
+        double raceProgressPercent,
+        int currentTimeMin = 0)
     {
         double score = 0.0;
         score += product.CarbsG * 2.0;
@@ -817,6 +916,15 @@ public class PlanGenerator
         double intakesPerHour = state.TotalIntakes / (raceProgressPercent + 0.1);
         if (intakesPerHour > SchedulingConstraints.MaxIntakesPerHour)
             score -= 10;
+
+        var dynContext = new ProductSelectionContext(
+            LastNonSipProduct:  state.LastNonSipProduct,
+            LastNonSipTimeMin:  state.LastNonSipTimeMin,
+            LastDrinkTimeMin:   state.LastDrinkTimeMin,
+            CurrentTimeMin:     currentTimeMin,
+            CurrentPhase:       segment
+        );
+        score += DynamicSelectionStrategy.CalculateTotalDynamicBonus(product, dynContext);
 
         return score;
     }
@@ -882,11 +990,15 @@ public class PlanGenerator
         return 0.0;
     }
 
-    private static ProductEnhanced? SelectExtraProduct(RaceMode mode, List<ProductEnhanced> products) =>
+    private static ProductEnhanced? SelectExtraProduct(RaceMode mode, List<ProductEnhanced> products, bool caffeineEnabled) =>
         mode switch
         {
-            RaceMode.Cycling => products.FirstOrDefault(p => p.Texture == ProductTexture.Chew || p.Texture == ProductTexture.Bake),
-            _ => products.FirstOrDefault(p => p.Texture == ProductTexture.Gel)
+            RaceMode.Cycling => products.FirstOrDefault(p =>
+                (p.Texture == ProductTexture.Chew || p.Texture == ProductTexture.Bake) &&
+                (!p.HasCaffeine || caffeineEnabled)),
+            _ => products.FirstOrDefault(p =>
+                p.Texture == ProductTexture.Gel &&
+                (!p.HasCaffeine || caffeineEnabled))
         };
 
     // ─── Helpers ──────────────────────────────────────────────────
@@ -985,9 +1097,9 @@ public class PlanGenerator
             if (isTriathlon)
             {
                 if (currentPhase?.Phase == RacePhase.Bike)
-                    currentTime += 18;
+                    currentTime += GetSlotInterval(RaceMode.Cycling);
                 else if (currentPhase?.Phase == RacePhase.Run)
-                    currentTime += 25;
+                    currentTime += GetSlotInterval(RaceMode.Running);
                 else
                     currentTime += slotInterval;
             }

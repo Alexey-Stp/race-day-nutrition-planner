@@ -32,10 +32,12 @@ export const NutritionSummary: React.FC<NutritionSummaryProps> = ({
       ? plan.nutritionSchedule
       : plan.nutritionSchedule.filter(event => !event.hasCaffeine);
 
-    const carbs = schedule.reduce((sum, e) => sum + (e.carbsInEvent ?? 0), 0) ||
-      (schedule.length > 0 ? schedule.at(-1)!.totalCarbsSoFar : 0);
-    
-    const caffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg || 0), 0);
+    const reducedCarbs = schedule.reduce((sum, e) => sum + (e.carbsInEvent ?? 0), 0);
+    const carbs = reducedCarbs > 0
+      ? reducedCarbs
+      : schedule.at(-1)?.totalCarbsSoFar ?? 0;
+
+    const caffeine = schedule.reduce((sum, event) => sum + (event.caffeineMg ?? 0), 0);
 
     return { totalCarbs: carbs, totalCaffeine: caffeine };
   }, [plan.nutritionSchedule, useCaffeine]);

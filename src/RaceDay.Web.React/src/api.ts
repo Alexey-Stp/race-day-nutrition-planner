@@ -89,8 +89,8 @@ export const api = {
         productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
-        volumeMl: p.volumeMl || 0,
-        caffeineMg: p.caffeineMg || null
+        volumeMl: p.volumeMl ?? 0,
+        caffeineMg: p.caffeineMg ?? null
       }))
     };
 
