@@ -107,6 +107,9 @@ public class PlanGenerator
         // === PHASE 6c: Ensure full-duration coverage ===
         EnsureFullDurationCoverage(plan, products, phases, targets, durationMinutes);
 
+        // === PHASE 6d: Guarantee at least one event at or after 85% of race duration ===
+        EnsureMinimumLastEventTime(plan, products, phases, durationMinutes);
+
         // === PHASE 7: Validate ===
         var validationResult = ValidateAndAutoFix(plan, targets, products, durationMinutes, caffeineEnabled);
         return validationResult.Plan;
@@ -794,9 +797,48 @@ public class PlanGenerator
         }
 
         RecalculateCumulativeTotals(plan, products);
+    }
 
-        // Re-reconcile if we've overshot due to the added events
-        ReconcileToTarget(plan, products, targets, durationMinutes, phases);
+    // ─── Phase 6d: Guarantee minimum last event time ──────────────
+
+    private static void EnsureMinimumLastEventTime(
+        List<NutritionEvent> plan,
+        List<ProductEnhanced> products,
+        List<PhaseSegment> phases,
+        int durationMinutes)
+    {
+        int minLastEventTime = (int)(durationMinutes * SchedulingConstraints.MinCoverageRatio);
+        int lastEventTime = plan.Where(e => e.TimeMin > 0).Select(e => e.TimeMin).DefaultIfEmpty(0).Max();
+        if (lastEventTime >= minLastEventTime) return;
+
+        var lastPhase = phases.LastOrDefault()?.Phase ?? RacePhase.Run;
+        double hour = minLastEventTime / 60.0;
+        var segment = phases.FirstOrDefault(p => hour >= p.StartHour && hour < p.EndHour)
+                   ?? phases.LastOrDefault();
+        var phase = segment?.Phase ?? lastPhase;
+
+        var product = products.FirstOrDefault(p => !p.HasCaffeine &&
+                          (p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel))
+                   ?? products.FirstOrDefault(p => p.Texture == ProductTexture.Drink);
+        if (product == null) return;
+
+        bool isSip = product.Texture == ProductTexture.Drink;
+        double drinkVolume = product.VolumeMl > 0 ? product.VolumeMl : SchedulingConstraints.DefaultDrinkVolumeMl;
+        plan.Add(new NutritionEvent(
+            TimeMin: minLastEventTime,
+            Phase: phase,
+            PhaseDescription: GetPhaseDescription(phase),
+            ProductName: product.Name,
+            AmountPortions: isSip ? Math.Round((double)SchedulingConstraints.SipVolumeMl / drinkVolume, 2) : 1,
+            Action: isSip ? "Sip" : GetAction(product.Texture),
+            TotalCarbsSoFar: 0,
+            HasCaffeine: false,
+            CaffeineMg: null,
+            TotalCaffeineSoFar: 0,
+            CarbsInEvent: isSip ? Math.Round(product.CarbsG * SchedulingConstraints.SipVolumeMl / drinkVolume, 1) : product.CarbsG,
+            SipMl: isSip ? SchedulingConstraints.SipVolumeMl : null
+        ));
+        RecalculateCumulativeTotals(plan, products);
     }
 
     // ─── Product scoring & selection ──────────────────────────────
