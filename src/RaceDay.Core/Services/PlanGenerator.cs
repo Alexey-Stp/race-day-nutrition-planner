@@ -78,7 +78,7 @@ public class PlanGenerator
         RecalculateCumulativeTotals(plan, products);
 
         // === PHASE 5b: Enforce front-load constraint ===
-        EnforceFrontLoadConstraint(plan, durationMinutes);
+        EnforceFrontLoadConstraint(plan, durationMinutes, targets.CarbsG);
 
         // === PHASE 6: Target reconciliation ===
         ReconcileToTarget(plan, products, targets, durationMinutes, phases);
@@ -475,7 +475,7 @@ public class PlanGenerator
 
     // ─── Phase 5b: Front-load constraint ──────────────────────────
 
-    private static void EnforceFrontLoadConstraint(List<NutritionEvent> plan, int durationMinutes)
+    private static void EnforceFrontLoadConstraint(List<NutritionEvent> plan, int durationMinutes, double targetCarbsG)
     {
         if (plan.Count == 0) return;
 
@@ -484,19 +484,21 @@ public class PlanGenerator
         if (totalCarbs <= 0) return;
 
         var frontCarbs = plan
-            .Where(e => e.TimeMin <= windowEnd && e.SipMl == null)
+            .Where(e => e.TimeMin >= 0 && e.TimeMin <= windowEnd && e.SipMl == null)
             .Sum(e => e.CarbsInEvent);
 
         if (frontCarbs <= totalCarbs * SchedulingConstraints.MaxFrontLoadFraction) return;
 
-        // Remove highest-carb events in the window until constraint is met
+        // Remove highest-carb events in the window until constraint is met,
+        // but never drop total carbs below the carb target.
         var candidates = plan
-            .Where(e => e.TimeMin <= windowEnd && e.SipMl == null)
+            .Where(e => e.TimeMin >= 0 && e.TimeMin <= windowEnd && e.SipMl == null)
             .OrderByDescending(e => e.CarbsInEvent)
             .ToList();
 
         foreach (var evt in candidates)
         {
+            if (totalCarbs - evt.CarbsInEvent < targetCarbsG) break;
             plan.Remove(evt);
             frontCarbs -= evt.CarbsInEvent;
             totalCarbs -= evt.CarbsInEvent;

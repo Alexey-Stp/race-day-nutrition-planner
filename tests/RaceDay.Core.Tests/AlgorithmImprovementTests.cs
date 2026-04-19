@@ -213,7 +213,7 @@ public class AlgorithmImprovementTests
             "EnforceFrontLoadConstraint",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         method.ShouldNotBeNull(); // guard: method must exist
-        method.Invoke(null, [plan, durationMinutes]);
+        method.Invoke(null, [plan, durationMinutes, 0.0]);
 
         // Assert — constraint respected
         var totalCarbs = plan.Sum(e => e.CarbsInEvent);

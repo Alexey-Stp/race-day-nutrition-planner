@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using RaceDay.Core.Services;
 using RaceDay.Core.Repositories;
 using RaceDay.Core.Models;
@@ -19,14 +18,8 @@ public static class ApiEndpointExtensions
     /// </summary>
     private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
 
-    private static ILogger _logger = NullLogger.Instance;
-
-    /// <summary>
-    /// Initialise the shared API logger from the DI-provided factory.
-    /// Call once from Program.cs after app.Build().
-    /// </summary>
-    internal static void Initialize(ILoggerFactory loggerFactory) =>
-        _logger = loggerFactory.CreateLogger("RaceDay.API.Endpoints");
+    // Used as ILogger<T> category marker; cannot use the static class itself as a type argument.
+    private sealed class Log { }
     /// <summary>
     /// Map product-related API endpoints
     /// </summary>
@@ -125,7 +118,7 @@ public static class ApiEndpointExtensions
     }
 
     // Product Handlers
-    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -134,12 +127,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllProductsAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllProductsAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -148,12 +141,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductByIdAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductByIdAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -162,12 +155,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductsByTypeAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductsByTypeAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -179,13 +172,13 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchProductsAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchProductsAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
     // Activity Handlers
-    private static async Task<IResult> GetAllActivitiesAsync(CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllActivitiesAsync(ILogger<Log> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -194,12 +187,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllActivitiesAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllActivitiesAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetActivityByIdAsync(string id, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivityByIdAsync(string id, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -208,12 +201,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivityByIdAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivityByIdAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -225,12 +218,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivitiesByTypeAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivitiesByTypeAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static async Task<IResult> SearchActivitiesAsync(string query, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchActivitiesAsync(string query, ILogger<Log> logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -242,7 +235,7 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchActivitiesAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchActivitiesAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
@@ -252,6 +245,7 @@ public static class ApiEndpointExtensions
         PlanGenerationRequest request,
         IProductRepository repository,
         NutritionPlanService planService,
+        ILogger<Log> logger,
         CancellationToken cancellationToken)
     {
         try
@@ -282,7 +276,7 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GeneratePlanAsync));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GeneratePlanAsync));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
@@ -418,7 +412,7 @@ public static class ApiEndpointExtensions
     }
 
     // Metadata Handlers
-    private static IResult GetUIMetadata()
+    private static IResult GetUIMetadata(ILogger<Log> logger)
     {
         try
         {
@@ -427,12 +421,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetUIMetadata));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetUIMetadata));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetTemperatureMetadata()
+    private static IResult GetTemperatureMetadata(ILogger<Log> logger)
     {
         try
         {
@@ -441,12 +435,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetTemperatureMetadata));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetTemperatureMetadata));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetIntensityMetadata()
+    private static IResult GetIntensityMetadata(ILogger<Log> logger)
     {
         try
         {
@@ -455,12 +449,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetIntensityMetadata));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetIntensityMetadata));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetDefaults()
+    private static IResult GetDefaults(ILogger<Log> logger)
     {
         try
         {
@@ -469,12 +463,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetDefaults));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetDefaults));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult GetConfigurationMetadata()
+    private static IResult GetConfigurationMetadata(ILogger<Log> logger)
     {
         try
         {
@@ -483,12 +477,12 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetConfigurationMetadata));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetConfigurationMetadata));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
 
-    private static IResult CalculateNutritionTargets(TargetsRequest request)
+    private static IResult CalculateNutritionTargets(TargetsRequest request, ILogger<Log> logger)
     {
         var validationError = ValidateTargetsRequest(request);
         if (validationError != null)
@@ -518,7 +512,7 @@ public static class ApiEndpointExtensions
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception in {Handler}", nameof(CalculateNutritionTargets));
+            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(CalculateNutritionTargets));
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }

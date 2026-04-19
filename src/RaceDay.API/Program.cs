@@ -52,9 +52,6 @@ builder.WebHost.UseUrls($"http://+:{Environment.GetEnvironmentVariable("PORT") ?
 
 var app = builder.Build();
 
-// Wire up the shared API endpoint logger
-ApiEndpointExtensions.Initialize(app.Services.GetRequiredService<ILoggerFactory>());
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
