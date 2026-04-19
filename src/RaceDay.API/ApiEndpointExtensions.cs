@@ -116,7 +116,7 @@ public static class ApiEndpointExtensions
     }
 
     // Product Handlers
-    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -130,7 +130,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -144,7 +144,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -158,7 +158,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -176,7 +176,7 @@ public static class ApiEndpointExtensions
     }
 
     // Activity Handlers
-    private static async Task<IResult> GetAllActivitiesAsync(ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAllActivitiesAsync(ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -190,7 +190,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetActivityByIdAsync(string id, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivityByIdAsync(string id, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -204,7 +204,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         try
         {
@@ -221,7 +221,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static async Task<IResult> SearchActivitiesAsync(string query, ILogger<Log> logger, CancellationToken cancellationToken)
+    private static async Task<IResult> SearchActivitiesAsync(string query, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
             return Results.BadRequest("Search query is required");
@@ -243,7 +243,7 @@ public static class ApiEndpointExtensions
         PlanGenerationRequest request,
         IProductRepository repository,
         NutritionPlanService planService,
-        ILogger<Log> logger,
+        ILogger<ApiEndpointsLog> logger,
         CancellationToken cancellationToken)
     {
         try
@@ -412,7 +412,7 @@ public static class ApiEndpointExtensions
     }
 
     // Metadata Handlers
-    private static IResult GetUIMetadata(ILogger<Log> logger)
+    private static IResult GetUIMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -426,7 +426,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static IResult GetTemperatureMetadata(ILogger<Log> logger)
+    private static IResult GetTemperatureMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -440,7 +440,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static IResult GetIntensityMetadata(ILogger<Log> logger)
+    private static IResult GetIntensityMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -454,7 +454,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static IResult GetDefaults(ILogger<Log> logger)
+    private static IResult GetDefaults(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -468,7 +468,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static IResult GetConfigurationMetadata(ILogger<Log> logger)
+    private static IResult GetConfigurationMetadata(ILogger<ApiEndpointsLog> logger)
     {
         try
         {
@@ -482,7 +482,7 @@ public static class ApiEndpointExtensions
         }
     }
 
-    private static IResult CalculateNutritionTargets(TargetsRequest request, ILogger<Log> logger)
+    private static IResult CalculateNutritionTargets(TargetsRequest request, ILogger<ApiEndpointsLog> logger)
     {
         var validationError = ValidateTargetsRequest(request);
         if (validationError != null)
@@ -516,7 +516,10 @@ public static class ApiEndpointExtensions
             return Results.Problem("An unexpected error occurred. Please try again later.");
         }
     }
+
 }
+
+internal sealed class ApiEndpointsLog { }
 
 public record TargetsRequest(
     double AthleteWeightKg,
