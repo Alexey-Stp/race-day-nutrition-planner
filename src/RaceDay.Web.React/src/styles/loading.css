@@ -1,0 +1,25 @@
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(20,18,14,0.35);
+  display: grid; place-items: center; z-index: 50;
+  backdrop-filter: blur(3px);
+}
+.loading-card {
+  background: var(--paper); border-radius: var(--radius);
+  padding: 22px 24px; min-width: 280px; max-width: 360px;
+  box-shadow: var(--shadow-md);
+  display: flex; flex-direction: column; gap: 12px; align-items: center;
+}
+.loading-track {
+  width: 100%; height: 28px;
+  background: linear-gradient(90deg, var(--line) 0 50%, transparent 50%) repeat-x;
+  background-size: 16px 1px;
+  background-position: 0 100%;
+  position: relative;
+}
+.loading-runner {
+  position: absolute; bottom: 0; left: 0;
+  font-size: 22px;
+  animation: run 1.6s linear infinite;
+}
+@keyframes run { from { left: 0; } to { left: calc(100% - 24px); } }
+.loading-msg { font-size: 13px; color: var(--ink-2); text-align: center; }
