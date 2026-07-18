@@ -108,4 +108,342 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
+
+    // ── Product endpoints ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetProductById_ValidId_ReturnsOk()
+    {
+        // First get all products to find a valid ID
+        var allResponse = await _client.GetAsync("/api/products");
+        allResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await allResponse.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var firstId = doc.RootElement[0].GetProperty("id").GetString();
+
+        var response = await _client.GetAsync($"/api/products/{firstId}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetProductById_InvalidId_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync("/api/products/NonExistentProduct_XYZ123");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetProductsByType_Gel_ReturnsOkWithArray()
+    {
+        var response = await _client.GetAsync("/api/products/type/gel");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task SearchProducts_WithQuery_ReturnsOkWithArray()
+    {
+        var response = await _client.GetAsync("/api/products/search?query=gel");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task SearchProducts_EmptyQuery_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync("/api/products/search?query=");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // ── Activity endpoints ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetAllActivities_ReturnsOkWithNonEmptyArray()
+    {
+        var response = await _client.GetAsync("/api/activities");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+        (doc.RootElement.GetArrayLength() > 0).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task GetActivityById_ValidId_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/api/activities/run");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetActivityById_InvalidId_ReturnsNotFound()
+    {
+        var response = await _client.GetAsync("/api/activities/nonexistent_xyz");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetActivitiesByType_ValidType_ReturnsOkWithArray()
+    {
+        var response = await _client.GetAsync("/api/activities/type/Run");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task GetActivitiesByType_InvalidType_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync("/api/activities/type/InvalidSport999");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SearchActivities_WithQuery_ReturnsOkWithArray()
+    {
+        var response = await _client.GetAsync("/api/activities/search?query=run");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.ValueKind.ShouldBe(JsonValueKind.Array);
+    }
+
+    [Fact]
+    public async Task SearchActivities_EmptyQuery_ReturnsBadRequest()
+    {
+        var response = await _client.GetAsync("/api/activities/search?query=");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // ── Metadata endpoints ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetTemperatureMetadata_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/api/metadata/temperatures");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetIntensityMetadata_ReturnsOk()
+    {
+        var response = await _client.GetAsync("/api/metadata/intensities");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GetDefaults_ReturnsOkWithDefaultActivityId()
+    {
+        var response = await _client.GetAsync("/api/metadata/defaults");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.TryGetProperty("defaultActivityId", out _).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task GetConfigurationMetadata_ReturnsOkWithSportConfigs()
+    {
+        var response = await _client.GetAsync("/api/metadata/configuration");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.TryGetProperty("sports", out var sports).ShouldBeTrue();
+        (sports.GetArrayLength() > 0).ShouldBeTrue();
+    }
+
+    // ── Targets endpoint ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task CalculateNutritionTargets_ValidRequest_ReturnsTargets()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 70.0,
+            sportType = "Run",
+            durationHours = 2.0,
+            temperature = "Moderate",
+            intensity = "Hard"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/metadata/targets", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.TryGetProperty("carbsGPerHour", out _).ShouldBeTrue();
+        doc.RootElement.TryGetProperty("fluidsMlPerHour", out _).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task CalculateNutritionTargets_InvalidWeight_ReturnsBadRequest()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 0.0,
+            sportType = "Run",
+            durationHours = 2.0,
+            temperature = "Moderate",
+            intensity = "Hard"
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/metadata/targets", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    // ── GeneratePlan additional cases ────────────────────────────────────────
+
+    [Fact]
+    public async Task GeneratePlan_WithFilter_ReturnsOkPlan()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Run",
+            durationHours = 1.5,
+            temperatureC = 20.0,
+            intensity = "Moderate",
+            caffeineEnabled = false,
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_RunSport_ExcludesDrinksFromFilter()
+    {
+        // Run sport automatically excludes drink/recovery types when using filter
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Run",
+            durationHours = 1.5,
+            temperatureC = 20.0,
+            intensity = "Moderate",
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_WithCaffeineEnabled_ReturnsOk()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 70.0,
+            sportType = "Bike",
+            durationHours = 3.0,
+            temperatureC = 20.0,
+            intensity = "Hard",
+            caffeineEnabled = true,
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_ExcessiveWeight_ReturnsBadRequest()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 250.0,
+            sportType = "Run",
+            durationHours = 1.0,
+            temperatureC = 20.0,
+            intensity = "Moderate",
+            filter = new { }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_ExtremeTemperature_ReturnsBadRequest()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 70.0,
+            sportType = "Run",
+            durationHours = 1.0,
+            temperatureC = 100.0, // out of range
+            intensity = "Moderate",
+            filter = new { }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_WithExplicitProducts_ReturnsOk()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 70.0,
+            sportType = "Run",
+            durationHours = 1.5,
+            temperatureC = 20.0,
+            intensity = "Moderate",
+            products = new[]
+            {
+                new { name = "Test Gel", productType = "gel", carbsG = 25.0, sodiumMg = 50.0, volumeMl = 0.0 }
+            }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_HotWeather_ReturnsOkPlan()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 70.0,
+            sportType = "Bike",
+            durationHours = 2.0,
+            temperatureC = 30.0,
+            intensity = "Moderate",
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
 }
