@@ -20,27 +20,13 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       
-      # Node Setup for React
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-      
       # Install Dependencies
       - name: Install .NET Dependencies
         run: dotnet restore
       
-      - name: Install Node Dependencies
-        working-directory: src/RaceDay.Web.React
-        run: npm ci --ignore-scripts
-      
       # Build
       - name: Build .NET
         run: dotnet build --no-restore
-      
-      - name: Build React
-        working-directory: src/RaceDay.Web.React
-        run: npm run build
       
       # Run Tests with Coverage
       - name: Run .NET Tests with Coverage
