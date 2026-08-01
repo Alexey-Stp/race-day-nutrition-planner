@@ -41,13 +41,17 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
   useEffect(() => {
     if (!plan?.race || !plan?.athlete) { setTargets(null); return; }
+    let active = true;
     api.calculateNutritionTargets(
       plan.athlete.weightKg,
       plan.race.sportType,
       plan.race.durationHours,
       plan.race.temperature,
       plan.race.intensity,
-    ).then(setTargets).catch(console.error);
+    ).then((res) => {
+      if (active) setTargets(res);
+    }).catch(console.error);
+    return () => { active = false; };
   }, [plan]);
 
   const schedule = useMemo(() => {
