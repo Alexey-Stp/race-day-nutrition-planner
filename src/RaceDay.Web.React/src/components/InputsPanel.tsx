@@ -274,6 +274,8 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         <Section label="Brand & products">
           {loadingProducts ? (
             <p className="muted">Loading products…</p>
+          ) : loadError ? (
+            <p className="error">{loadError}</p>
           ) : (
             <>
               <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
