@@ -9,15 +9,23 @@ interface RacePaneProps {
   onExit: () => void;
 }
 
+const eventId = (e: { timeMin: number; productName: string }) => `${e.timeMin}:${e.productName}`;
+
 export const RacePane: React.FC<RacePaneProps> = ({ className = '', plan, useCaffeine, onExit }) => {
   const [startAt, setStartAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [done, setDone] = useState<Set<number>>(new Set());
+  const [done, setDone] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    setStartAt(null);
+    setDone(new Set());
+  }, [plan]);
+
+  useEffect(() => {
+    if (!startAt) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [startAt]);
 
   const schedule = useMemo(() => {
     if (!plan?.nutritionSchedule) return [];
@@ -28,28 +36,28 @@ export const RacePane: React.FC<RacePaneProps> = ({ className = '', plan, useCaf
   const elapsedMin = startAt ? (now - startAt) / 60000 : 0;
 
   const nextEvent = useMemo(() => {
-    return schedule.find((e, i) => !done.has(i) && e.timeMin >= elapsedMin) ?? null;
+    return schedule.find((e) => !done.has(eventId(e)) && e.timeMin >= elapsedMin) ?? null;
   }, [schedule, elapsedMin, done]);
-  const nextIdx = nextEvent ? schedule.indexOf(nextEvent) : -1;
+  const nextId = nextEvent ? eventId(nextEvent) : null;
 
   const countdownSec = nextEvent ? Math.max(0, Math.round((nextEvent.timeMin - elapsedMin) * 60)) : 0;
   const mm = Math.floor(countdownSec / 60).toString().padStart(2, '0');
   const ss = (countdownSec % 60).toString().padStart(2, '0');
 
   const completedCarbs = useMemo(
-    () => schedule.filter((_, i) => done.has(i)).reduce((s, e) => s + (e.carbsInEvent ?? 0), 0),
+    () => schedule.filter((e) => done.has(eventId(e))).reduce((s, e) => s + (e.carbsInEvent ?? 0), 0),
     [schedule, done],
   );
   const completedCaf = useMemo(
-    () => schedule.filter((_, i) => done.has(i)).reduce((s, e) => s + (e.caffeineMg ?? 0), 0),
+    () => schedule.filter((e) => done.has(eventId(e))).reduce((s, e) => s + (e.caffeineMg ?? 0), 0),
     [schedule, done],
   );
 
   const elapsedLabel = startAt ? formatDuration(elapsedMin / 60) : '—';
 
-  const toggle = (i: number) => {
+  const toggle = (id: string) => {
     const n = new Set(done);
-    if (n.has(i)) n.delete(i); else n.add(i);
+    if (n.has(id)) n.delete(id); else n.add(id);
     setDone(n);
   };
 
@@ -85,8 +93,8 @@ export const RacePane: React.FC<RacePaneProps> = ({ className = '', plan, useCaf
             <button
               type="button"
               className="btn-generate"
-              disabled={nextIdx < 0}
-              onClick={() => nextIdx >= 0 && toggle(nextIdx)}
+              disabled={!nextId}
+              onClick={() => nextId && toggle(nextId)}
             >
               Mark taken
             </button>
@@ -104,12 +112,13 @@ export const RacePane: React.FC<RacePaneProps> = ({ className = '', plan, useCaf
         </div>
 
         <ol className="race-list">
-          {schedule.map((e, i) => {
+          {schedule.map((e) => {
+            const id = eventId(e);
             const passed = elapsedMin >= e.timeMin;
             return (
-              <li key={i} className={`race-row ${done.has(i) ? 'is-done' : ''} ${passed ? 'is-passed' : ''}`}>
+              <li key={id} className={`race-row ${done.has(id) ? 'is-done' : ''} ${passed ? 'is-passed' : ''}`}>
                 <label>
-                  <input type="checkbox" checked={done.has(i)} onChange={() => toggle(i)} />
+                  <input type="checkbox" checked={done.has(id)} onChange={() => toggle(id)} />
                   <span className="race-row-time">T+{formatDuration(e.timeMin / 60)}</span>
                   <span className="race-row-title">{e.productName}</span>
                   <span className="race-row-meta">

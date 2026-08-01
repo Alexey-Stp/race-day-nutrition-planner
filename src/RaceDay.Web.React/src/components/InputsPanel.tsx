@@ -39,6 +39,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
   const [brands, setBrands] = useState<string[]>([]);
   const [brand, setBrand] = useState<string>('');
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -56,6 +57,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         }
       } catch (e) {
         console.error(e);
+        if (alive) setLoadError('Failed to load products. Please reload the page.');
       } finally {
         if (alive) setLoadingProducts(false);
       }
@@ -94,7 +96,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
           <div className="field">
             <label htmlFor="weight">Weight</label>
             <div className="num-stepper">
-              <button type="button" onClick={() => setAthleteWeight(Math.max(ATHLETE_WEIGHT.MIN, +(athleteWeight - 0.5).toFixed(1)))}>−</button>
+              <button type="button" onClick={() => setAthleteWeight(Math.min(ATHLETE_WEIGHT.MAX, Math.max(ATHLETE_WEIGHT.MIN, +(athleteWeight - 0.5).toFixed(1))))}>−</button>
               <input
                 id="weight"
                 type="number"
@@ -105,7 +107,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
                 onChange={(e) => setAthleteWeight(Number(e.target.value))}
               />
               <span className="unit">kg</span>
-              <button type="button" onClick={() => setAthleteWeight(Math.min(ATHLETE_WEIGHT.MAX, +(athleteWeight + 0.5).toFixed(1)))}>+</button>
+              <button type="button" onClick={() => setAthleteWeight(Math.min(ATHLETE_WEIGHT.MAX, Math.max(ATHLETE_WEIGHT.MIN, +(athleteWeight + 0.5).toFixed(1))))}>+</button>
             </div>
           </div>
         </Section>
@@ -181,6 +183,8 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         <Section label="Brand & products">
           {loadingProducts ? (
             <p className="muted">Loading products…</p>
+          ) : loadError ? (
+            <p className="error">{loadError}</p>
           ) : (
             <>
               <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
