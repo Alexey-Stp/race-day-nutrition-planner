@@ -70,9 +70,10 @@ public class PlanGenerator
         var durationMinutes = (int)(durationHours * 60);
         var weightKg = athlete.WeightKg;
 
-        var phases = BuildPhaseTimeline(race.SportType, durationHours);
+        var legModel = ResolveLegModel(race);
+        var phases = BuildPhaseTimeline(race.SportType, durationHours, legModel);
         var slots = BuildSlots(durationMinutes, slotInterval, phases);
-        var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled);
+        var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled, legModel);
         var totalCarbs = targets.CarbsG;
 
         var state = InitPlannerState(raceMode, weightKg);
@@ -121,14 +122,20 @@ public class PlanGenerator
         List<ProductEnhanced> products,
         bool caffeineEnabled = false)
     {
+        var legWarnings = CollectLegWarnings(race);
+        var legModel = ResolveLegModel(race);
         var plan = GeneratePlan(race, athlete, products, caffeineEnabled);
-        var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled);
+        var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled, legModel);
         var durationMinutes = (int)(race.DurationHours * 60);
         var validationResult = ValidateAndAutoFix(plan, targets, products, durationMinutes, caffeineEnabled);
 
+        var warnings = legWarnings.Count > 0
+            ? legWarnings.Concat(validationResult.Warnings).ToList()
+            : validationResult.Warnings;
+
         return new PlanResult(
             validationResult.Plan,
-            validationResult.Warnings,
+            warnings,
             validationResult.Errors
         );
     }
@@ -400,7 +407,7 @@ public class PlanGenerator
             if (bikePhase == null || runPhase == null) return;
 
             double remainingCarbs = targets.CarbsG - state.TotalCarbs;
-            double bikeTargetCarbs = state.TotalCarbs + (remainingCarbs * AdvancedNutritionConfig.TriathlonBikeCarbsRatio);
+            double bikeTargetCarbs = state.TotalCarbs + (remainingCarbs * TriathlonLegModel.BikeCarbRatio);
             int bikeEndMin = (int)(bikePhase.EndHour * 60) - AdvancedNutritionConfig.BikeToRunTransitionMarginMin;
             int bikeStartMin = (int)(bikePhase.StartHour * 60);
 
@@ -1030,21 +1037,55 @@ public class PlanGenerator
             _ => AdvancedNutritionConfig.RunningSlotIntervalMin
         };
 
-    private static List<PhaseSegment> BuildPhaseTimeline(SportType sportType, double totalHours)
+    /// <summary>
+    /// Resolve the triathlon leg model for the plan (lenient). Returns null for
+    /// non-triathlon sports, where legs are not applicable.
+    /// </summary>
+    private static ResolvedLegModel? ResolveLegModel(RaceProfile race)
+    {
+        if (race.SportType != SportType.Triathlon)
+            return null;
+
+        return TriathlonLegModel.Resolve(
+            race.DurationHours, race.Legs, race.Preset, strict: false, out _);
+    }
+
+    /// <summary>
+    /// Resolve the leg model and collect any structured warnings (leg-sum
+    /// normalisation, or legs supplied for a non-triathlon sport).
+    /// </summary>
+    private static List<string> CollectLegWarnings(RaceProfile race)
+    {
+        // Legs on a non-triathlon sport are ignored (single-phase) — warn, never throw.
+        if (race.SportType != SportType.Triathlon)
+        {
+            if (race.Legs != null || race.Preset.HasValue)
+                return new List<string>
+                {
+                    $"Triathlon leg inputs were provided for a {race.SportType} plan and were ignored " +
+                    "(single-phase sports have no swim/bike/run legs)."
+                };
+            return new List<string>();
+        }
+
+        TriathlonLegModel.Resolve(race.DurationHours, race.Legs, race.Preset, strict: false, out var warnings);
+        return warnings;
+    }
+
+    private static List<PhaseSegment> BuildPhaseTimeline(
+        SportType sportType, double totalHours, ResolvedLegModel? legModel)
     {
         if (sportType == SportType.Triathlon)
         {
-            const double swimPercent = 0.20;
-            const double bikePercent = 0.50;
-
-            double swimEnd = totalHours * swimPercent;
-            double bikeEnd = swimEnd + (totalHours * bikePercent);
+            // Leg boundaries come solely from the resolved model (single source of truth).
+            var legs = legModel ?? TriathlonLegModel.Resolve(
+                totalHours, legs: null, preset: null, strict: false, out _);
 
             return new List<PhaseSegment>
             {
-                new(RacePhase.Swim, 0, swimEnd),
-                new(RacePhase.Bike, swimEnd, bikeEnd),
-                new(RacePhase.Run, bikeEnd, totalHours)
+                new(RacePhase.Swim, 0, legs.SwimEndH),
+                new(RacePhase.Bike, legs.SwimEndH, legs.BikeEndH),
+                new(RacePhase.Run, legs.BikeEndH, legs.RunEndH)
             };
         }
 

@@ -26,9 +26,10 @@ public static class NutritionCalculator
     /// Calculates comprehensive multi-nutrient targets with segment distribution
     /// </summary>
     public static MultiNutrientTargets CalculateMultiNutrientTargets(
-        RaceProfile race, 
-        AthleteProfile athlete, 
-        bool caffeineEnabled = false)
+        RaceProfile race,
+        AthleteProfile athlete,
+        bool caffeineEnabled = false,
+        ResolvedLegModel? legModel = null)
     {
         var baseTargets = CalculateTargets(race, athlete);
         
@@ -55,8 +56,14 @@ public static class NutritionCalculator
         Dictionary<RacePhase, PhaseTargets>? segmentTargets = null;
         if (race.SportType == SportType.Triathlon)
         {
+            // Single source of leg boundaries/ratios: reuse the model resolved by the
+            // caller (PlanGenerator) when supplied, else resolve here (lenient) so this
+            // method remains correct when called standalone.
+            var legs = legModel ?? TriathlonLegModel.Resolve(
+                race.DurationHours, race.Legs, race.Preset, strict: false, out _);
+
             segmentTargets = CalculateTriathlonSegmentTargets(
-                race.DurationHours,
+                legs,
                 totalCarbs,
                 totalSodium,
                 totalFluid
@@ -76,30 +83,29 @@ public static class NutritionCalculator
     }
     
     private static Dictionary<RacePhase, PhaseTargets> CalculateTriathlonSegmentTargets(
-        double totalHours,
+        ResolvedLegModel legs,
         double totalCarbs,
         double totalSodium,
         double totalFluid)
     {
-        // Estimate segment durations (percentages)
-        const double swimPercent = 0.20;
-        const double bikePercent = 0.50;
-        const double runPercent = 0.30;
-        
-        double swimDuration = totalHours * swimPercent * 60; // minutes
-        double bikeDuration = totalHours * bikePercent * 60;
-        double runDuration = totalHours * runPercent * 60;
-        
-        // Distribute carbs: 70% bike, 30% run (swim has minimal nutrition)
-        double bikeCarbs = totalCarbs * SchedulingConstraints.TriathlonBikeCarbRatio;
-        double runCarbs = totalCarbs * SchedulingConstraints.TriathlonRunCarbRatio;
-        
-        // Distribute sodium and fluid proportionally to duration
-        double bikeSodium = totalSodium * bikePercent;
-        double runSodium = totalSodium * runPercent;
-        double bikeFluid = totalFluid * bikePercent;
-        double runFluid = totalFluid * runPercent;
-        
+        // Leg durations come solely from the resolved model (single source of truth).
+        double totalHours = legs.RunEndH;
+        double swimDuration = legs.SwimH * 60; // minutes
+        double bikeDuration = legs.BikeH * 60;
+        double runDuration = legs.RunH * 60;
+
+        // Distribute carbs per the resolved ratios (swim has minimal nutrition).
+        double bikeCarbs = totalCarbs * legs.BikeCarbRatio;
+        double runCarbs = totalCarbs * legs.RunCarbRatio;
+
+        // Distribute sodium and fluid proportionally to each leg's share of duration.
+        double bikeShare = totalHours > 0 ? legs.BikeH / totalHours : 0;
+        double runShare = totalHours > 0 ? legs.RunH / totalHours : 0;
+        double bikeSodium = totalSodium * bikeShare;
+        double runSodium = totalSodium * runShare;
+        double bikeFluid = totalFluid * bikeShare;
+        double runFluid = totalFluid * runShare;
+
         return new Dictionary<RacePhase, PhaseTargets>
         {
             [RacePhase.Swim] = new PhaseTargets(0, 0, 0, swimDuration),

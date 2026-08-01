@@ -24,6 +24,38 @@ export const TemperatureCondition = {
 
 export type TemperatureCondition = typeof TemperatureCondition[keyof typeof TemperatureCondition];
 
+export const DistancePreset = {
+  Sprint: "Sprint",
+  Olympic: "Olympic",
+  HalfIron: "HalfIron",
+  Ironman: "Ironman"
+} as const;
+
+export type DistancePreset = typeof DistancePreset[keyof typeof DistancePreset];
+
+/** Explicit swim/bike/run leg durations in hours (triathlon only). */
+export interface TriathlonLegs {
+  swimH: number;
+  bikeH: number;
+  runH: number;
+}
+
+/** Default swim/bike/run leg fractions for a distance preset. */
+export interface LegFractions {
+  swim: number;
+  bike: number;
+  run: number;
+}
+
+/** Per-leg nutrition targets returned by the API (triathlon only). */
+export interface SegmentTarget {
+  phase: string;
+  carbsG: number;
+  sodiumMg: number;
+  fluidMl: number;
+  durationMinutes: number;
+}
+
 // Metadata types from backend API
 export interface TemperatureMetadata {
   condition: TemperatureCondition;
@@ -119,6 +151,8 @@ export interface ActivityInfo {
   maxDurationHours: number;
   bestTimeHours: number;
   bestTimeFormatted: string;
+  preset?: DistancePreset | null;
+  legFractions?: LegFractions | null;
 }
 
 export interface ProductEditor {
@@ -138,6 +172,8 @@ export interface RaceProfile {
   durationHours: number;
   temperature: TemperatureCondition;
   intensity: IntensityLevel;
+  legs?: TriathlonLegs | null;
+  preset?: DistancePreset | null;
 }
 
 export interface NutritionTargets {
@@ -177,6 +213,9 @@ export interface AdvancedPlanResponse {
   athlete: AthleteProfile;
   nutritionSchedule: NutritionEvent[];
   shoppingSummary?: ShoppingSummary;
+  warnings?: string[];
+  errors?: string[];
+  segmentTargets?: SegmentTarget[];
 }
 
 export interface ShoppingSummary {
