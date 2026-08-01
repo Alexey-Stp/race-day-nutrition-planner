@@ -37,9 +37,16 @@ jobs:
           dotnet sonarscanner begin \
             /k:"Alexey-Stp_race-day-nutrition-planner" \
             /o:"alexey-stp" \
+            /n:"Race Day Nutrition Planner" \
+            /v:"1.0" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+            /d:sonar.scanner.skipJreProvisioning=true \
+            /d:sonar.cs.opencover.reportsPaths="coverage/**/coverage.opencover.xml" \
+            /d:sonar.cs.vstest.reportsPaths="**/TestResults/*.trx" \
+            /d:sonar.exclusions="**/node_modules/**,**/coverage/**,**/*.min.js" \
+            /d:sonar.coverage.exclusions="src/RaceDay.Web.React/**" \
+            /d:sonar.sourceEncoding="UTF-8"
 
       - name: Restore dependencies
         run: dotnet restore
