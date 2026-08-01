@@ -59,11 +59,17 @@ jobs:
     
     - name: Run Unit Tests with Code Coverage
       run: dotnet test --configuration Release --no-build --verbosity normal --logger "console;verbosity=detailed" --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+    - name: Install ReportGenerator tool
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+    - name: Merge Coverage Reports
+      run: reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/merged" -reporttypes:Cobertura
     
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       with:
-        files: ./coverage/**/coverage.cobertura.xml
+        files: ./coverage/merged/Cobertura.xml
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
@@ -71,15 +77,9 @@ jobs:
     - name: Check Coverage Threshold & Report Low Coverage
       run: |
         python3 - <<'EOF'
-        import sys, xml.etree.ElementTree as ET, subprocess
+        import sys, xml.etree.ElementTree as ET
 
-        result = subprocess.check_output(['find', './coverage', '-name', 'coverage.cobertura.xml'])
-        paths = [l.strip() for l in result.decode().splitlines() if l.strip()]
-        if not paths:
-            print("❌ No coverage report found!")
-            sys.exit(1)
-        path = paths[0]
-
+        path = './coverage/merged/Cobertura.xml'
         root = ET.parse(path).getroot()
         overall = float(root.attrib.get('line-rate', '0'))
         pct = round(overall * 100, 1)

@@ -1887,5 +1887,90 @@ public class PlanGeneratorTests
         result.Warnings.ShouldNotBeEmpty();
     }
 
+    // ── Edge cases ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void GeneratePlanWithDiagnostics_ReturnsPlanResultWithEventsAndLists()
+    {
+        var athlete = new AthleteProfile(WeightKg: 70);
+        var race = new RaceProfile(SportType.Run, DurationHours: 1.5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
+        var products = new List<ProductEnhanced>
+        {
+            new("Gel", 25, ProductTexture.Gel, false, 0)
+        };
+
+        var result = _generator.GeneratePlanWithDiagnostics(race, athlete, products);
+
+        result.ShouldNotBeNull();
+        result.Events.ShouldNotBeNull();
+        result.Warnings.ShouldNotBeNull();
+        result.Errors.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void GeneratePlan_ShortRace30Minutes_ProducesPlan()
+    {
+        var athlete = new AthleteProfile(WeightKg: 70);
+        var race = new RaceProfile(SportType.Run, DurationHours: 0.5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Moderate);
+        var products = new List<ProductEnhanced>
+        {
+            new("Gel", 25, ProductTexture.Gel, false, 0),
+            new("Drink", 35, ProductTexture.Drink, false, 0, 500)
+        };
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        plan.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void GeneratePlan_VeryLongRace12Hours_ProducesNonEmptyPlan()
+    {
+        var athlete = new AthleteProfile(WeightKg: 70);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 12, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
+        var products = new List<ProductEnhanced>
+        {
+            new("Gel", 25, ProductTexture.Gel, false, 0),
+            new("Drink", 35, ProductTexture.Drink, false, 0, 500),
+            new("Bar", 40, ProductTexture.Bake, false, 0)
+        };
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        plan.ShouldNotBeEmpty();
+    }
+
+    [Fact]
+    public void GeneratePlan_OnlyDrinkProducts_ProducesSipEvents()
+    {
+        var athlete = new AthleteProfile(WeightKg: 70);
+        var race = new RaceProfile(SportType.Bike, DurationHours: 2, Temperature: TemperatureCondition.Hot, Intensity: IntensityLevel.Moderate);
+        var products = new List<ProductEnhanced>
+        {
+            new("Sports Drink", 35, ProductTexture.Drink, false, 0, 500)
+        };
+
+        var plan = _generator.GeneratePlan(race, athlete, products);
+
+        plan.ShouldNotBeEmpty();
+        plan.Any(e => e.Action == "Sip").ShouldBeTrue();
+    }
+
+    [Fact]
+    public void GeneratePlan_CaffeineEnabledNoCaffeineProducts_DoesNotThrow()
+    {
+        var athlete = new AthleteProfile(WeightKg: 70);
+        var race = new RaceProfile(SportType.Run, DurationHours: 2, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
+        var products = new List<ProductEnhanced>
+        {
+            new("Gel", 25, ProductTexture.Gel, false, 0)
+        };
+
+        // Should not throw even when caffeine is enabled but no caffeinated products exist
+        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+
+        plan.ShouldNotBeNull();
+    }
+
     #endregion
 }
