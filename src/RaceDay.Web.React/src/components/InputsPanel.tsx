@@ -136,6 +136,48 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
     items: visible.filter((p) => p.productType === g),
   })).filter((g) => g.items.length > 0);
 
+  const renderProductsContent = () => {
+    if (loadingProducts) return <p className="muted">Loading products…</p>;
+    if (loadError) return <p className="error">{loadError}</p>;
+    return (
+      <>
+        <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
+          <option value="">All brands</option>
+          {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+
+        <div className="product-groups">
+          {grouped.map((g) => (
+            <div key={g.type} className="product-group">
+              <div className="product-group-head">
+                <span>{g.label}</span>
+                <span className="muted">
+                  {g.items.filter((p) => selectedIds.has(p.id)).length}/{g.items.length}
+                </span>
+              </div>
+              <div className="product-list">
+                {g.items.map((p) => (
+                  <label key={p.id} className={`product-row ${selectedIds.has(p.id) ? 'is-on' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => toggleProduct(p)}
+                    />
+                    <span className="product-name">{p.name}</span>
+                    <span className="product-meta">
+                      {p.carbsG.toFixed(0)}g
+                      {p.caffeineMg ? ` · ${p.caffeineMg}mg caf` : ''}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
   return (
     <aside className={`panel-inputs ${className}`}>
       <div className="panel-inputs-inner">
@@ -272,47 +314,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         </Section>
 
         <Section label="Brand & products">
-          {loadingProducts ? (
-            <p className="muted">Loading products…</p>
-          ) : loadError ? (
-            <p className="error">{loadError}</p>
-          ) : (
-            <>
-              <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
-                <option value="">All brands</option>
-                {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-
-              <div className="product-groups">
-                {grouped.map((g) => (
-                  <div key={g.type} className="product-group">
-                    <div className="product-group-head">
-                      <span>{g.label}</span>
-                      <span className="muted">
-                        {g.items.filter((p) => selectedIds.has(p.id)).length}/{g.items.length}
-                      </span>
-                    </div>
-                    <div className="product-list">
-                      {g.items.map((p) => (
-                        <label key={p.id} className={`product-row ${selectedIds.has(p.id) ? 'is-on' : ''}`}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(p.id)}
-                            onChange={() => toggleProduct(p)}
-                          />
-                          <span className="product-name">{p.name}</span>
-                          <span className="product-meta">
-                            {p.carbsG.toFixed(0)}g
-                            {p.caffeineMg ? ` · ${p.caffeineMg}mg caf` : ''}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          {renderProductsContent()}
         </Section>
 
         {error && <div className="error">{error}</div>}

@@ -40,17 +40,17 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   const [targets, setTargets] = useState<Targets | null>(null);
 
   useEffect(() => {
-    if (!plan?.race || !plan?.athlete) { setTargets(null); return; }
     let active = true;
-    api.calculateNutritionTargets(
-      plan.athlete.weightKg,
-      plan.race.sportType,
-      plan.race.durationHours,
-      plan.race.temperature,
-      plan.race.intensity,
-    ).then((res) => {
-      if (active) setTargets(res);
-    }).catch(console.error);
+    const fetch = plan?.race && plan?.athlete
+      ? api.calculateNutritionTargets(
+          plan.athlete.weightKg,
+          plan.race.sportType,
+          plan.race.durationHours,
+          plan.race.temperature,
+          plan.race.intensity,
+        )
+      : Promise.resolve(null);
+    fetch.then((res) => { if (active) setTargets(res); }).catch(console.error);
     return () => { active = false; };
   }, [plan]);
 
@@ -123,11 +123,11 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
         </div>
 
         {warnings.length > 0 && (
-          <div className="warnings" role="status">
-            {warnings.map((w, i) => (
-              <div key={i} className="warning">{w}</div>
+          <output className="warnings">
+            {warnings.map((w) => (
+              <div key={w} className="warning">{w}</div>
             ))}
-          </div>
+          </output>
         )}
 
         {isTriathlon && segmentTargets.length > 0 && (
