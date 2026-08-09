@@ -35,10 +35,10 @@ public static class AdvancedNutritionConfig
 
     // End phase detection
     public const double EndPhaseThreshold = 0.8; // After 80% of race
-    
-    // Bike-to-Run distribution targets for triathlon (65-75% on bike)
-    public const double TriathlonBikeCarbsRatio = 0.70;  // 70% of carbs on bike
-    
+
+    // Bike-to-Run carb distribution for triathlon is single-sourced in
+    // TriathlonLegModel (BikeCarbRatio / RunCarbRatio); do not redefine it here.
+
     // Transition safety margins (minutes before transition to stop fueling)
     public const int BikeToRunTransitionMarginMin = 10;
     public const int PreRaceNutritionMinutesBefore = 15;  // Final gel timing

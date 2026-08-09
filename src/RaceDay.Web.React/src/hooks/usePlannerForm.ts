@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { SportType, IntensityLevel, TemperatureCondition, type ProductInfo } from '../types';
+import { SportType, IntensityLevel, TemperatureCondition, type ProductInfo, type DistancePreset, type TriathlonLegs } from '../types';
 import { ATHLETE_WEIGHT } from '../constants';
 
 /**
@@ -15,6 +15,10 @@ export function usePlannerForm() {
   const [duration, setDuration] = useState(1.5);
   const [temperature, setTemperature] = useState<TemperatureCondition>(TemperatureCondition.Moderate);
   const [intensity, setIntensity] = useState<IntensityLevel>(IntensityLevel.Moderate);
+
+  // Triathlon leg configuration (only meaningful when sportType === Triathlon)
+  const [distancePreset, setDistancePreset] = useState<DistancePreset | null>(null);
+  const [legs, setLegs] = useState<TriathlonLegs | null>(null);
 
   // Nutrition preferences
   const [useCaffeine, setUseCaffeine] = useState(true);
@@ -39,6 +43,8 @@ export function usePlannerForm() {
     duration,
     temperature,
     intensity,
+    distancePreset,
+    legs,
     useCaffeine,
     selectedProducts,
     // Setters
@@ -47,6 +53,8 @@ export function usePlannerForm() {
     setDuration,
     setTemperature,
     setIntensity,
+    setDistancePreset,
+    setLegs,
     setUseCaffeine,
     setSelectedProducts,
     // Validation

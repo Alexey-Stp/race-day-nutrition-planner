@@ -25,5 +25,49 @@
     "minDurationHours": 1.0,
     "maxDurationHours": 17.0,
     "bestTimeHours": 2.0
+  },
+  {
+    "id": "triathlon-sprint",
+    "name": "Sprint Triathlon",
+    "sportType": "Triathlon",
+    "description": "Sprint distance: 750m swim, 20km bike, 5km run",
+    "minDurationHours": 1.0,
+    "maxDurationHours": 2.5,
+    "bestTimeHours": 1.0,
+    "preset": "Sprint",
+    "legFractions": { "swim": 0.17, "bike": 0.54, "run": 0.29 }
+  },
+  {
+    "id": "triathlon-olympic",
+    "name": "Olympic Triathlon",
+    "sportType": "Triathlon",
+    "description": "Olympic distance: 1.5km swim, 40km bike, 10km run",
+    "minDurationHours": 1.75,
+    "maxDurationHours": 4.0,
+    "bestTimeHours": 1.83,
+    "preset": "Olympic",
+    "legFractions": { "swim": 0.15, "bike": 0.52, "run": 0.33 }
+  },
+  {
+    "id": "triathlon-half",
+    "name": "Half Ironman (70.3)",
+    "sportType": "Triathlon",
+    "description": "70.3 distance: 1.9km swim, 90km bike, 21.1km run",
+    "minDurationHours": 3.5,
+    "maxDurationHours": 8.5,
+    "bestTimeHours": 3.6,
+    "preset": "HalfIron",
+    "legFractions": { "swim": 0.10, "bike": 0.56, "run": 0.34 }
+  },
+  {
+    "id": "triathlon-ironman",
+    "name": "Ironman",
+    "sportType": "Triathlon",
+    "description": "Full distance: 3.8km swim, 180km bike, 42.2km run",
+    "minDurationHours": 8.0,
+    "maxDurationHours": 17.0,
+    "bestTimeHours": 7.5,
+    "preset": "Ironman",
+    "legFractions": { "swim": 0.09, "bike": 0.53, "run": 0.38 }
   }
 ]

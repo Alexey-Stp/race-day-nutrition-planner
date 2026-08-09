@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { ProductInfo, SportType, IntensityLevel, TemperatureCondition } from '../types';
+import type { ProductInfo, SportType, IntensityLevel, TemperatureCondition, DistancePreset, TriathlonLegs } from '../types';
 import { SportType as SportTypeEnum, IntensityLevel as IntensityEnum, TemperatureCondition as TempEnum } from '../types';
 import { api } from '../api';
 import { ATHLETE_WEIGHT, DURATION } from '../constants';
@@ -31,9 +31,56 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
     duration, setDuration,
     temperature, setTemperature,
     intensity, setIntensity,
+    distancePreset, setDistancePreset,
+    legs, setLegs,
     useCaffeine, setUseCaffeine,
     selectedProducts, setSelectedProducts,
   } = form;
+
+  const isTriathlon = sportType === SportTypeEnum.Triathlon;
+
+  // Default leg fractions per preset (mirrors the API's TriathlonLegModel), used
+  // to seed editable leg fields when a preset is chosen.
+  const PRESET_FRACTIONS: Record<DistancePreset, TriathlonLegs> = {
+    Sprint: { swimH: 0.17, bikeH: 0.54, runH: 0.29 },
+    Olympic: { swimH: 0.15, bikeH: 0.52, runH: 0.33 },
+    HalfIron: { swimH: 0.10, bikeH: 0.56, runH: 0.34 },
+    Ironman: { swimH: 0.09, bikeH: 0.53, runH: 0.38 },
+  };
+
+  const PRESET_LABELS: Record<DistancePreset, string> = {
+    Sprint: 'Sprint',
+    Olympic: 'Olympic',
+    HalfIron: '70.3',
+    Ironman: 'Ironman',
+  };
+
+  // Leg values currently shown: explicit legs if edited, else preset-expanded,
+  // else the default 20/50/30 split against duration.
+  const displayLegs: TriathlonLegs = legs ?? (
+    distancePreset
+      ? {
+          swimH: +(duration * PRESET_FRACTIONS[distancePreset].swimH).toFixed(2),
+          bikeH: +(duration * PRESET_FRACTIONS[distancePreset].bikeH).toFixed(2),
+          runH: +(duration * PRESET_FRACTIONS[distancePreset].runH).toFixed(2),
+        }
+      : {
+          swimH: +(duration * 0.20).toFixed(2),
+          bikeH: +(duration * 0.50).toFixed(2),
+          runH: +(duration * 0.30).toFixed(2),
+        }
+  );
+
+  const choosePreset = (p: DistancePreset) => {
+    setDistancePreset(p);
+    setLegs(null); // let the backend expand the preset against duration
+  };
+
+  const editLeg = (key: keyof TriathlonLegs, value: number) => {
+    // Editing a leg switches to a custom split (preset no longer applies).
+    setDistancePreset(null);
+    setLegs({ ...displayLegs, [key]: Number.isFinite(value) ? Math.max(0, value) : 0 });
+  };
 
   const [products, setProducts] = useState<ProductInfo[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
@@ -89,6 +136,48 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
     items: visible.filter((p) => p.productType === g),
   })).filter((g) => g.items.length > 0);
 
+  const renderProductsContent = () => {
+    if (loadingProducts) return <p className="muted">Loading products…</p>;
+    if (loadError) return <p className="error">{loadError}</p>;
+    return (
+      <>
+        <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
+          <option value="">All brands</option>
+          {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+
+        <div className="product-groups">
+          {grouped.map((g) => (
+            <div key={g.type} className="product-group">
+              <div className="product-group-head">
+                <span>{g.label}</span>
+                <span className="muted">
+                  {g.items.filter((p) => selectedIds.has(p.id)).length}/{g.items.length}
+                </span>
+              </div>
+              <div className="product-list">
+                {g.items.map((p) => (
+                  <label key={p.id} className={`product-row ${selectedIds.has(p.id) ? 'is-on' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(p.id)}
+                      onChange={() => toggleProduct(p)}
+                    />
+                    <span className="product-name">{p.name}</span>
+                    <span className="product-meta">
+                      {p.carbsG.toFixed(0)}g
+                      {p.caffeineMg ? ` · ${p.caffeineMg}mg caf` : ''}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  };
+
   return (
     <aside className={`panel-inputs ${className}`}>
       <div className="panel-inputs-inner">
@@ -96,7 +185,6 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
           <div className="field">
             <label htmlFor="weight">Weight</label>
             <div className="num-stepper">
-              <button type="button" onClick={() => setAthleteWeight(Math.min(ATHLETE_WEIGHT.MAX, Math.max(ATHLETE_WEIGHT.MIN, +(athleteWeight - 0.5).toFixed(1))))}>−</button>
               <input
                 id="weight"
                 type="number"
@@ -107,7 +195,6 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
                 onChange={(e) => setAthleteWeight(Number(e.target.value))}
               />
               <span className="unit">kg</span>
-              <button type="button" onClick={() => setAthleteWeight(Math.min(ATHLETE_WEIGHT.MAX, Math.max(ATHLETE_WEIGHT.MIN, +(athleteWeight + 0.5).toFixed(1))))}>+</button>
             </div>
           </div>
         </Section>
@@ -126,6 +213,52 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
             ))}
           </div>
         </Section>
+
+        {isTriathlon && (
+          <Section label="Race distance">
+            <div className="pill-row">
+              {(Object.keys(PRESET_LABELS) as DistancePreset[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  className={`pill ${distancePreset === p && !legs ? 'is-active' : ''}`}
+                  onClick={() => choosePreset(p)}
+                >
+                  {PRESET_LABELS[p]}
+                </button>
+              ))}
+              <button
+                type="button"
+                className={`pill ${legs ? 'is-active' : ''}`}
+                onClick={() => setLegs(displayLegs)}
+              >
+                Custom
+              </button>
+            </div>
+
+            <div className="leg-fields">
+              <LegField
+                label="Swim"
+                value={displayLegs.swimH}
+                onChange={(v) => editLeg('swimH', v)}
+              />
+              <LegField
+                label="Bike"
+                value={displayLegs.bikeH}
+                onChange={(v) => editLeg('bikeH', v)}
+              />
+              <LegField
+                label="Run"
+                value={displayLegs.runH}
+                onChange={(v) => editLeg('runH', v)}
+              />
+            </div>
+            <p className="muted leg-hint">
+              Legs total {formatDuration(displayLegs.swimH + displayLegs.bikeH + displayLegs.runH)}
+              {' · '}race {formatDuration(duration)}
+            </p>
+          </Section>
+        )}
 
         <Section label={`Duration · ${formatDuration(duration)}`}>
           <input
@@ -181,47 +314,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         </Section>
 
         <Section label="Brand & products">
-          {loadingProducts ? (
-            <p className="muted">Loading products…</p>
-          ) : loadError ? (
-            <p className="error">{loadError}</p>
-          ) : (
-            <>
-              <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
-                <option value="">All brands</option>
-                {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-
-              <div className="product-groups">
-                {grouped.map((g) => (
-                  <div key={g.type} className="product-group">
-                    <div className="product-group-head">
-                      <span>{g.label}</span>
-                      <span className="muted">
-                        {g.items.filter((p) => selectedIds.has(p.id)).length}/{g.items.length}
-                      </span>
-                    </div>
-                    <div className="product-list">
-                      {g.items.map((p) => (
-                        <label key={p.id} className={`product-row ${selectedIds.has(p.id) ? 'is-on' : ''}`}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(p.id)}
-                            onChange={() => toggleProduct(p)}
-                          />
-                          <span className="product-name">{p.name}</span>
-                          <span className="product-meta">
-                            {p.carbsG.toFixed(0)}g
-                            {p.caffeineMg ? ` · ${p.caffeineMg}mg caf` : ''}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          {renderProductsContent()}
         </Section>
 
         {error && <div className="error">{error}</div>}
@@ -243,5 +336,22 @@ const Section: React.FC<{ label: string; children: React.ReactNode }> = ({ label
   <div className="section">
     <div className="section-label">{label}</div>
     {children}
+  </div>
+);
+
+const LegField: React.FC<{ label: string; value: number; onChange: (v: number) => void }> = ({ label, value, onChange }) => (
+  <div className="field leg-field">
+    <label>{label}</label>
+    <div className="num-stepper">
+      <input
+        type="number"
+        min={0}
+        max={17}
+        step={0.1}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+      <span className="unit">h</span>
+    </div>
   </div>
 );

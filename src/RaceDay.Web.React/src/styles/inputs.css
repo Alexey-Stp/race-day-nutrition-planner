@@ -122,3 +122,10 @@
 }
 .btn-generate:hover:not(:disabled) { background: #000; }
 .btn-generate:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Triathlon leg fields */
+.leg-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.leg-field label { font-size: 11px; color: var(--ink-3); display: block; margin-bottom: 4px; }
+.leg-field .num-stepper { display: flex; align-items: center; gap: 4px; }
+.leg-field input { width: 100%; }
+.leg-hint { font-size: 11px; margin-top: 6px; }

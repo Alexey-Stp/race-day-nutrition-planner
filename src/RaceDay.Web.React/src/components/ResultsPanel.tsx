@@ -40,17 +40,17 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   const [targets, setTargets] = useState<Targets | null>(null);
 
   useEffect(() => {
-    if (!plan?.race || !plan?.athlete) { setTargets(null); return; }
     let active = true;
-    api.calculateNutritionTargets(
-      plan.athlete.weightKg,
-      plan.race.sportType,
-      plan.race.durationHours,
-      plan.race.temperature,
-      plan.race.intensity,
-    ).then((res) => {
-      if (active) setTargets(res);
-    }).catch(console.error);
+    const fetch = plan?.race && plan?.athlete
+      ? api.calculateNutritionTargets(
+          plan.athlete.weightKg,
+          plan.race.sportType,
+          plan.race.durationHours,
+          plan.race.temperature,
+          plan.race.intensity,
+        )
+      : Promise.resolve(null);
+    fetch.then((res) => { if (active) setTargets(res); }).catch(console.error);
     return () => { active = false; };
   }, [plan]);
 
@@ -66,6 +66,20 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   }, [schedule]);
 
   const shopping = useMemo(() => getShoppingSummary(plan), [plan]);
+
+  const isTriathlon = sportType === 'Triathlon';
+
+  // Group the schedule by leg for triathlon; otherwise a single flat list.
+  const legGroups = useMemo(() => {
+    if (!isTriathlon) return [{ phase: '', items: schedule }];
+    const order = ['Swim', 'Bike', 'Run'];
+    return order
+      .map((phase) => ({ phase, items: schedule.filter((e) => e.phase === phase) }))
+      .filter((g) => g.items.length > 0);
+  }, [schedule, isTriathlon]);
+
+  const segmentTargets = plan?.segmentTargets ?? [];
+  const warnings = plan?.warnings ?? [];
 
   if (!plan) {
     return (
@@ -108,29 +122,60 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
           {useCaffeine && <Bar label="Caffeine" value={totalCaffeine} max={MAX_CAFFEINE_MG} unit="mg" />}
         </div>
 
+        {warnings.length > 0 && (
+          <output className="warnings">
+            {warnings.map((w) => (
+              <div key={w} className="warning">{w}</div>
+            ))}
+          </output>
+        )}
+
+        {isTriathlon && segmentTargets.length > 0 && (
+          <section className="leg-targets">
+            <h3>Per-leg targets</h3>
+            <div className="leg-target-grid">
+              {segmentTargets.map((s) => (
+                <div key={s.phase} className="leg-target">
+                  <div className="leg-target-head">{s.phase}</div>
+                  <div className="leg-target-body">
+                    <span>{formatDuration(s.durationMinutes / 60)}</span>
+                    <span>{s.carbsG.toFixed(0)}g carbs</span>
+                    <span>{s.fluidMl.toFixed(0)}ml</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="feed-list">
           <h3>Schedule</h3>
-          <ol>
-            {schedule.map((e, i) => {
-              const when = e.timeMin < 0
-                ? `T−${Math.abs(e.timeMin)}m`
-                : `T+${formatDuration(e.timeMin / 60)}`;
-              return (
-                <li key={i} className="feed-item">
-                  <span className="feed-when">{when}</span>
-                  <span className="feed-dot" aria-hidden />
-                  <div className="feed-body">
-                    <div className="feed-title">{e.productName}</div>
-                    <div className="feed-meta">
-                      <span>{e.action}</span>
-                      {e.carbsInEvent ? <span>{e.carbsInEvent.toFixed(0)}g carbs</span> : null}
-                      {e.caffeineMg ? <span>{e.caffeineMg}mg caf</span> : null}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
+          {legGroups.map((group) => (
+            <div key={group.phase || 'all'} className="feed-group">
+              {group.phase && <div className="feed-group-head">{group.phase}</div>}
+              <ol>
+                {group.items.map((e, i) => {
+                  const when = e.timeMin < 0
+                    ? `T−${Math.abs(e.timeMin)}m`
+                    : `T+${formatDuration(e.timeMin / 60)}`;
+                  return (
+                    <li key={`${group.phase}-${i}`} className="feed-item">
+                      <span className="feed-when">{when}</span>
+                      <span className="feed-dot" aria-hidden />
+                      <div className="feed-body">
+                        <div className="feed-title">{e.productName}</div>
+                        <div className="feed-meta">
+                          <span>{e.action}</span>
+                          {e.carbsInEvent ? <span>{e.carbsInEvent.toFixed(0)}g carbs</span> : null}
+                          {e.caffeineMg ? <span>{e.caffeineMg}mg caf</span> : null}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ))}
         </section>
 
         {shopping && shopping.items.length > 0 && (

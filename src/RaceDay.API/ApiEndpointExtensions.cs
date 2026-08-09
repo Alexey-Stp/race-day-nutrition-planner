@@ -257,10 +257,13 @@ public static class ApiEndpointExtensions
                 return productsResult.Error;
 
             var profiles = CreateProfiles(request);
+            var caffeineEnabled = request.CaffeineEnabled ?? false;
             var planResult = planService.GeneratePlanWithDiagnostics(
                 profiles.race, profiles.athlete, productsResult.Products!,
-                request.CaffeineEnabled ?? false);
-            var response = BuildResponseWithDiagnostics(profiles.athlete, profiles.race, planResult);
+                caffeineEnabled);
+            var targets = NutritionCalculator.CalculateMultiNutrientTargets(
+                profiles.race, profiles.athlete, caffeineEnabled);
+            var response = BuildResponseWithDiagnostics(profiles.athlete, profiles.race, planResult, targets);
 
             return Results.Ok(response);
         }
@@ -295,6 +298,28 @@ public static class ApiEndpointExtensions
 
         if (request.TemperatureC < -20 || request.TemperatureC > 55)
             return Results.BadRequest("TemperatureC must be between -20 and 55.");
+
+        var legsError = ValidateLegs(request.Legs);
+        if (legsError != null) return legsError;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Validate explicit triathlon leg durations. A sum that diverges from the total
+    /// duration is handled leniently downstream (normalised + warning), so it is not
+    /// rejected here; only structurally invalid legs (negative, or all-zero) fail.
+    /// </summary>
+    private static IResult? ValidateLegs(TriathlonLegsRequest? legs)
+    {
+        if (legs == null)
+            return null;
+
+        if (legs.SwimH < 0 || legs.BikeH < 0 || legs.RunH < 0)
+            return Results.BadRequest("Triathlon leg durations cannot be negative.");
+
+        if (legs.SwimH + legs.BikeH + legs.RunH <= 0)
+            return Results.BadRequest("Triathlon leg durations must sum to more than 0.");
 
         return null;
     }
@@ -370,11 +395,16 @@ public static class ApiEndpointExtensions
     {
         var temperatureCondition = MapTemperature(request.TemperatureC);
         var athlete = new AthleteProfile(request.AthleteWeightKg);
+        var legs = request.Legs == null
+            ? null
+            : new TriathlonLegs(request.Legs.SwimH, request.Legs.BikeH, request.Legs.RunH);
         var race = new RaceProfile(
             request.SportType,
             request.DurationHours,
             temperatureCondition,
-            request.Intensity
+            request.Intensity,
+            legs,
+            request.DistancePreset
         );
 
         return (athlete, race);
@@ -397,10 +427,35 @@ public static class ApiEndpointExtensions
     private static AdvancedPlanResponse BuildResponseWithDiagnostics(
         AthleteProfile athlete,
         RaceProfile race,
-        PlanResult planResult)
+        PlanResult planResult,
+        MultiNutrientTargets targets)
     {
         var shoppingSummary = planResult.Events.CalculateShoppingList();
-        return new AdvancedPlanResponse(race, athlete, planResult.Events, shoppingSummary, planResult.Warnings, planResult.Errors);
+        var segmentTargets = MapSegmentTargets(targets.SegmentTargets);
+        return new AdvancedPlanResponse(
+            race, athlete, planResult.Events, shoppingSummary,
+            planResult.Warnings, planResult.Errors, segmentTargets);
+    }
+
+    /// <summary>
+    /// Flatten per-phase targets into a serialisable, leg-ordered list for the UI.
+    /// </summary>
+    private static List<SegmentTargetResponse>? MapSegmentTargets(
+        Dictionary<RacePhase, PhaseTargets>? segmentTargets)
+    {
+        if (segmentTargets == null)
+            return null;
+
+        var order = new[] { RacePhase.Swim, RacePhase.Bike, RacePhase.Run };
+        return order
+            .Where(segmentTargets.ContainsKey)
+            .Select(phase =>
+            {
+                var t = segmentTargets[phase];
+                return new SegmentTargetResponse(
+                    phase.ToString(), t.CarbsG, t.SodiumMg, t.FluidMl, t.DurationMinutes);
+            })
+            .ToList();
     }
 
     /// <summary>
@@ -538,7 +593,18 @@ public record PlanGenerationRequest(
     List<ProductRequest>? Products = null,
     ProductFilter? Filter = null,
     int? IntervalMin = null,  // Reserved for future use; currently has no effect
-    bool? CaffeineEnabled = null
+    bool? CaffeineEnabled = null,
+    TriathlonLegsRequest? Legs = null,
+    DistancePreset? DistancePreset = null
+);
+
+/// <summary>
+/// Explicit swim/bike/run leg durations (hours) for a triathlon request.
+/// </summary>
+public record TriathlonLegsRequest(
+    double SwimH,
+    double BikeH,
+    double RunH
 );
 
 public record ProductRequest(
@@ -559,5 +625,17 @@ public record AdvancedPlanResponse(
     List<NutritionEvent> NutritionSchedule,
     ShoppingSummary? ShoppingSummary = null,
     List<string>? Warnings = null,
-    List<string>? Errors = null
+    List<string>? Errors = null,
+    List<SegmentTargetResponse>? SegmentTargets = null
+);
+
+/// <summary>
+/// Per-leg nutrition targets for a triathlon, ordered swim → bike → run.
+/// </summary>
+public record SegmentTargetResponse(
+    string Phase,
+    double CarbsG,
+    double SodiumMg,
+    double FluidMl,
+    double DurationMinutes
 );

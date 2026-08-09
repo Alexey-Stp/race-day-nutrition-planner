@@ -84,6 +84,10 @@ export const api = {
       temperatureC: temperatureCMap[race.temperature],
       intensity: intensityMap[race.intensity],
       caffeineEnabled: caffeineEnabled,
+      // Triathlon leg inputs (omitted when absent). DistancePreset binds by name
+      // (JsonStringEnumConverter on the API); legs pass through as hours.
+      legs: race.legs ?? undefined,
+      distancePreset: race.preset ?? undefined,
       products: products.map(p => ({
         name: p.name,
         productType: p.productType,

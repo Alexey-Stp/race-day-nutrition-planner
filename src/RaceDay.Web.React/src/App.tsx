@@ -30,6 +30,8 @@ function App() {
     duration,
     temperature,
     intensity,
+    distancePreset,
+    legs,
     useCaffeine,
     selectedProducts,
     isFormValid,
@@ -61,7 +63,16 @@ function App() {
     setError(null);
     try {
       const athlete = { weightKg: athleteWeight };
-      const race = { sportType, durationHours: duration, temperature, intensity };
+      const isTri = sportType === 'Triathlon';
+      const race = {
+        sportType,
+        durationHours: duration,
+        temperature,
+        intensity,
+        // Leg inputs only apply to triathlon; omit otherwise so the API sees no legs.
+        legs: isTri ? legs : null,
+        preset: isTri ? distancePreset : null,
+      };
       const products = selectedProducts.map((p) => ({
         name: p.name,
         productType: p.productType,
@@ -82,7 +93,7 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedProducts, athleteWeight, sportType, duration, temperature, intensity, useCaffeine]);
+  }, [selectedProducts, athleteWeight, sportType, duration, temperature, intensity, distancePreset, legs, useCaffeine]);
 
   const planReady = useMemo(() => !!plan?.nutritionSchedule?.length, [plan]);
 

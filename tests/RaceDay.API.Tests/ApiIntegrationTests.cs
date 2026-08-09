@@ -109,6 +109,137 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    // ── Triathlon leg model (RAC-1) ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GeneratePlan_ExplicitLegs_ReturnsSegmentTargetsPerLeg()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Triathlon",
+            durationHours = 10.5,
+            temperatureC = 20.0,
+            intensity = "Hard",
+            caffeineEnabled = false,
+            legs = new { swimH = 1.1, bikeH = 5.8, runH = 3.6 },
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        doc.RootElement.TryGetProperty("segmentTargets", out var seg)
+            .ShouldBeTrue($"Response should contain 'segmentTargets'. Response: {json}");
+        seg.ValueKind.ShouldBe(JsonValueKind.Array);
+        seg.GetArrayLength().ShouldBe(3);
+
+        // Swim first, ~1.1h = 66 min.
+        var swim = seg[0];
+        swim.GetProperty("phase").GetString().ShouldBe("Swim");
+        swim.GetProperty("durationMinutes").GetDouble().ShouldBe(66.0, tolerance: 0.5);
+        swim.GetProperty("carbsG").GetDouble().ShouldBe(0.0);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_DistancePreset_ReturnsOkWithSegments()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Triathlon",
+            durationHours = 12.0,
+            temperatureC = 20.0,
+            intensity = "Hard",
+            distancePreset = "Ironman",
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = JsonDocument.Parse(json);
+        var seg = doc.RootElement.GetProperty("segmentTargets");
+        double swimMin = seg[0].GetProperty("durationMinutes").GetDouble();
+        // Ironman swim is ~8-10% of 12h (57.6-72 min), definitively under the legacy 20% (144 min).
+        (swimMin / 60.0 / 12.0).ShouldBeInRange(0.08, 0.10);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_LegSumMismatch_ReturnsOkWithNormalisationWarning()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Triathlon",
+            durationHours = 10.0,
+            temperatureC = 20.0,
+            intensity = "Hard",
+            legs = new { swimH = 1.0, bikeH = 5.0, runH = 3.0 }, // sum 9 != 10
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        json.ShouldContain("normalised");
+    }
+
+    [Fact]
+    public async Task GeneratePlan_NegativeLeg_ReturnsBadRequest()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Triathlon",
+            durationHours = 10.0,
+            temperatureC = 20.0,
+            intensity = "Hard",
+            legs = new { swimH = -1.0, bikeH = 5.0, runH = 3.0 },
+            filter = new { }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GeneratePlan_LegsOnBike_ReturnsOkWithIgnoredWarning()
+    {
+        var payload = new
+        {
+            athleteWeightKg = 75.0,
+            sportType = "Bike",
+            durationHours = 3.0,
+            temperatureC = 20.0,
+            intensity = "Hard",
+            legs = new { swimH = 0.5, bikeH = 1.5, runH = 1.0 },
+            filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
+        };
+
+        var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        json.ShouldContain("ignored");
+    }
+
+    [Fact]
+    public async Task GetActivities_IncludesDistancePresetsWithLegFractions()
+    {
+        var response = await _client.GetAsync("/api/activities");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var json = await response.Content.ReadAsStringAsync();
+        json.ShouldContain("triathlon-ironman");
+        json.ShouldContain("legFractions");
+    }
+
     // ── Product endpoints ────────────────────────────────────────────────────
 
     [Fact]
