@@ -29,7 +29,8 @@ const problemToMessage = (problem: ProblemDetails): string => {
 };
 
 async function errorFromResponse(response: Response): Promise<Error> {
-  const fallback = `Request failed (${response.status}${response.statusText ? ` ${response.statusText}` : ''})`;
+  const statusSuffix = response.statusText ? ' ' + response.statusText : '';
+  const fallback = `Request failed (${response.status}${statusSuffix})`;
   let text = '';
   try {
     text = await response.text();

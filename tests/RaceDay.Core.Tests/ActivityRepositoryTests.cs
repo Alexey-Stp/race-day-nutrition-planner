@@ -98,7 +98,7 @@ public class ActivityRepositoryTests
         // Assert
         foreach (var activity in activities)
         {
-            var isValidSportType = Enum.IsDefined(typeof(SportType), activity.SportType);
+            var isValidSportType = Enum.IsDefined(activity.SportType);
             (isValidSportType).ShouldBeTrue($"Invalid SportType: {activity.SportType}");
         }
     }

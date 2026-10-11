@@ -13,12 +13,12 @@ internal static class ContractMapper
     public static Product ToDomain(this ProductRequest p) =>
         new(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg);
 
-    public static Product ToPlannerProduct(this ProductInfo p) =>
-        new(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg);
-
     public static ProductFilter ToDomain(this ProductFilterRequest f) => new(f.Brand, f.ExcludeTypes);
 
     public static TriathlonLegs ToDomain(this TriathlonLegsRequest l) => new(l.SwimH, l.BikeH, l.RunH);
+
+    public static Product ToPlannerProduct(this ProductInfo p) =>
+        new(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg);
 
     public static ProductResponse ToResponse(this ProductInfo p) =>
         new(p.Id, p.Brand, p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.CaloriesKcal, p.VolumeMl, p.ImageUrl, p.CaffeineMg);
@@ -27,12 +27,6 @@ internal static class ContractMapper
         new(a.Id, a.Name, a.SportType, a.Description, a.MinDurationHours, a.MaxDurationHours, a.BestTimeHours,
             a.Preset,
             a.LegFractions is { } f ? new LegFractionsResponse(f.Swim, f.Bike, f.Run) : null);
-
-    public static NutritionTargetsResponse ToTargetsResponse(this MultiNutrientTargets t) =>
-        new(t.CarbsPerHour, t.FluidPerHour, t.SodiumPerHour, t.CarbsG, t.FluidMl, t.SodiumMg);
-
-    public static PlanTargetsResponse ToPlanTargetsResponse(this MultiNutrientTargets t) =>
-        new(t.CarbsPerHour, t.FluidPerHour, t.SodiumPerHour, t.CarbsG, t.FluidMl, t.SodiumMg, t.CaffeineMg);
 
     public static AdvancedPlanResponse ToResponse(
         this PlanResult plan, RaceProfile race, AthleteProfile athlete, MultiNutrientTargets targets, bool caffeineEnabled)
@@ -59,6 +53,12 @@ internal static class ContractMapper
     private static NutritionEventResponse ToResponse(NutritionEvent e) =>
         new(e.TimeMin, e.Phase, e.PhaseDescription, e.ProductName, e.AmountPortions, e.Action, e.TotalCarbsSoFar,
             e.HasCaffeine, e.CaffeineMg, e.TotalCaffeineSoFar, e.CarbsInEvent, e.SipMl, e.Kind);
+
+    public static NutritionTargetsResponse ToTargetsResponse(this MultiNutrientTargets t) =>
+        new(t.CarbsPerHour, t.FluidPerHour, t.SodiumPerHour, t.CarbsG, t.FluidMl, t.SodiumMg);
+
+    public static PlanTargetsResponse ToPlanTargetsResponse(this MultiNutrientTargets t) =>
+        new(t.CarbsPerHour, t.FluidPerHour, t.SodiumPerHour, t.CarbsG, t.FluidMl, t.SodiumMg, t.CaffeineMg);
 
     /// <summary>Flatten per-phase targets into a leg-ordered list (null for non-triathlon plans).</summary>
     private static List<SegmentTargetResponse>? MapSegmentTargets(IReadOnlyDictionary<RacePhase, PhaseTargets>? segmentTargets) =>

@@ -19,7 +19,6 @@ public class NutritionPlanService : INutritionPlanService
     public static readonly IReadOnlySet<string> NonRaceProductTypes =
         new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "recovery" };
 
-    private readonly PlanGenerator _planGenerator = new();
     private readonly ILogger<NutritionPlanService> _logger;
 
     public NutritionPlanService(ILogger<NutritionPlanService> logger)
@@ -44,10 +43,11 @@ public class NutritionPlanService : INutritionPlanService
     {
         ValidateInputs(race, athlete, products);
         var enhancedProducts = ConvertToEnhancedProducts(products);
-        if (enhancedProducts.Count < products.Count)
-            _logger.LogInformation("Excluded {Count} non-race product(s) from planning", products.Count - enhancedProducts.Count);
+        int excluded = products.Count - enhancedProducts.Count;
+        if (excluded > 0 && _logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("Excluded {Count} non-race product(s) from planning", excluded);
 
-        return _planGenerator.GeneratePlanWithDiagnostics(race, athlete, enhancedProducts, caffeineEnabled);
+        return PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, enhancedProducts, caffeineEnabled);
     }
 
     private static void ValidateInputs(RaceProfile race, AthleteProfile athlete, IReadOnlyList<Product> products)

@@ -8,7 +8,6 @@ using System.Linq;
 
 public class AlgorithmImprovementTests
 {
-    private readonly PlanGenerator _generator = new();
 
     [Fact]
     public void GeneratePlan_RespectsClusterWindow()
@@ -19,7 +18,7 @@ public class AlgorithmImprovementTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - No items should be within 5 minutes of each other
         for (int i = 0; i < plan.Count - 1; i++)
@@ -39,7 +38,7 @@ public class AlgorithmImprovementTests
         var products = CreateProductsWithDrinks();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Should include drink products
         var drinkItems = plan.Where(e => products.FirstOrDefault(p => p.Name == e.ProductName)?.Texture == ProductTexture.Drink).ToList();
@@ -62,12 +61,12 @@ public class AlgorithmImprovementTests
         var products = CreateProductsWithCaffeine();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         // Assert
         var caffeineItems = plan.Where(e => e.HasCaffeine && e.CaffeineMg > 0).ToList();
         
-        if (caffeineItems.Any())
+        if (caffeineItems.Count > 0)
         {
             // All caffeine items should be after 40% of race
             var raceDurationMin = race.DurationHours * 60;
@@ -90,7 +89,7 @@ public class AlgorithmImprovementTests
         var products = CreateProductsWithCaffeine();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
 
         // Assert
         var totalCaffeine = plan.Where(e => e.HasCaffeine).Sum(e => e.CaffeineMg ?? 0);
@@ -106,7 +105,7 @@ public class AlgorithmImprovementTests
         var products = CreateProductsWithDrinks();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Bike should have more carbs than run
         var bikeCarbs = plan.Where(e => e.Phase == RacePhase.Bike)
@@ -135,7 +134,7 @@ public class AlgorithmImprovementTests
         var products = CreateVariedProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - No single product should dominate if alternatives exist
         var productCounts = plan.GroupBy(e => e.ProductName)
@@ -160,7 +159,7 @@ public class AlgorithmImprovementTests
         var products = CreateProductsWithDrinks();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert — plan is generated successfully with events in both sport-specific phases.
         // The slot intervals used per phase (CyclingSlotIntervalMin for Bike, RunningSlotIntervalMin for Run)
@@ -238,7 +237,7 @@ public class AlgorithmImprovementTests
     private static readonly AthleteProfile Athlete75 = new(WeightKg: 75);
 
     private static PlanResult Generate(RaceProfile race, List<ProductEnhanced> products, bool caffeine = false) =>
-        new PlanGenerator().GeneratePlanWithDiagnostics(race, Athlete75, products, caffeine);
+        PlanGenerator.GeneratePlanWithDiagnostics(race, Athlete75, products, caffeine);
 
     [Fact]
     public void GeneratePlan_Running3hEasyOnlyGel160_StaysWithinTargetAndSpacing()
@@ -437,7 +436,7 @@ public class AlgorithmImprovementTests
         PlanInvariants.AssertWithinRaceBounds(result.Events, 246);
     }
 
-    private List<ProductEnhanced> CreateTestProducts()
+    private static List<ProductEnhanced> CreateTestProducts()
     {
         return new List<ProductEnhanced>
         {
@@ -447,7 +446,7 @@ public class AlgorithmImprovementTests
         };
     }
 
-    private List<ProductEnhanced> CreateProductsWithDrinks()
+    private static List<ProductEnhanced> CreateProductsWithDrinks()
     {
         return new List<ProductEnhanced>
         {
@@ -459,7 +458,7 @@ public class AlgorithmImprovementTests
         };
     }
 
-    private List<ProductEnhanced> CreateProductsWithCaffeine()
+    private static List<ProductEnhanced> CreateProductsWithCaffeine()
     {
         return new List<ProductEnhanced>
         {
@@ -470,7 +469,7 @@ public class AlgorithmImprovementTests
         };
     }
 
-    private List<ProductEnhanced> CreateVariedProducts()
+    private static List<ProductEnhanced> CreateVariedProducts()
     {
         return new List<ProductEnhanced>
         {

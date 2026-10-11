@@ -100,7 +100,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
   useEffect(() => {
     const controller = new AbortController();
     const alive = () => !controller.signal.aborted;
-    (async () => {
+    void (async () => {
       try {
         const data = await api.getProducts(controller.signal);
         if (!alive()) return;

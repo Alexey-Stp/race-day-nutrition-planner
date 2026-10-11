@@ -47,16 +47,18 @@ internal static class PlanValidator
     {
         var intakes = plan.Where(e => !e.IsSip).OrderBy(e => e.TimeMin).ToList();
         for (int i = 0; i < intakes.Count; i++)
-        for (int j = i + 1; j < intakes.Count; j++)
         {
-            var a = intakes[i];
-            var b = intakes[j];
-            int required = PlacementPolicy.GetMinimumSpacing(
-                a.Product, b.Product, PlanningContext.SpacingPhase(a.Event.Phase, b.Event.Phase));
-            int gap = b.TimeMin - a.TimeMin;
-            if (gap < required)
-                errors.Add($"Spacing violation: {a.Product.Name} at {a.TimeMin}min and {b.Product.Name} at {b.TimeMin}min " +
-                           $"are {gap}min apart (< {required}min)");
+            for (int j = i + 1; j < intakes.Count; j++)
+            {
+                var a = intakes[i];
+                var b = intakes[j];
+                int required = PlacementPolicy.GetMinimumSpacing(
+                    a.Product, b.Product, PlanningContext.SpacingPhase(a.Event.Phase, b.Event.Phase));
+                int gap = b.TimeMin - a.TimeMin;
+                if (gap < required)
+                    errors.Add($"Spacing violation: {a.Product.Name} at {a.TimeMin}min and {b.Product.Name} at {b.TimeMin}min " +
+                               $"are {gap}min apart (< {required}min)");
+            }
         }
     }
 
@@ -77,7 +79,8 @@ internal static class PlanValidator
         if (intakes.Count <= Q.LowDiversityMinIntakes)
             return;
 
-        var mostCommon = intakes.GroupBy(e => e.Product.Name).MaxBy(g => g.Count())!;
+        if (intakes.GroupBy(e => e.Product.Name).MaxBy(g => g.Count()) is not { } mostCommon)
+            return;
         if (mostCommon.Count() > intakes.Count * Q.LowDiversityFraction)
             warnings.Add($"Low diversity: {mostCommon.Key} used {mostCommon.Count()} times " +
                          $"({mostCommon.Count() * 100 / intakes.Count}% of non-sip events)");

@@ -15,21 +15,21 @@ using RaceDay.Core.Models;
 /// <item>One cumulative-total pass, then one validation pass.</item>
 /// </list>
 /// </summary>
-public class PlanGenerator
+public static class PlanGenerator
 {
     private const double CarbComparisonSlackG = 0.05;
     private const int OneHourMin = 60;
 
     // ─── Public API ──────────────────────────────────────────────────
 
-    public List<NutritionEvent> GeneratePlan(
+    public static List<NutritionEvent> GeneratePlan(
         RaceProfile race,
         AthleteProfile athlete,
         IReadOnlyList<ProductEnhanced> products,
         bool caffeineEnabled = false) =>
         GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled).Events.ToList();
 
-    public PlanResult GeneratePlanWithDiagnostics(
+    public static PlanResult GeneratePlanWithDiagnostics(
         RaceProfile race,
         AthleteProfile athlete,
         IReadOnlyList<ProductEnhanced> products,
@@ -77,7 +77,7 @@ public class PlanGenerator
                       ?? candidates.FirstOrDefault(p => p.Texture == ProductTexture.Gel)
                       ?? candidates.FirstOrDefault(p => p.Texture == ProductTexture.LightGel);
         if (product != null)
-            plan.Add(NutritionEventFactory.PreRace(product, ctx.PreRaceTimeMin, ctx.MainPhase));
+            plan.Add(NutritionEventFactory.PreRace(product, PlanningContext.PreRaceTimeMin, ctx.MainPhase));
     }
 
     // ─── Phase 2: Paced discrete intakes ─────────────────────────────
@@ -98,27 +98,30 @@ public class PlanGenerator
             var window = ctx.FuelWindows[w];
             double windowAim = ctx.CarbAim * window.CarbShare;
             double budget = windowAim - ExpectedSipCarbs(window, ctx, windowAim) - NonSipCarbsIn(plan, ctx, w);
-            if (budget < SchedulingConstraints.MinRemainingCarbsForIntakeG)
+            if (budget >= SchedulingConstraints.MinRemainingCarbsForIntakeG)
+                PlaceIntakesInWindow(plan, ctx, window, budget, smallestPortion);
+        }
+    }
+
+    private static void PlaceIntakesInWindow(
+        List<PlannedEvent> plan, PlanningContext ctx, FuelWindow window, double budget, double smallestPortion)
+    {
+        double placed = 0;
+        double span = window.LengthMin + 1;
+        for (int t = window.StartMin;
+             t <= window.EndMin && placed < budget - SchedulingConstraints.MinRemainingCarbsForIntakeG;
+             t++)
+        {
+            double curve = budget * (t - window.StartMin + 1) / span;
+            if (placed + smallestPortion * SchedulingConstraints.PacingMidpointFraction > curve)
                 continue;
 
-            double placed = 0;
-            double span = window.LengthMin + 1;
-            for (int t = window.StartMin; t <= window.EndMin; t++)
-            {
-                if (placed >= budget - SchedulingConstraints.MinRemainingCarbsForIntakeG)
-                    break;
+            var product = ProductScorer.SelectBest(plan, t, ctx, ctx.CarbCap - NonSipCarbs(plan));
+            if (product == null || placed + product.CarbsG * SchedulingConstraints.PacingMidpointFraction > curve)
+                continue;
 
-                double curve = budget * (t - window.StartMin + 1) / span;
-                if (placed + smallestPortion * SchedulingConstraints.PacingMidpointFraction > curve)
-                    continue;
-
-                var product = ProductScorer.SelectBest(plan, t, ctx, ctx.CarbCap - NonSipCarbs(plan));
-                if (product == null || placed + product.CarbsG * SchedulingConstraints.PacingMidpointFraction > curve)
-                    continue;
-
-                plan.Add(NutritionEventFactory.Intake(product, t, ctx.PhaseAt(t)));
-                placed += product.CarbsG;
-            }
+            plan.Add(NutritionEventFactory.Intake(product, t, ctx.PhaseAt(t)));
+            placed += product.CarbsG;
         }
     }
 
@@ -158,8 +161,10 @@ public class PlanGenerator
             .Select((w, i) => Math.Max(0, ctx.CarbAim * w.CarbShare - NonSipCarbsIn(plan, ctx, i)))
             .ToList();
         double deficitSum = deficits.Sum();
+        double WindowShare(int index, int slotCount) =>
+            deficitSum > 0 ? deficits[index] / deficitSum : (double)slotCount / totalSlots;
         var allocation = slots
-            .Select((s, i) => s.Count == 0 ? 0 : need * (deficitSum > 0 ? deficits[i] / deficitSum : (double)s.Count / totalSlots))
+            .Select((s, i) => s.Count == 0 ? 0 : need * WindowShare(i, s.Count))
             .ToList();
 
         // Spill allocation that exceeds a window's sip capacity into windows with spare capacity.
@@ -297,7 +302,7 @@ public class PlanGenerator
     }
 
     /// <summary>Window minutes ordered by distance to the nearest intake (window edges count), later first on ties.</summary>
-    private static List<int> SpreadOrder(FuelWindow window, IReadOnlyList<int> intakeTimes, int fromMin)
+    private static List<int> SpreadOrder(FuelWindow window, List<int> intakeTimes, int fromMin)
     {
         int start = Math.Max(fromMin, window.StartMin);
         if (start > window.EndMin)
@@ -396,40 +401,48 @@ public class PlanGenerator
     internal static void EnforceFrontLoadConstraint(List<PlannedEvent> plan, PlanningContext ctx)
     {
         int windowEnd = ctx.FrontLoadWindowEndMin;
-        bool IsFront(PlannedEvent e) => e.TimeMin >= 0 && e.TimeMin <= windowEnd;
-        bool Violated()
-        {
-            double total = TotalCarbs(plan);
-            return total > 0 && plan.Where(IsFront).Sum(e => e.Carbs) > total * SchedulingConstraints.MaxFrontLoadFraction;
-        }
 
-        while (Violated())
-        {
-            var candidates = plan.Where(e => e.Kind == EventKind.Intake && IsFront(e))
-                .OrderByDescending(e => e.Carbs).ThenBy(e => e.TimeMin).ToList();
-
-            bool moved = false;
-            foreach (var evt in candidates)
-            {
-                if (FindLaterSlot(plan, evt, ctx, windowEnd + 1) is not int t)
-                    continue;
-                plan[plan.IndexOf(evt)] = NutritionEventFactory.MoveTo(evt, t, ctx.PhaseAt(t));
-                moved = true;
-                break;
-            }
-            if (!moved)
-                break;
-        }
+        bool moved = true;
+        while (moved && IsFrontLoaded(plan, windowEnd))
+            moved = TryMoveFrontIntakeLater(plan, ctx, windowEnd);
 
         // Last resort - keeps the hard rule even when nothing can be moved.
-        foreach (var evt in plan.Where(e => e.IsSip && IsFront(e)).OrderBy(e => e.TimeMin).ToList())
+        DropFrontEventsWhileFrontLoaded(plan, windowEnd,
+            plan.Where(e => e.IsSip && IsInFrontWindow(e, windowEnd)).OrderBy(e => e.TimeMin));
+        DropFrontEventsWhileFrontLoaded(plan, windowEnd,
+            plan.Where(e => !e.IsSip && IsInFrontWindow(e, windowEnd)).OrderByDescending(e => e.Carbs));
+    }
+
+    private static bool IsInFrontWindow(PlannedEvent e, int windowEnd) => e.TimeMin >= 0 && e.TimeMin <= windowEnd;
+
+    private static bool IsFrontLoaded(List<PlannedEvent> plan, int windowEnd)
+    {
+        double total = TotalCarbs(plan);
+        return total > 0 &&
+               plan.Where(e => IsInFrontWindow(e, windowEnd)).Sum(e => e.Carbs) > total * SchedulingConstraints.MaxFrontLoadFraction;
+    }
+
+    private static bool TryMoveFrontIntakeLater(List<PlannedEvent> plan, PlanningContext ctx, int windowEnd)
+    {
+        var candidates = plan.Where(e => e.Kind == EventKind.Intake && IsInFrontWindow(e, windowEnd))
+            .OrderByDescending(e => e.Carbs).ThenBy(e => e.TimeMin).ToList();
+
+        foreach (var evt in candidates)
         {
-            if (!Violated()) return;
-            plan.Remove(evt);
+            if (FindLaterSlot(plan, evt, ctx, windowEnd + 1) is not int t)
+                continue;
+            plan[plan.IndexOf(evt)] = NutritionEventFactory.MoveTo(evt, t, ctx.PhaseAt(t));
+            return true;
         }
-        foreach (var evt in plan.Where(e => !e.IsSip && IsFront(e)).OrderByDescending(e => e.Carbs).ToList())
+        return false;
+    }
+
+    private static void DropFrontEventsWhileFrontLoaded(List<PlannedEvent> plan, int windowEnd, IEnumerable<PlannedEvent> ordered)
+    {
+        foreach (var evt in ordered.ToList())
         {
-            if (!Violated()) return;
+            if (!IsFrontLoaded(plan, windowEnd))
+                return;
             plan.Remove(evt);
         }
     }

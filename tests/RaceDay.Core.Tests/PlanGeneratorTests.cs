@@ -7,7 +7,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 public class PlanGeneratorTests
 {
-    private readonly PlanGenerator _generator = new();
 
     #region Direct PlanGenerator Tests
 
@@ -20,7 +19,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -42,7 +41,7 @@ public class PlanGeneratorTests
         var products = CreateTriathlonProducts(); // Use more varied products
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -65,7 +64,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var preRaceEvent = plan.FirstOrDefault(e => e.TimeMin == -15);
@@ -82,7 +81,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Carbs should never decrease
         for (int i = 1; i < plan.Count; i++)
@@ -101,8 +100,8 @@ public class PlanGeneratorTests
         var products = CreateTriathlonProducts(); // Use more varied products
 
         // Act
-        var heavyPlan = _generator.GeneratePlan(race, heavyAthlete, products);
-        var lightPlan = _generator.GeneratePlan(race, lightAthlete, products);
+        var heavyPlan = PlanGenerator.GeneratePlan(race, heavyAthlete, products);
+        var lightPlan = PlanGenerator.GeneratePlan(race, lightAthlete, products);
 
         // Assert
         var heavyTotal = heavyPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
@@ -127,8 +126,8 @@ public class PlanGeneratorTests
         var products = CreateTriathlonProducts(); // Use more varied products for better accuracy
 
         // Act
-        var shortPlan = _generator.GeneratePlan(race: shortRace, athlete, products);
-        var longPlan = _generator.GeneratePlan(race: longRace, athlete, products);
+        var shortPlan = PlanGenerator.GeneratePlan(race: shortRace, athlete, products);
+        var longPlan = PlanGenerator.GeneratePlan(race: longRace, athlete, products);
 
         // Assert
         var shortTotal = shortPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
@@ -153,8 +152,8 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var easyPlan = _generator.GeneratePlan(easyRace, athlete, products);
-        var hardPlan = _generator.GeneratePlan(hardRace, athlete, products);
+        var easyPlan = PlanGenerator.GeneratePlan(easyRace, athlete, products);
+        var hardPlan = PlanGenerator.GeneratePlan(hardRace, athlete, products);
 
         // Assert
         var easyTotal = easyPlan.LastOrDefault()?.TotalCarbsSoFar ?? 0;
@@ -173,7 +172,7 @@ public class PlanGeneratorTests
         var validActions = new[] { "Eat", "Squeeze", "Chew", "Drink", "Consume", "Sip" };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         Assert.All(plan, @event =>
@@ -191,7 +190,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Should not have events during swim phase (first part of race)
         var earlyEvents = plan.Where(e => e.TimeMin < 60).ToList(); // First hour
@@ -211,7 +210,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Should have at least one caffeinated product for long hard races
         var hasCaffeine = plan.Any(e => e.HasCaffeine);
@@ -227,8 +226,8 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan1 = _generator.GeneratePlan(race, athlete, products);
-        var plan2 = _generator.GeneratePlan(race, athlete, products);
+        var plan1 = PlanGenerator.GeneratePlan(race, athlete, products);
+        var plan2 = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Same inputs should produce same plan (deterministic)
         plan2.Count.ShouldBe(plan1.Count);
@@ -248,7 +247,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert - Plan should have events throughout the race
         plan.ShouldNotBeEmpty();
@@ -265,7 +264,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -307,7 +306,7 @@ public class PlanGeneratorTests
         var products = CreateTriathlonProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var mainEvents = plan.Where(e => e.TimeMin > 0).ToList();
@@ -341,7 +340,7 @@ public class PlanGeneratorTests
         var products = CreateTriathlonProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike && e.TimeMin > 0).ToList();
@@ -372,7 +371,7 @@ public class PlanGeneratorTests
         var products = CreateTriathlonProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
@@ -413,7 +412,7 @@ public class PlanGeneratorTests
         var expectedRunEnd = race.DurationHours * 60; // 270 min
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
 
         // Assert - COMPREHENSIVE VALIDATION
 
@@ -570,7 +569,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var raceEvents = plan.Where(e => e.TimeMin > 0).ToList();
@@ -596,7 +595,7 @@ public class PlanGeneratorTests
         var products = CreateTestProducts();
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var raceEvents = plan.Where(e => e.TimeMin > 0).ToList();
@@ -640,7 +639,7 @@ public class PlanGeneratorTests
         var targetTotalCarbs = target.CarbsGPerHour * race.DurationHours;
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -667,7 +666,7 @@ public class PlanGeneratorTests
         var targetTotalCarbs = target.CarbsGPerHour * race.DurationHours;
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -687,8 +686,8 @@ public class PlanGeneratorTests
         var barsOnly = allProducts.Where(p => p.Texture == ProductTexture.Bake).ToList();
 
         // Act
-        var planAll = _generator.GeneratePlan(race, athlete, allProducts);
-        var planBars = _generator.GeneratePlan(race, athlete, barsOnly);
+        var planAll = PlanGenerator.GeneratePlan(race, athlete, allProducts);
+        var planBars = PlanGenerator.GeneratePlan(race, athlete, barsOnly);
 
         // Assert - Target carbs should be the same
         var targetCarbsAll = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
@@ -712,8 +711,8 @@ public class PlanGeneratorTests
         var gelsOnly = allProducts.Where(p => p.Texture == ProductTexture.Gel || p.Texture == ProductTexture.LightGel).ToList();
 
         // Act
-        var planAll = _generator.GeneratePlan(race, athlete, allProducts);
-        var planGels = _generator.GeneratePlan(race, athlete, gelsOnly);
+        var planAll = PlanGenerator.GeneratePlan(race, athlete, allProducts);
+        var planGels = PlanGenerator.GeneratePlan(race, athlete, gelsOnly);
 
         // Assert - Target carbs should be the same
         var targetCarbsAll = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
@@ -737,8 +736,8 @@ public class PlanGeneratorTests
         var drinksOnly = allProducts.Where(p => p.Texture == ProductTexture.Drink).ToList();
 
         // Act
-        var planAll = _generator.GeneratePlan(race, athlete, allProducts);
-        var planDrinks = _generator.GeneratePlan(race, athlete, drinksOnly);
+        var planAll = PlanGenerator.GeneratePlan(race, athlete, allProducts);
+        var planDrinks = PlanGenerator.GeneratePlan(race, athlete, drinksOnly);
 
         // Assert - Target carbs should be the same
         var targetCarbsAll = NutritionCalculator.CalculateTargets(race, athlete).CarbsGPerHour;
@@ -772,9 +771,9 @@ public class PlanGeneratorTests
         gelProducts.ShouldNotBeEmpty();
         drinkProducts.ShouldNotBeEmpty();
         
-        var planBars = _generator.GeneratePlan(race, athlete, barProducts);
-        var planGels = _generator.GeneratePlan(race, athlete, gelProducts);
-        var planDrinks = _generator.GeneratePlan(race, athlete, drinkProducts);
+        var planBars = PlanGenerator.GeneratePlan(race, athlete, barProducts);
+        var planGels = PlanGenerator.GeneratePlan(race, athlete, gelProducts);
+        var planDrinks = PlanGenerator.GeneratePlan(race, athlete, drinkProducts);
         
         // All should generate plans
         planBars.ShouldNotBeEmpty();
@@ -806,9 +805,9 @@ public class PlanGeneratorTests
         products3.ShouldNotBeEmpty();
 
         // Act
-        var planBars = _generator.GeneratePlan(race, athlete, products1);
-        var planGels = _generator.GeneratePlan(race, athlete, products2);
-        var planDrinks = _generator.GeneratePlan(race, athlete, products3);
+        var planBars = PlanGenerator.GeneratePlan(race, athlete, products1);
+        var planGels = PlanGenerator.GeneratePlan(race, athlete, products2);
+        var planDrinks = PlanGenerator.GeneratePlan(race, athlete, products3);
 
         // Assert - Target is same, but plans use different products
         planBars.ShouldNotBeEmpty();
@@ -845,7 +844,7 @@ public class PlanGeneratorTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, singleProductType);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, singleProductType);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -1472,7 +1471,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(SportType.Run, DurationHours: 3, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var drinkEvents = plan.Where(e => e.ProductName.Contains("Drink")).ToList();
         drinkEvents.ShouldNotBeEmpty();
@@ -1505,7 +1504,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(SportType.Bike, DurationHours: 4, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var sipEvents = plan.Where(e => e.Action == "Sip").ToList();
         sipEvents.ShouldNotBeEmpty();
@@ -1530,7 +1529,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var positiveTimeEvents = plan.Where(e => e.TimeMin > 0).OrderBy(e => e.TimeMin).ToList();
         positiveTimeEvents.ShouldNotBeEmpty();
@@ -1556,7 +1555,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         double totalPlanCarbs = plan.Sum(e => e.CarbsInEvent);
         int durationMinutes = (int)(durationHours * 60);
@@ -1587,7 +1586,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Sum of CarbsInEvent should equal the last cumulative total
         double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
@@ -1606,7 +1605,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
         var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled: false);
 
         double sumOfEvents = plan.Sum(e => e.CarbsInEvent);
@@ -1628,7 +1627,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var nonSipEvents = plan.Where(e => e.Action != "Sip" && e.TimeMin > 0).OrderBy(e => e.TimeMin).ToList();
 
@@ -1649,7 +1648,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(SportType.Triathlon, DurationHours: 5, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike && e.TimeMin > 0).ToList();
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
@@ -1716,7 +1715,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: temperature, Intensity: intensity);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // 1. Plan is non-empty
         plan.ShouldNotBeEmpty();
@@ -1765,7 +1764,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(SportType.Run, DurationHours: 5.15, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         int durationMinutes = (int)(race.DurationHours * 60); // 309 min
         int finalThirdStart = durationMinutes * 2 / 3; // ~206 min
@@ -1785,7 +1784,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(sportType, DurationHours: durationHours, Temperature: TemperatureCondition.Moderate, Intensity: intensity);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         int durationMinutes = (int)(durationHours * 60);
         int lastEventTime = plan.Where(e => e.TimeMin > 0).Max(e => e.TimeMin);
@@ -1819,7 +1818,7 @@ public class PlanGeneratorTests
             new("Sports Drink", CarbsG: 30, Texture: ProductTexture.Drink, HasCaffeine: false, CaffeineMg: 0, VolumeMl: 500),
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
         double ceiling = weightKg * maxMgPerKg;
@@ -1844,7 +1843,7 @@ public class PlanGeneratorTests
             new("Plain Bar", CarbsG: 40, Texture: ProductTexture.Bake, HasCaffeine: false, CaffeineMg: 0),
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         double totalCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
         double ceiling = weightKg * 1.0; // Easy = 1 mg/kg
@@ -1859,7 +1858,7 @@ public class PlanGeneratorTests
         var race = new RaceProfile(SportType.Run, DurationHours: 3, Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Hard);
         var products = CreateTriathlonProducts();
 
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         double sumCaffeine = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue).Sum(e => e.CaffeineMg!.Value);
         double lastCumulativeCaffeine = plan.Last().TotalCaffeineSoFar;
@@ -1881,7 +1880,7 @@ public class PlanGeneratorTests
             new("Big Gel", CarbsG: 45, Texture: ProductTexture.Gel, HasCaffeine: false, CaffeineMg: 0),
         };
 
-        var result = _generator.GeneratePlanWithDiagnostics(race, athlete, products);
+        var result = PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, products);
 
         // Should have at least one quality warning (front-loading, coverage, or density)
         result.Warnings.ShouldNotBeEmpty();
@@ -1899,7 +1898,7 @@ public class PlanGeneratorTests
             new("Gel", 25, ProductTexture.Gel, false, 0)
         };
 
-        var result = _generator.GeneratePlanWithDiagnostics(race, athlete, products);
+        var result = PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, products);
 
         result.ShouldNotBeNull();
         result.Events.ShouldNotBeNull();
@@ -1918,7 +1917,7 @@ public class PlanGeneratorTests
             new("Drink", 35, ProductTexture.Drink, false, 0, 500)
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         plan.ShouldNotBeNull();
     }
@@ -1935,7 +1934,7 @@ public class PlanGeneratorTests
             new("Bar", 40, ProductTexture.Bake, false, 0)
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         plan.ShouldNotBeEmpty();
     }
@@ -1950,7 +1949,7 @@ public class PlanGeneratorTests
             new("Sports Drink", 35, ProductTexture.Drink, false, 0, 500)
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         plan.ShouldNotBeEmpty();
         plan.Any(e => e.Action == "Sip").ShouldBeTrue();
@@ -1967,7 +1966,7 @@ public class PlanGeneratorTests
         };
 
         // Should not throw even when caffeine is enabled but no caffeinated products exist
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         plan.ShouldNotBeNull();
     }

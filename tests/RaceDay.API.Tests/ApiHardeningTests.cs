@@ -448,7 +448,19 @@ public class ApiHardeningTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Cors_Development_AllowsAnyOrigin()
+    public async Task Cors_Development_AllowsLoopbackOrigin()
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/metadata");
+        request.Headers.Add("Origin", "http://localhost:5173");
+
+        var response = await _client.SendAsync(request);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        response.Headers.GetValues("Access-Control-Allow-Origin").Single().ShouldBe("http://localhost:5173");
+    }
+
+    [Fact]
+    public async Task Cors_Development_DeniesNonLoopbackOrigin()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/metadata");
         request.Headers.Add("Origin", "https://anything.example");
@@ -456,7 +468,7 @@ public class ApiHardeningTests : IClassFixture<WebApplicationFactory<Program>>
         var response = await _client.SendAsync(request);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        response.Headers.GetValues("Access-Control-Allow-Origin").Single().ShouldBe("*");
+        response.Headers.Contains("Access-Control-Allow-Origin").ShouldBeFalse();
     }
 
     [Fact]
@@ -466,12 +478,12 @@ public class ApiHardeningTests : IClassFixture<WebApplicationFactory<Program>>
         {
             Content = JsonContent.Create(ValidPlan(products: new[] { Gel(carbs: -1) }))
         };
-        request.Headers.Add("Origin", "https://anything.example");
+        request.Headers.Add("Origin", "http://localhost:5173");
 
         var response = await _client.SendAsync(request);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        response.Headers.GetValues("Access-Control-Allow-Origin").Single().ShouldBe("*");
+        response.Headers.GetValues("Access-Control-Allow-Origin").Single().ShouldBe("http://localhost:5173");
     }
 
     [Fact]
@@ -498,7 +510,7 @@ public class ApiHardeningTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Cors_ProductionWithoutConfiguredOrigins_FallsBackToAnyOrigin()
+    public async Task Cors_ProductionWithoutConfiguredOrigins_DeniesCrossOrigin()
     {
         var client = _factory.WithWebHostBuilder(b => b.UseEnvironment("Production")).CreateClient();
 
@@ -506,7 +518,7 @@ public class ApiHardeningTests : IClassFixture<WebApplicationFactory<Program>>
         request.Headers.Add("Origin", "https://anything.example");
         var response = await client.SendAsync(request);
 
-        response.Headers.GetValues("Access-Control-Allow-Origin").Single().ShouldBe("*");
+        response.Headers.Contains("Access-Control-Allow-Origin").ShouldBeFalse();
     }
 
     [Fact]

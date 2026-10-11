@@ -82,7 +82,7 @@ internal sealed class PlanningContext
     public RacePhase MainPhase => Phases[0].Phase;
     public int LatestEventMin => Math.Max(0, DurationMinutes - SchedulingConstraints.RaceEndSafetyMarginMin);
     public int EarliestIntakeMin => Math.Min(SchedulingConstraints.EarliestInRaceIntakeMin, LatestEventMin);
-    public int PreRaceTimeMin => -AdvancedNutritionConfig.PreRaceNutritionMinutesBefore;
+    public static int PreRaceTimeMin => -AdvancedNutritionConfig.PreRaceNutritionMinutesBefore;
     public int CaffeineEarliestMin =>
         (int)Math.Ceiling(DurationMinutes * SchedulingConstraints.CaffeinePreferredStartPercent);
     public int FrontLoadWindowEndMin => (int)(DurationMinutes * SchedulingConstraints.FrontLoadWindowFraction);
@@ -108,7 +108,7 @@ internal sealed class PlanningContext
     public static RacePhase SpacingPhase(RacePhase a, RacePhase b) =>
         a == RacePhase.Bike && b == RacePhase.Bike ? RacePhase.Bike : RacePhase.Run;
 
-    private static IReadOnlyList<PhaseSegment> BuildPhases(SportType sport, int durationMinutes, ResolvedLegModel? legModel)
+    private static List<PhaseSegment> BuildPhases(SportType sport, int durationMinutes, ResolvedLegModel? legModel)
     {
         if (sport == SportType.Triathlon && legModel != null)
         {
@@ -126,7 +126,7 @@ internal sealed class PlanningContext
         return new List<PhaseSegment> { new(phase, 0, durationMinutes) };
     }
 
-    private IReadOnlyList<FuelWindow> BuildFuelWindows(ResolvedLegModel? legModel)
+    private List<FuelWindow> BuildFuelWindows(ResolvedLegModel? legModel)
     {
         if (!IsTriathlon || legModel == null)
             return new List<FuelWindow> { new(MainPhase, EarliestIntakeMin, LatestEventMin, 1.0) };

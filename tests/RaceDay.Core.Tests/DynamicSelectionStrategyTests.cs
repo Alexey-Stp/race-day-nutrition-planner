@@ -347,7 +347,6 @@ public class DynamicSelectionStrategyTests
 
     // ── Integration tests (via PlanGenerator) ────────────────────────────────
 
-    private readonly PlanGenerator _generator = new();
 
     [Fact]
     public void GeneratePlan_BikeRace_ChewableProductsAppearInPlan()
@@ -363,7 +362,7 @@ public class DynamicSelectionStrategyTests
             new("Gel 40g", 40, ProductTexture.Gel, false, 0, 0, "", 80)
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         plan.ShouldNotBeEmpty();
         // Chews should appear when available on bike (phase bonus + static bonus)
@@ -383,7 +382,7 @@ public class DynamicSelectionStrategyTests
             new("Large Gel", 40, ProductTexture.Gel, false, 0, 0, "", 80)
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var nonSipEvents = plan.Where(e => e.SipMl == null).ToList();
         nonSipEvents.ShouldNotBeEmpty();
@@ -411,7 +410,7 @@ public class DynamicSelectionStrategyTests
             new("Gel 25g", 25, ProductTexture.Gel, false, 0, 0, "", 50)
         };
 
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         var sipEvents = plan.Where(e => e.SipMl != null).OrderBy(e => e.TimeMin).ToList();
         sipEvents.ShouldNotBeEmpty();

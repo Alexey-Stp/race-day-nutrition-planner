@@ -50,7 +50,7 @@ internal sealed class GlobalExceptionHandler(
         int status = problem.Status ?? StatusCodes.Status500InternalServerError;
         if (status >= StatusCodes.Status500InternalServerError)
             logger.LogError(exception, "Request {Method} {Path} failed with {Status}", httpContext.Request.Method, httpContext.Request.Path, status);
-        else
+        else if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("Request {Method} {Path} rejected with {Status}: {Message}", httpContext.Request.Method, httpContext.Request.Path, status, exception.Message);
 
         httpContext.Response.StatusCode = status;

@@ -13,7 +13,6 @@ using System.Linq;
 /// </summary>
 public class RegressionTests
 {
-    private readonly PlanGenerator _generator = new();
 
     [Fact]
     public void Bug_CaffeineAlwaysZero_WhenCaffeinatedProductsUsed()
@@ -37,7 +36,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         // Assert
         var caffeineEvents = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue && e.CaffeineMg > 0).ToList();
@@ -82,7 +81,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -132,7 +131,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var swimEvents = plan.Where(e => e.Phase == RacePhase.Swim).ToList();
@@ -176,7 +175,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
 
         // Assert
         var caffeineEvents = plan.Where(e => e.HasCaffeine).ToList();
@@ -207,7 +206,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         // Assert
         var sumCarbs = plan.Sum(e => e.CarbsInEvent);
@@ -226,14 +225,16 @@ public class RegressionTests
 
     public enum ProductSet { GelsOnly, DrinksAndGels, ChewsOnly, Catalogue }
 
-    public static IEnumerable<object[]> MatrixCases()
+    public static TheoryData<SportType, double, IntensityLevel, bool, ProductSet> MatrixCases()
     {
+        var cases = new TheoryData<SportType, double, IntensityLevel, bool, ProductSet>();
         foreach (var sport in new[] { SportType.Run, SportType.Bike, SportType.Triathlon })
         foreach (var hours in new[] { 1.0, 3.0, 6.0, 12.0 })
         foreach (var intensity in new[] { IntensityLevel.Easy, IntensityLevel.Moderate, IntensityLevel.Hard })
         foreach (var caffeine in new[] { false, true })
         foreach (var set in Enum.GetValues<ProductSet>())
-            yield return new object[] { sport, hours, intensity, caffeine, set };
+            cases.Add(sport, hours, intensity, caffeine, set);
+        return cases;
     }
 
     [Theory]
@@ -299,7 +300,7 @@ public class RegressionTests
             }
         };
 
-        return (new PlanGenerator().GeneratePlanWithDiagnostics(race, athlete, set_products, caffeine), set_products);
+        return (PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, set_products, caffeine), set_products);
     }
 
     private static ProductTexture OracleTexture(string productType, double carbsG) =>

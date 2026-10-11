@@ -79,9 +79,9 @@ public static class HostingExtensions
     }
 
     /// <summary>
-    /// Development allows any origin. Elsewhere the configured <c>Cors:AllowedOrigins</c> are used; when none are
-    /// configured any origin is allowed (the API is public and unauthenticated) and a warning is logged at startup.
-    /// Returns an empty list when any origin is allowed.
+    /// Development allows loopback origins only (the Vite dev server). Elsewhere only the configured
+    /// <c>Cors:AllowedOrigins</c> are allowed; when none are configured cross-origin requests are denied and a
+    /// warning is logged at startup. Returns an empty list in Development.
     /// </summary>
     public static IReadOnlyList<string> ResolveCorsOrigins(IConfiguration configuration, IHostEnvironment environment)
     {
@@ -101,14 +101,17 @@ public static class HostingExtensions
             var origins = ResolveCorsOrigins(configuration, environment);
             options.AddPolicy(CorsSettings.PolicyName, policy =>
             {
-                if (origins.Count == 0)
-                    policy.AllowAnyOrigin();
+                if (environment.IsDevelopment())
+                    policy.SetIsOriginAllowed(IsLoopbackOrigin);
                 else
                     policy.WithOrigins([.. origins]);
                 policy.AllowAnyMethod().AllowAnyHeader();
             });
         });
     }
+
+    private static bool IsLoopbackOrigin(string origin) =>
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri) && uri.IsLoopback;
 
     private static void AddPlanRateLimiting(WebApplicationBuilder builder)
     {
@@ -161,8 +164,8 @@ public static class HostingExtensions
         if (!app.Environment.IsDevelopment() && ResolveCorsOrigins(app.Configuration, app.Environment).Count == 0)
         {
             app.Logger.LogWarning(
-                "No CORS origins configured (Cors:AllowedOrigins); allowing any origin. " +
-                "Set Cors__AllowedOrigins__0 to the frontend origin to restrict cross-origin access.");
+                "No CORS origins configured (Cors:AllowedOrigins); cross-origin requests are denied. " +
+                "Set Cors__AllowedOrigins__0 to the frontend origin to allow browser access from it.");
         }
 
         app.UseForwardedHeaders();

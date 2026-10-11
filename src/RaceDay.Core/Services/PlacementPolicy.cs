@@ -52,14 +52,18 @@ internal static class PlacementPolicy
     /// Minimum minutes between two discrete intakes. Texture drives the base spacing (solid &gt; gel &gt; drink,
     /// bike more permissive than run); two caffeinated products additionally need the caffeine spacing.
     /// </summary>
+    private static int TextureSpacing(ProductEnhanced product1, ProductEnhanced product2, bool bike)
+    {
+        if (IsSolid(product1) || IsSolid(product2))
+            return bike ? SchedulingConstraints.MinSolidSpacingBike : SchedulingConstraints.MinSolidSpacingRun;
+        if (IsGel(product1) || IsGel(product2))
+            return bike ? SchedulingConstraints.MinGelSpacingBike : SchedulingConstraints.MinGelSpacingRun;
+        return SchedulingConstraints.MinDrinkSpacing;
+    }
+
     public static int GetMinimumSpacing(ProductEnhanced product1, ProductEnhanced product2, RacePhase phase)
     {
-        bool bike = phase == RacePhase.Bike;
-        int textureSpacing = IsSolid(product1) || IsSolid(product2)
-            ? (bike ? SchedulingConstraints.MinSolidSpacingBike : SchedulingConstraints.MinSolidSpacingRun)
-            : IsGel(product1) || IsGel(product2)
-                ? (bike ? SchedulingConstraints.MinGelSpacingBike : SchedulingConstraints.MinGelSpacingRun)
-                : SchedulingConstraints.MinDrinkSpacing;
+        int textureSpacing = TextureSpacing(product1, product2, phase == RacePhase.Bike);
 
         return product1.HasCaffeine && product2.HasCaffeine
             ? Math.Max(SchedulingConstraints.MinCaffeineSpacing, textureSpacing)

@@ -5,6 +5,8 @@ using RaceDay.Core.Exceptions;
 
 public class ProductRepositoryTests
 {
+    private static readonly string[] MixedCaseExcludeTypes = ["GEL", " Drink "];
+
     private readonly ProductRepository _repository = new();
 
     [Fact]
@@ -39,7 +41,7 @@ public class ProductRepositoryTests
     {
         // Arrange
         var products = await _repository.GetAllProductsAsync();
-        var firstProduct = products.First();
+        var firstProduct = products[0];
 
         // Act
         var product = await _repository.GetProductByIdAsync(firstProduct.Id);
@@ -80,7 +82,7 @@ public class ProductRepositoryTests
         // Assert
         products.ShouldNotBeNull();
         // Drinks may or may not exist in test data, but method should work
-        (products == null || products.All(p => p.ProductType.ToLower().Contains("drink"))).ShouldBeTrue();
+        (products == null || products.All(p => p.ProductType.Contains("drink", StringComparison.OrdinalIgnoreCase))).ShouldBeTrue();
     }
 
     [Fact]
@@ -101,7 +103,7 @@ public class ProductRepositoryTests
     {
         // Arrange
         var allProducts = await _repository.GetAllProductsAsync();
-        var firstProductName = allProducts.First().Name;
+        var firstProductName = allProducts[0].Name;
 
         // Act
         var results = await _repository.SearchProductsAsync(firstProductName);
@@ -128,7 +130,7 @@ public class ProductRepositoryTests
     {
         // Arrange
         var allProducts = await _repository.GetAllProductsAsync();
-        var testName = allProducts.First().Name;
+        var testName = allProducts[0].Name;
 
         // Act
         var resultsLower = await _repository.SearchProductsAsync(testName.ToLower());
@@ -265,7 +267,7 @@ public class ProductRepositoryTests
     [Fact]
     public async Task GetFilteredProductsAsync_ExcludeTypesAnyCase_ExcludesThem()
     {
-        var filtered = await _repository.GetFilteredProductsAsync(new ProductFilter(ExcludeTypes: new[] { "GEL", " Drink " }));
+        var filtered = await _repository.GetFilteredProductsAsync(new ProductFilter(ExcludeTypes: MixedCaseExcludeTypes));
 
         filtered.ShouldNotBeEmpty();
         filtered.ShouldAllBe(p => !p.ProductType.Equals("gel", StringComparison.OrdinalIgnoreCase)

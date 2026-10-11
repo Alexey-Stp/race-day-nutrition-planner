@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -95,19 +96,17 @@ public class ProductRepository : IProductRepository
         return filtered.ToList();
     }
 
-    private static IReadOnlyList<ProductInfo> LoadCatalogue(Func<IEnumerable<ProductInfo>> loader, ILogger logger)
+    private static ReadOnlyCollection<ProductInfo> LoadCatalogue(Func<IEnumerable<ProductInfo>> loader, ILogger logger)
     {
         try
         {
             var products = loader().ToList();
             if (products.Count == 0)
+            {
+                logger.LogError("Product catalogue is empty");
                 throw new CatalogueLoadException(CatalogueName, "no products were found in the embedded resources");
+            }
             return products.AsReadOnly();
-        }
-        catch (CatalogueLoadException ex)
-        {
-            logger.LogError(ex, "Product catalogue is empty");
-            throw;
         }
         catch (Exception ex) when (ex is JsonException or IOException or InvalidOperationException or NotSupportedException)
         {

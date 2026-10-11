@@ -31,13 +31,12 @@ public class DiagnosticTest
     [InlineData(true)]
     public void GeneratePlan_Run4hEasyMixedProducts_SatisfiesAllHardRules(bool caffeineEnabled)
     {
-        var generator = new PlanGenerator();
         var athlete = new AthleteProfile(WeightKg: 75);
         var race = new RaceProfile(SportType.Run, DurationHours: 4.0,
             Temperature: TemperatureCondition.Moderate, Intensity: IntensityLevel.Easy);
         var products = MixedProducts();
 
-        var result = generator.GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled);
+        var result = PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled);
         var plan = result.Events;
 
         _output.WriteLine($"Total events: {plan.Count}, total carbs: {plan.Sum(e => e.CarbsInEvent):F1}g");
