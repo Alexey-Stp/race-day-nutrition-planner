@@ -63,14 +63,13 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task GeneratePlan_MissingBody_ReturnsBadRequestOrUnsupportedMediaType()
+    public async Task GeneratePlan_MissingBody_ReturnsBadRequestProblem()
     {
         var response = await _client.PostAsync("/api/plan/generate",
             new StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json"));
 
-        (response.StatusCode == HttpStatusCode.BadRequest ||
-         response.StatusCode == HttpStatusCode.UnsupportedMediaType)
-            .ShouldBeTrue($"Expected 400 or 415, got {(int)response.StatusCode}");
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        response.Content.Headers.ContentType?.MediaType.ShouldBe("application/problem+json");
     }
 
     [Fact]
@@ -479,9 +478,25 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
             filter = new { brand = (string?)null, excludeTypes = (string[]?)null }
         };
 
+        var drinksResponse = await _client.GetAsync("/api/products/type/drink");
+        drinksResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        using var drinksDoc = JsonDocument.Parse(await drinksResponse.Content.ReadAsStringAsync());
+        var drinkNames = drinksDoc.RootElement.EnumerateArray()
+            .Select(p => p.GetProperty("name").GetString())
+            .ToHashSet();
+        drinkNames.ShouldNotBeEmpty("catalogue should contain drinks for this test to be meaningful");
+
         var response = await _client.PostAsJsonAsync("/api/plan/generate", payload);
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var schedule = doc.RootElement.GetProperty("nutritionSchedule").EnumerateArray().ToList();
+        schedule.ShouldNotBeEmpty();
+        foreach (var evt in schedule)
+        {
+            drinkNames.ShouldNotContain(evt.GetProperty("productName").GetString());
+            evt.GetProperty("kind").GetString().ShouldNotBe("Sip");
+        }
     }
 
     [Fact]

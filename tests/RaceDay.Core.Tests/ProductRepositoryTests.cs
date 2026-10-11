@@ -1,9 +1,12 @@
 namespace RaceDay.Core.Tests;
 using RaceDay.Core.Models;
 using RaceDay.Core.Repositories;
+using RaceDay.Core.Exceptions;
 
 public class ProductRepositoryTests
 {
+    private static readonly string[] MixedCaseExcludeTypes = ["GEL", " Drink "];
+
     private readonly ProductRepository _repository = new();
 
     [Fact]
@@ -38,7 +41,7 @@ public class ProductRepositoryTests
     {
         // Arrange
         var products = await _repository.GetAllProductsAsync();
-        var firstProduct = products.First();
+        var firstProduct = products[0];
 
         // Act
         var product = await _repository.GetProductByIdAsync(firstProduct.Id);
@@ -79,7 +82,7 @@ public class ProductRepositoryTests
         // Assert
         products.ShouldNotBeNull();
         // Drinks may or may not exist in test data, but method should work
-        (products == null || products.All(p => p.ProductType.ToLower().Contains("drink"))).ShouldBeTrue();
+        (products == null || products.All(p => p.ProductType.Contains("drink", StringComparison.OrdinalIgnoreCase))).ShouldBeTrue();
     }
 
     [Fact]
@@ -100,7 +103,7 @@ public class ProductRepositoryTests
     {
         // Arrange
         var allProducts = await _repository.GetAllProductsAsync();
-        var firstProductName = allProducts.First().Name;
+        var firstProductName = allProducts[0].Name;
 
         // Act
         var results = await _repository.SearchProductsAsync(firstProductName);
@@ -127,7 +130,7 @@ public class ProductRepositoryTests
     {
         // Arrange
         var allProducts = await _repository.GetAllProductsAsync();
-        var testName = allProducts.First().Name;
+        var testName = allProducts[0].Name;
 
         // Act
         var resultsLower = await _repository.SearchProductsAsync(testName.ToLower());
@@ -195,5 +198,99 @@ public class ProductRepositoryTests
         // Assert
         filtered.ShouldNotBeNull();
         filtered.Count.ShouldBe(allProducts.Count);
+    }
+
+    // ── Review findings: culture, case, immutability, load failure ──────────
+
+    [Fact]
+    public async Task SearchProductsAsync_TurkishCulture_MatchesDottedI()
+    {
+        var original = Thread.CurrentThread.CurrentCulture;
+        try
+        {
+            // Under tr-TR "ISOTONIC".ToLower() is "ısotonıc" (dotless ı), which used to miss "Isotonic".
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("tr-TR");
+
+            var results = await _repository.SearchProductsAsync("ISOTONIC");
+
+            results.ShouldNotBeEmpty();
+            results.ShouldAllBe(p => p.Name.Contains("Isotonic", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentCulture = original;
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SearchProductsAsync_NullOrBlankQuery_ReturnsEmpty(string? query)
+    {
+        var results = await _repository.SearchProductsAsync(query!);
+
+        results.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task GetProductByIdAsync_DifferentCase_ReturnsProduct()
+    {
+        var first = (await _repository.GetAllProductsAsync())[0];
+
+        var product = await _repository.GetProductByIdAsync(first.Id.ToUpperInvariant());
+
+        product.ShouldNotBeNull();
+        product.Id.ShouldBe(first.Id);
+    }
+
+    [Fact]
+    public async Task GetAllProductsAsync_ReturnedList_CannotModifyCatalogue()
+    {
+        var products = await _repository.GetAllProductsAsync();
+
+        products.ShouldBeAssignableTo<IReadOnlyList<ProductInfo>>();
+        if (products is IList<ProductInfo> list)
+            Should.Throw<NotSupportedException>(() => list.Clear());
+        (await _repository.GetAllProductsAsync()).Count.ShouldBe(products.Count);
+    }
+
+    [Fact]
+    public async Task GetAllProductsAsync_RepeatedCalls_ReturnSameInstanceWithoutCopying()
+    {
+        var first = await _repository.GetAllProductsAsync();
+        var second = await _repository.GetAllProductsAsync();
+
+        second.ShouldBeSameAs(first);
+    }
+
+    [Fact]
+    public async Task GetFilteredProductsAsync_ExcludeTypesAnyCase_ExcludesThem()
+    {
+        var filtered = await _repository.GetFilteredProductsAsync(new ProductFilter(ExcludeTypes: MixedCaseExcludeTypes));
+
+        filtered.ShouldNotBeEmpty();
+        filtered.ShouldAllBe(p => !p.ProductType.Equals("gel", StringComparison.OrdinalIgnoreCase)
+                                  && !p.ProductType.Equals("drink", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task GetAllProductsAsync_LoaderThrows_ThrowsCatalogueLoadException()
+    {
+        var repository = new ProductRepository(() => throw new System.Text.Json.JsonException("bad json"));
+
+        var ex = await Should.ThrowAsync<CatalogueLoadException>(() => repository.GetAllProductsAsync());
+        ex.InnerException.ShouldBeOfType<System.Text.Json.JsonException>();
+    }
+
+    [Fact]
+    public async Task GetAllProductsAsync_EmptyCatalogue_ThrowsInsteadOfCachingEmptyList()
+    {
+        int calls = 0;
+        var repository = new ProductRepository(() => { calls++; return Array.Empty<ProductInfo>(); });
+
+        await Should.ThrowAsync<CatalogueLoadException>(() => repository.GetAllProductsAsync());
+        await Should.ThrowAsync<CatalogueLoadException>(() => repository.GetAllProductsAsync());
+        calls.ShouldBe(2); // failure is not cached; the next call retries
     }
 }

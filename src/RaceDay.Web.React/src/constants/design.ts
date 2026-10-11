@@ -37,12 +37,16 @@ export const ATHLETE_WEIGHT = {
   DEFAULT: 75,
 } as const;
 
-// Duration constraints
+// Duration constraints. MAX mirrors the API's 24h DurationHours limit
+// (Ironman finishes range ~8-17h).
 export const DURATION = {
   MIN: 0.5,
   MAX: 24,
   STEP: 0.01667, // 1 minute in hours
 } as const;
+
+// Duration slider granularity (15 minutes)
+export const DURATION_SLIDER_STEP = 0.25;
 
 // Progress thresholds
 export const PROGRESS_THRESHOLDS = {

@@ -14,7 +14,8 @@ namespace RaceDay.Core.Models;
 /// <param name="CaffeineMg">Amount of caffeine in milligrams</param>
 /// <param name="TotalCaffeineSoFar">Cumulative caffeine consumed up to this point</param>
 /// <param name="CarbsInEvent">Carbs contributed by this specific event</param>
-/// <param name="SipMl">Milliliters consumed in this sip event (null for non-drink events)</param>
+/// <param name="SipMl">Milliliters consumed in this sip event (null for non-sip events)</param>
+/// <param name="Kind">Explicit event classification (pre-race, sip or intake)</param>
 public record NutritionEvent(
     int TimeMin,
     RacePhase Phase,
@@ -27,5 +28,6 @@ public record NutritionEvent(
     double? CaffeineMg = null,
     double TotalCaffeineSoFar = 0,
     double CarbsInEvent = 0,
-    double? SipMl = null
+    double? SipMl = null,
+    EventKind Kind = EventKind.Intake
 );

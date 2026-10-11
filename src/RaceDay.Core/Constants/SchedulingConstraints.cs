@@ -18,8 +18,13 @@ public static class SchedulingConstraints
 
     // Transition zones (minutes)
     public const int NoSolidsBeforeT2 = 15;
+    public const int NoFuelingAfterT1 = 5;
     public const int NoFuelingAfterT2 = 5;
     public const int NoSolidsBeforeFinish = 10;
+
+    // Race bounds (minutes)
+    public const int RaceEndSafetyMarginMin = 5;     // no intake in the final N minutes
+    public const int EarliestInRaceIntakeMin = 10;   // first in-race intake / sip
 
     // Segment distribution targets (ratios)
     public const double TriathlonBikeCarbRatio = 0.70;
@@ -31,6 +36,14 @@ public static class SchedulingConstraints
 
     // Target tolerance (percentage)
     public const double TargetTolerancePercent = 0.10; // 10%
+    // Planner aims slightly above target so rounding never lands below it
+    public const double TargetAimMarginPercent = 0.02;
+    // Stop adding discrete intakes once the remaining need is below this (g)
+    public const double MinRemainingCarbsForIntakeG = 5;
+    // Pacing: an intake is placed once its carb midpoint fits under the even-distribution curve
+    public const double PacingMidpointFraction = 0.5;
+    // Pre-race intake is only planned when it is at most this share of the race carb target
+    public const double PreRaceMaxTargetFraction = 0.6;
 
     // Caffeine timing (percentage of race duration)
     public const double CaffeinePreferredStartPercent = 0.40; // Start at 40% of race
@@ -50,12 +63,17 @@ public static class SchedulingConstraints
     public const double SipVolumeMl = 50;
     // Minimum sip volume to bother scheduling
     public const double MinSipVolumeMl = 20;
+    // Only drinks above this carb content per portion form the sip backbone
+    public const double BackboneDrinkMinCarbsG = 20;
+    // Share of total carbs planned to come from the sip backbone
+    public const double DrinkCarbShare = 0.45;
 
     // === Intensity-based caffeine ceiling (mg per kg bodyweight) ===
     public const double CaffeineCeilingEasyMgPerKg = 1.0;
     public const double CaffeineCeilingModerateMgPerKg = 3.0;
     public const double CaffeineCeilingHardMgPerKg = 4.0;
-    public const double CaffeineCeilingMaxMgPerKg = 5.0;
+    // Absolute cap regardless of body weight
+    public const double CaffeineCeilingAbsoluteMaxMg = 300;
 
     // === Full-duration coverage ===
     public const double MinCoverageRatio = 0.85;

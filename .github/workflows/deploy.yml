@@ -5,15 +5,57 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+env:
+  # Pinned CLI version; bump deliberately. The Railway CLI version is pinned in the deploy-api container image.
+  VERCEL_CLI_VERSION: '63.1.2'
+
 jobs:
-  deploy-api:
-    name: Deploy API to Railway
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: src/RaceDay.Web.React/package-lock.json
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+
+      - name: Build .NET Solution
+        run: dotnet build --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+
+      - name: Run Unit Tests
+        run: dotnet test --configuration Release --no-build
+
+      - name: Install React dependencies
+        run: npm ci --ignore-scripts
+        working-directory: src/RaceDay.Web.React
+
+      - name: Build React Application
+        run: npm run build
+        working-directory: src/RaceDay.Web.React
+
+  deploy-api:
+    name: Deploy API to Railway
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Official Railway CLI image (pinned): no npm install, so no package lifecycle scripts run.
+    container: ghcr.io/railwayapp/cli:5.64.2
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Deploy to Railway
         run: railway up --project 2938596c-7b4f-4dea-bbc7-75b4e25bb3c5 --environment production --service 0a0c4f80-72bd-49b3-a090-13ebdbbad387 --detach
@@ -23,46 +65,63 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
+    needs: [build-and-test, deploy-api]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+
+      - name: Check required secrets
+        run: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "::error::RAILWAY_API_URL secret is empty; the frontend would be built without an API URL."
+            exit 1
+          fi
+        env:
+          VITE_API_URL: ${{ secrets.RAILWAY_API_URL }}
 
       - name: Install Vercel CLI
-        run: npm install -g vercel
+        run: npm install -g --ignore-scripts "vercel@${VERCEL_CLI_VERSION}"
 
       - name: Compute version
         id: version
         run: |
           TODAY=$(date -u +%Y-%m-%d)
           DATESHORT=$(date -u +%Y%m%d)
-          COUNT=$(gh api "/repos/${{ github.repository }}/actions/workflows/deploy.yml/runs?per_page=100&status=completed" \
+          COUNT=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/runs?per_page=100&status=completed" \
             --jq "[.workflow_runs[] | select(.created_at | startswith(\"$TODAY\"))] | length")
           DAILY_N=$((COUNT + 1))
-          echo "version=1.0.${DATESHORT}.${DAILY_N}" >> $GITHUB_OUTPUT
+          echo "version=1.0.${DATESHORT}.${DAILY_N}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
 
       - name: Deploy to Vercel (Production)
         id: vercel
         run: |
+          # The Vercel CLI reads VERCEL_TOKEN from the environment, keeping the
+          # token off the command line.
           URL=$(vercel deploy --prod --yes --archive=tgz \
-            --token ${{ secrets.VERCEL_TOKEN }} \
-            --build-env VITE_API_URL=${{ secrets.RAILWAY_API_URL }} \
-            --build-env VITE_APP_VERSION=${{ steps.version.outputs.version }})
-          echo "url=$URL" >> $GITHUB_OUTPUT
+            --build-env "VITE_API_URL=${VITE_API_URL}" \
+            --build-env "VITE_APP_VERSION=${APP_VERSION}")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
         working-directory: src/RaceDay.Web.React
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VITE_API_URL: ${{ secrets.RAILWAY_API_URL }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
 
       - name: Notify Telegram
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
             -d parse_mode="Markdown" \
-            -d text="*Race Day Planner deployed* v${{ steps.version.outputs.version }}%0A${{ steps.vercel.outputs.url }}"
-
-   
+            -d text="*Race Day Planner deployed* v${APP_VERSION}%0A${DEPLOY_URL}"
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          DEPLOY_URL: ${{ steps.vercel.outputs.url }}

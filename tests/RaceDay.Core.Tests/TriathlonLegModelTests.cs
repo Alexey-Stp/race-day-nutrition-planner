@@ -129,6 +129,27 @@ public class TriathlonLegModelTests
             TriathlonLegModel.Resolve(0.0, legs: null, preset: null, strict: false, out _));
     }
 
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void Resolve_NonFiniteDuration_Throws(double duration)
+    {
+        Should.Throw<ValidationException>(() =>
+            TriathlonLegModel.Resolve(duration, legs: null, preset: null, strict: false, out _));
+    }
+
+    [Theory]
+    [InlineData(double.NaN, 2.5, 1.5)]
+    [InlineData(1.0, double.NaN, 1.5)]
+    [InlineData(1.0, 2.5, double.PositiveInfinity)]
+    public void Resolve_NonFiniteLeg_Throws(double swim, double bike, double run)
+    {
+        var legs = new TriathlonLegs(swim, bike, run);
+
+        Should.Throw<ValidationException>(() =>
+            TriathlonLegModel.Resolve(5.0, legs, preset: null, strict: false, out _));
+    }
+
     [Fact]
     public void CarbRatios_SingleSourced_MatchSchedulingConstraints()
     {

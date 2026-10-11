@@ -113,7 +113,7 @@ public static class TriathlonLegModel
     {
         warnings = new List<string>();
 
-        if (durationHours <= 0)
+        if (!double.IsFinite(durationHours) || durationHours <= 0)
             throw new ValidationException(nameof(durationHours), "Duration must be greater than 0");
 
         if (legs != null)
@@ -132,11 +132,14 @@ public static class TriathlonLegModel
         bool strict,
         List<string> warnings)
     {
+        if (!double.IsFinite(legs.SwimH) || !double.IsFinite(legs.BikeH) || !double.IsFinite(legs.RunH))
+            throw new ValidationException(nameof(legs), "Leg durations must be finite numbers");
+
         if (legs.SwimH < 0 || legs.BikeH < 0 || legs.RunH < 0)
             throw new ValidationException(nameof(legs), "Leg durations cannot be negative");
 
         double sum = legs.SumH;
-        if (sum <= 0)
+        if (!double.IsFinite(sum) || sum <= 0)
             throw new ValidationException(nameof(legs), "Leg durations must sum to more than 0");
 
         if (Math.Abs(sum - durationHours) <= SumToleranceHours)

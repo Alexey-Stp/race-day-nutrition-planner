@@ -2,6 +2,7 @@ namespace RaceDay.Core.Tests;
 using RaceDay.Core.Models;
 using RaceDay.Core.Utilities;
 using RaceDay.Core.Exceptions;
+using RaceDay.Core.Constants;
 
 public class ValidationTests
 {
@@ -114,15 +115,16 @@ public class ValidationTests
 
         // Act & Assert
         var exception = Should.Throw<ValidationException>(() => Validation.ValidateAthleteProfile(athlete));
-        Assert.Contains("Weight cannot exceed 250 kg", exception.Message);
+        Assert.Contains($"Weight cannot exceed {ValidationLimits.MaxWeightKg} kg", exception.Message);
     }
 
     [Fact]
     public void ValidateAthleteProfile_WeightBoundaries_ValidatesCorrectly()
     {
         // Arrange
-        var athleteLight = new AthleteProfile(WeightKg: 0.1); // Very light but valid
-        var athleteHeavy = new AthleteProfile(WeightKg: 250); // Maximum valid
+        // Limits are shared with the API via ValidationLimits (1-200 kg).
+        var athleteLight = new AthleteProfile(WeightKg: ValidationLimits.MinWeightKg); // Minimum valid
+        var athleteHeavy = new AthleteProfile(WeightKg: ValidationLimits.MaxWeightKg); // Maximum valid
 
         // Act & Assert - should not throw
         Validation.ValidateAthleteProfile(athleteLight);
@@ -287,6 +289,116 @@ public class ValidationTests
         // Act & Assert - should not throw
         Validation.ValidateInterval(intervalMin);
         Validation.ValidateInterval(intervalMax);
+    }
+
+    #endregion
+
+    #region Finite-number guards and shared limits
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void ValidateRaceProfile_NonFiniteDuration_ThrowsValidationException(double duration)
+    {
+        var race = new RaceProfile(SportType.Run, duration, TemperatureCondition.Moderate, IntensityLevel.Moderate);
+
+        var ex = Should.Throw<ValidationException>(() => Validation.ValidateRaceProfile(race));
+        ex.PropertyName.ShouldBe(nameof(RaceProfile.DurationHours));
+    }
+
+    [Fact]
+    public void ValidateRaceProfile_NonFiniteLeg_ThrowsValidationException()
+    {
+        var race = new RaceProfile(SportType.Triathlon, 5, TemperatureCondition.Moderate, IntensityLevel.Hard,
+            Legs: new TriathlonLegs(double.NaN, 2.5, 1.5));
+
+        Should.Throw<ValidationException>(() => Validation.ValidateRaceProfile(race));
+    }
+
+    [Theory]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    public void ValidateAthleteProfile_NonFiniteWeight_ThrowsValidationException(double weight)
+    {
+        Should.Throw<ValidationException>(() => Validation.ValidateAthleteProfile(new AthleteProfile(weight)));
+    }
+
+    [Theory]
+    [InlineData(double.NaN, 0, 0, null)]
+    [InlineData(25, double.PositiveInfinity, 0, null)]
+    [InlineData(25, 0, double.NaN, null)]
+    [InlineData(25, 0, 0, double.NaN)]
+    public void ValidateProduct_NonFiniteValue_ThrowsValidationException(double carbs, double sodium, double volume, double? caffeine)
+    {
+        var product = new Product("Gel", "gel", carbs, sodium, volume, caffeine);
+
+        Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
+    }
+
+    [Fact]
+    public void ValidateProduct_NegativeCaffeine_ThrowsValidationException()
+    {
+        Should.Throw<ValidationException>(() => Validation.ValidateProduct(new Product("Gel", "gel", 25, 50, 0, -5)));
+    }
+
+    [Theory]
+    [InlineData("Drink")]
+    [InlineData("DRINK")]
+    [InlineData(" drink ")]
+    public void ValidateProduct_DrinkTypeAnyCase_RequiresPositiveVolume(string productType)
+    {
+        var product = new Product("Bottle", productType, 40, 300, VolumeMl: 0);
+
+        Should.Throw<ValidationException>(() => Validation.ValidateProduct(product));
+    }
+
+    [Fact]
+    public void ValidateRaceProfile_BelowMinimumDuration_ThrowsValidationException()
+    {
+        var race = new RaceProfile(SportType.Run, ValidationLimits.MinDurationHours / 2, TemperatureCondition.Moderate, IntensityLevel.Moderate);
+
+        Should.Throw<ValidationException>(() => Validation.ValidateRaceProfile(race));
+    }
+
+    [Fact]
+    public void ValidateRaceProfile_DurationBoundaries_DoNotThrow()
+    {
+        Validation.ValidateRaceProfile(new RaceProfile(SportType.Run, ValidationLimits.MinDurationHours, TemperatureCondition.Moderate, IntensityLevel.Moderate));
+        Validation.ValidateRaceProfile(new RaceProfile(SportType.Run, ValidationLimits.MaxDurationHours, TemperatureCondition.Moderate, IntensityLevel.Moderate));
+    }
+
+    [Fact]
+    public void ValidateAthleteProfile_BelowMinimumWeight_ThrowsValidationException()
+    {
+        Should.Throw<ValidationException>(() => Validation.ValidateAthleteProfile(new AthleteProfile(ValidationLimits.MinWeightKg / 2)));
+    }
+
+    [Theory]
+    [InlineData(-20)]
+    [InlineData(0)]
+    [InlineData(55)]
+    public void ValidateTemperatureC_WithinRange_DoesNotThrow(double temperature)
+    {
+        Validation.ValidateTemperatureC(temperature);
+    }
+
+    [Theory]
+    [InlineData(-20.5)]
+    [InlineData(55.5)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public void ValidateTemperatureC_OutOfRangeOrNonFinite_ThrowsValidationException(double temperature)
+    {
+        Should.Throw<ValidationException>(() => Validation.ValidateTemperatureC(temperature));
+    }
+
+    [Fact]
+    public void ValidateProductCount_AboveLimit_ThrowsValidationException()
+    {
+        Validation.ValidateProductCount(ValidationLimits.MaxProductsPerPlan);
+        Should.Throw<ValidationException>(() => Validation.ValidateProductCount(ValidationLimits.MaxProductsPerPlan + 1));
     }
 
     #endregion

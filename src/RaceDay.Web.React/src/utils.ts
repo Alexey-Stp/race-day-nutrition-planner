@@ -14,27 +14,15 @@ export function formatDuration(hours: number): string {
   }
 }
 
-// Format race phase (0=Swim, 1=Bike, 2=Run)
-export function formatPhase(phase: string | number): string {
-  const phaseMap: Record<string | number, string> = {
-    '0': 'Swim',
-    '1': 'Bike',
-    '2': 'Run',
-    'Swim': 'Swim',
-    'Bike': 'Bike',
-    'Run': 'Run'
-  };
-
-  return phaseMap[phase] || String(phase);
-}
-
-// Format sip action for display
-export function formatAction(event: { action: string; sipMl?: number; amountPortions: number }): string {
-  if (event.action === 'Sip' && event.sipMl) {
-    return `Sip: ${Math.round(event.sipMl)} ml`;
-  }
-  if (event.action === 'Sip') {
-    return 'Sip';
-  }
-  return `${event.action} (${event.amountPortions} portion${event.amountPortions !== 1 ? 's' : ''})`;
+// Stable per-event identifier: `${timeMin}-${productName}-${occurrence}` where
+// occurrence disambiguates repeated product/time pairs. Survives re-renders and
+// re-filtering, unlike an array index.
+export function withEventIds<T extends { timeMin: number; productName: string }>(events: readonly T[]): (T & { id: string })[] {
+  const seen = new Map<string, number>();
+  return events.map((e) => {
+    const base = `${e.timeMin}-${e.productName}`;
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    return { ...e, id: `${base}-${n}` };
+  });
 }

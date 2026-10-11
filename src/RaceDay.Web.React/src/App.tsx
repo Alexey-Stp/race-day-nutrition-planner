@@ -38,6 +38,8 @@ function App() {
   } = form;
 
   const [plan, setPlan] = useState<RaceNutritionPlan | null>(null);
+  // Snapshot of the inputs the current plan was generated from.
+  const [planInputsKey, setPlanInputsKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [messageIdx, setMessageIdx] = useState(0);
@@ -46,7 +48,6 @@ function App() {
 
   useEffect(() => {
     if (!loading) return;
-    setMessageIdx(0);
     const interval = setInterval(
       () => setMessageIdx((i) => (i + 1) % LOADING_MESSAGES.length),
       MSG_INTERVAL_MS,
@@ -54,13 +55,30 @@ function App() {
     return () => clearInterval(interval);
   }, [loading]);
 
+  const inputsKey = useMemo(
+    () => JSON.stringify({
+      athleteWeight,
+      sportType,
+      duration,
+      temperature,
+      intensity,
+      distancePreset,
+      legs,
+      useCaffeine,
+      products: selectedProducts.map((p) => p.id).sort((a, b) => a.localeCompare(b)),
+    }),
+    [athleteWeight, sportType, duration, temperature, intensity, distancePreset, legs, useCaffeine, selectedProducts],
+  );
+
   const generatePlan = useCallback(async () => {
     if (selectedProducts.length === 0) {
       setError('Please select at least one product');
       return;
     }
+    setMessageIdx(0);
     setLoading(true);
     setError(null);
+    const generatedFrom = inputsKey;
     try {
       const athlete = { weightKg: athleteWeight };
       const isTri = sportType === 'Triathlon';
@@ -86,6 +104,7 @@ function App() {
         new Promise<void>((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
       ]);
       setPlan(newPlan);
+      setPlanInputsKey(generatedFrom);
       setMobilePane('plan');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate plan');
@@ -93,9 +112,10 @@ function App() {
     } finally {
       setLoading(false);
     }
-  }, [selectedProducts, athleteWeight, sportType, duration, temperature, intensity, distancePreset, legs, useCaffeine]);
+  }, [selectedProducts, athleteWeight, sportType, duration, temperature, intensity, distancePreset, legs, useCaffeine, inputsKey]);
 
   const planReady = useMemo(() => !!plan?.nutritionSchedule?.length, [plan]);
+  const inputsChanged = plan !== null && planInputsKey !== inputsKey;
 
   return (
     <div className="app-shell" data-race-mode={raceMode ? 'on' : 'off'}>
@@ -125,12 +145,7 @@ function App() {
             raceMode ? 'hide-desktop' : '',
           ].join(' ').trim()}
           plan={plan}
-          useCaffeine={useCaffeine}
-          athleteWeight={athleteWeight}
-          sportType={sportType}
-          duration={duration}
-          temperature={temperature}
-          intensity={intensity}
+          inputsChanged={inputsChanged}
           onRaceMode={() => setRaceMode(true)}
         />
 
@@ -140,7 +155,7 @@ function App() {
             raceMode ? 'show-desktop' : '',
           ].join(' ').trim()}
           plan={plan}
-          useCaffeine={useCaffeine}
+          active={raceMode || mobilePane === 'race'}
           onExit={() => setRaceMode(false)}
         />
       </div>

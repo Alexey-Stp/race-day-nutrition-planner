@@ -722,7 +722,7 @@ Pull requests automatically generate UI screenshots for both mobile (390×844) a
 - Links appear within minutes of opening/updating a PR
 
 **Adding New Routes to Screenshot Tests:**
-1. Edit `src/RaceDay.Web.React/e2e/ui-screenshots.spec.ts`
+1. Edit `src/RaceDay.Web.React/tests/screenshots.spec.ts`
 2. Add a new test case following the existing pattern
 3. Use `testInfo.project.name` to separate mobile/desktop paths
 4. Wait for `networkidle` and key UI elements before capturing

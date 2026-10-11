@@ -10,8 +10,11 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}Starting SonarCloud Analysis...${NC}"
 
 # Load .env file if it exists (for local development)
+# (sourced with auto-export so quoted values, spaces and '#' are handled safely)
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # In CI/CD, SONAR_TOKEN comes from GitHub Secrets
@@ -32,13 +35,17 @@ fi
 echo -e "${YELLOW}Cleaning previous builds...${NC}"
 dotnet clean
 
+# The scanner reads the token (sonar.token) from the SONAR_TOKEN environment
+# variable; export it instead of passing it as an argument, where it would be
+# visible in the process list.
+export SONAR_TOKEN
+
 # Begin SonarCloud analysis
 echo -e "${YELLOW}Beginning SonarCloud analysis...${NC}"
 dotnet sonarscanner begin \
   /k:"Alexey-Stp_race-day-nutrition-planner" \
   /o:"alexey-stp" \
   /d:sonar.host.url="https://sonarcloud.io" \
-  /d:sonar.login="$SONAR_TOKEN" \
   /d:sonar.cs.opencover.reportsPaths="coverage/**/coverage.opencover.xml"
 
 # Build the project
@@ -55,6 +62,6 @@ dotnet test \
 
 # End SonarCloud analysis
 echo -e "${YELLOW}Completing SonarCloud analysis...${NC}"
-dotnet sonarscanner end /d:sonar.login="$SONAR_TOKEN"
+dotnet sonarscanner end
 
 echo -e "${GREEN}Analysis complete! Check results at: https://sonarcloud.io${NC}"

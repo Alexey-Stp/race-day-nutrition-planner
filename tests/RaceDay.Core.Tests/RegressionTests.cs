@@ -3,6 +3,9 @@ namespace RaceDay.Core.Tests;
 using Xunit;
 using RaceDay.Core.Services;
 using RaceDay.Core.Models;
+using RaceDay.Core.Repositories;
+using RaceDay.Core.Constants;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Linq;
 
 /// <summary>
@@ -10,7 +13,6 @@ using System.Linq;
 /// </summary>
 public class RegressionTests
 {
-    private readonly PlanGenerator _generator = new();
 
     [Fact]
     public void Bug_CaffeineAlwaysZero_WhenCaffeinatedProductsUsed()
@@ -34,7 +36,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         // Assert
         var caffeineEvents = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue && e.CaffeineMg > 0).ToList();
@@ -79,7 +81,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         plan.ShouldNotBeEmpty();
@@ -129,7 +131,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
 
         // Assert
         var swimEvents = plan.Where(e => e.Phase == RacePhase.Swim).ToList();
@@ -173,7 +175,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
 
         // Assert
         var caffeineEvents = plan.Where(e => e.HasCaffeine).ToList();
@@ -204,7 +206,7 @@ public class RegressionTests
         };
 
         // Act
-        var plan = _generator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
 
         // Assert
         var sumCarbs = plan.Sum(e => e.CarbsInEvent);
@@ -216,4 +218,98 @@ public class RegressionTests
         lastEvent.TotalCarbsSoFar.ShouldBe(sumCarbs, 1.0);
         lastEvent.TotalCaffeineSoFar.ShouldBe(sumCaffeine, 1.0);
     }
+
+    // ── Hard-rule regression matrix ──────────────────────────────────────────
+    // sports × durations × intensities × caffeine × product sets. Every generated plan must
+    // satisfy every hard scheduling rule (see PlanInvariants for the independent oracle).
+
+    public enum ProductSet { GelsOnly, DrinksAndGels, ChewsOnly, Catalogue }
+
+    public static TheoryData<SportType, double, IntensityLevel, bool, ProductSet> MatrixCases()
+    {
+        var cases = new TheoryData<SportType, double, IntensityLevel, bool, ProductSet>();
+        foreach (var sport in new[] { SportType.Run, SportType.Bike, SportType.Triathlon })
+        foreach (var hours in new[] { 1.0, 3.0, 6.0, 12.0 })
+        foreach (var intensity in new[] { IntensityLevel.Easy, IntensityLevel.Moderate, IntensityLevel.Hard })
+        foreach (var caffeine in new[] { false, true })
+        foreach (var set in Enum.GetValues<ProductSet>())
+            cases.Add(sport, hours, intensity, caffeine, set);
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(MatrixCases))]
+    public void GeneratePlan_Matrix_SatisfiesAllHardRules(
+        SportType sport, double hours, IntensityLevel intensity, bool caffeine, ProductSet set)
+    {
+        var athlete = new AthleteProfile(WeightKg: 72);
+        var race = new RaceProfile(sport, hours, TemperatureCondition.Moderate, intensity);
+
+        var (result, products) = GenerateForSet(race, athlete, caffeine, set);
+
+        int duration = PlanInvariants.ToMinutes(hours);
+        PlanInvariants.AssertAllHardRules(result, products, duration, caffeine);
+
+        // Late-race fuelling must survive reconciliation (A9) whenever anything was planned.
+        if (result.Events.Count > 0 && hours >= 3)
+        {
+            int finalThird = duration * 2 / 3;
+            result.Events.ShouldContain(e => e.TimeMin >= finalThird, "No intake in the final third of the race");
+        }
+    }
+
+    private static (PlanResult Result, IReadOnlyList<ProductEnhanced> Products) GenerateForSet(
+        RaceProfile race, AthleteProfile athlete, bool caffeine, ProductSet set)
+    {
+        if (set == ProductSet.Catalogue)
+        {
+            var catalogue = new ProductRepository().GetAllProductsAsync().GetAwaiter().GetResult();
+            var products = catalogue
+                .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
+                .ToList();
+            var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
+            var result = service.GeneratePlanWithDiagnostics(race, athlete, products, caffeine);
+            var enhanced = catalogue
+                .Where(p => !p.ProductType.Equals("recovery", StringComparison.OrdinalIgnoreCase))
+                .Select(p => new ProductEnhanced(
+                    p.Name, p.CarbsG, OracleTexture(p.ProductType, p.CarbsG),
+                    p.CaffeineMg is > 0, p.CaffeineMg ?? 0, p.VolumeMl, p.ProductType, p.SodiumMg))
+                .ToList();
+            return (result, enhanced);
+        }
+
+        var set_products = set switch
+        {
+            ProductSet.GelsOnly => new List<ProductEnhanced>
+            {
+                new("Gel 25", 25, ProductTexture.Gel, false, 0, 40, "gel", 50),
+                new("Gel 40", 40, ProductTexture.Gel, false, 0, 65, "gel", 80),
+                new("Caf Gel", 25, ProductTexture.Gel, true, 75, 40, "gel", 50)
+            },
+            ProductSet.DrinksAndGels => new List<ProductEnhanced>
+            {
+                new("Drink Mix", 40, ProductTexture.Drink, false, 0, 500, "drink", 300),
+                new("Gel 25", 25, ProductTexture.Gel, false, 0, 40, "gel", 50),
+                new("Light Gel", 20, ProductTexture.LightGel, false, 0, 40, "gel", 40),
+                new("Caf Gel", 25, ProductTexture.Gel, true, 100, 40, "gel", 50)
+            },
+            _ => new List<ProductEnhanced>
+            {
+                new("Energy Chews", 24, ProductTexture.Chew, false, 0, 0, "chew", 80),
+                new("Caf Chews", 24, ProductTexture.Chew, true, 50, 0, "chew", 80)
+            }
+        };
+
+        return (PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, set_products, caffeine), set_products);
+    }
+
+    private static ProductTexture OracleTexture(string productType, double carbsG) =>
+        productType.ToLowerInvariant() switch
+        {
+            "gel" when carbsG <= ProductEffectivenessProfiles.LightGelMaxCarbsG => ProductTexture.LightGel,
+            "gel" => ProductTexture.Gel,
+            "drink" => ProductTexture.Drink,
+            "bar" => ProductTexture.Bake,
+            _ => throw new InvalidOperationException($"Unexpected catalogue type {productType}")
+        };
 }

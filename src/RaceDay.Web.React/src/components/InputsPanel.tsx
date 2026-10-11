@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import type { ProductInfo, SportType, IntensityLevel, TemperatureCondition, DistancePreset, TriathlonLegs } from '../types';
+import React, { useEffect, useId, useState } from 'react';
+import type { ProductInfo, SportType, IntensityLevel, TemperatureCondition, DistancePreset, TriathlonLegs, LegFractions } from '../types';
 import { SportType as SportTypeEnum, IntensityLevel as IntensityEnum, TemperatureCondition as TempEnum } from '../types';
 import { api } from '../api';
-import { ATHLETE_WEIGHT, DURATION } from '../constants';
+import { ATHLETE_WEIGHT, DURATION, DURATION_SLIDER_STEP } from '../constants';
 import { formatDuration } from '../utils';
 import { PRODUCT_GROUP_LABELS, PRODUCT_GROUP_ORDER } from '../constants/icons';
+
+// Fallback swim/bike/run split used when no preset fractions are available.
+const DEFAULT_LEG_FRACTIONS: LegFractions = { swim: 0.2, bike: 0.5, run: 0.3 };
 
 type FormReturn = ReturnType<typeof import('../hooks/usePlannerForm').usePlannerForm>;
 
@@ -39,14 +42,9 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
 
   const isTriathlon = sportType === SportTypeEnum.Triathlon;
 
-  // Default leg fractions per preset (mirrors the API's TriathlonLegModel), used
-  // to seed editable leg fields when a preset is chosen.
-  const PRESET_FRACTIONS: Record<DistancePreset, TriathlonLegs> = {
-    Sprint: { swimH: 0.17, bikeH: 0.54, runH: 0.29 },
-    Olympic: { swimH: 0.15, bikeH: 0.52, runH: 0.33 },
-    HalfIron: { swimH: 0.10, bikeH: 0.56, runH: 0.34 },
-    Ironman: { swimH: 0.09, bikeH: 0.53, runH: 0.38 },
-  };
+  // Default leg fractions per preset, sourced from the API's activity catalogue
+  // (ActivityInfo.legFractions) and used to seed the editable leg fields.
+  const [presetFractions, setPresetFractions] = useState<Partial<Record<DistancePreset, LegFractions>>>({});
 
   const PRESET_LABELS: Record<DistancePreset, string> = {
     Sprint: 'Sprint',
@@ -56,20 +54,14 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
   };
 
   // Leg values currently shown: explicit legs if edited, else preset-expanded,
-  // else the default 20/50/30 split against duration.
-  const displayLegs: TriathlonLegs = legs ?? (
-    distancePreset
-      ? {
-          swimH: +(duration * PRESET_FRACTIONS[distancePreset].swimH).toFixed(2),
-          bikeH: +(duration * PRESET_FRACTIONS[distancePreset].bikeH).toFixed(2),
-          runH: +(duration * PRESET_FRACTIONS[distancePreset].runH).toFixed(2),
-        }
-      : {
-          swimH: +(duration * 0.20).toFixed(2),
-          bikeH: +(duration * 0.50).toFixed(2),
-          runH: +(duration * 0.30).toFixed(2),
-        }
-  );
+  // else the default split against duration.
+  const fractions: LegFractions =
+    (distancePreset ? presetFractions[distancePreset] : undefined) ?? DEFAULT_LEG_FRACTIONS;
+  const displayLegs: TriathlonLegs = legs ?? {
+    swimH: +(duration * fractions.swim).toFixed(2),
+    bikeH: +(duration * fractions.bike).toFixed(2),
+    runH: +(duration * fractions.run).toFixed(2),
+  };
 
   const choosePreset = (p: DistancePreset) => {
     setDistancePreset(p);
@@ -89,11 +81,29 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
+    const controller = new AbortController();
+    api.getActivities(controller.signal)
+      .then((activities) => {
+        const map: Partial<Record<DistancePreset, LegFractions>> = {};
+        for (const a of activities) {
+          if (a.preset && a.legFractions) map[a.preset] = a.legFractions;
+        }
+        setPresetFractions(map);
+      })
+      .catch((e: unknown) => {
+        // Non-fatal: leg fields fall back to the default split.
+        if (!controller.signal.aborted) console.error(e);
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const alive = () => !controller.signal.aborted;
+    void (async () => {
       try {
-        const data = await api.getProducts();
-        if (!alive) return;
+        const data = await api.getProducts(controller.signal);
+        if (!alive()) return;
         setProducts(data);
         const uniq = Array.from(new Set(data.map((p) => p.brand).filter(Boolean))).sort((a, b) => a.localeCompare(b));
         setBrands(uniq);
@@ -103,13 +113,14 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
           setSelectedProducts(def);
         }
       } catch (e) {
+        if (!alive()) return;
         console.error(e);
-        if (alive) setLoadError('Failed to load products. Please reload the page.');
+        setLoadError('Failed to load products. Please reload the page.');
       } finally {
-        if (alive) setLoadingProducts(false);
+        if (alive()) setLoadingProducts(false);
       }
     })();
-    return () => { alive = false; };
+    return () => controller.abort();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -138,10 +149,10 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
 
   const renderProductsContent = () => {
     if (loadingProducts) return <p className="muted">Loading products…</p>;
-    if (loadError) return <p className="error">{loadError}</p>;
+    if (loadError) return <p className="error" role="alert">{loadError}</p>;
     return (
       <>
-        <select className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
+        <select id="brand-filter" aria-label="Brand" className="select" value={brand} onChange={(e) => changeBrand(e.target.value)}>
           <option value="">All brands</option>
           {brands.map((b) => <option key={b} value={b}>{b}</option>)}
         </select>
@@ -200,11 +211,13 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         </Section>
 
         <Section label="Sport">
-          <div className="pill-row">
+          <div className="pill-row" role="radiogroup" aria-label="Sport">
             {(['Run', 'Bike', 'Triathlon'] as SportType[]).map((s) => (
               <button
                 key={s}
                 type="button"
+                role="radio"
+                aria-checked={sportType === s}
                 className={`pill ${sportType === s ? 'is-active' : ''}`}
                 onClick={() => setSportType(SportTypeEnum[s])}
               >
@@ -216,11 +229,13 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
 
         {isTriathlon && (
           <Section label="Race distance">
-            <div className="pill-row">
+            <div className="pill-row" role="radiogroup" aria-label="Race distance">
               {(Object.keys(PRESET_LABELS) as DistancePreset[]).map((p) => (
                 <button
                   key={p}
                   type="button"
+                  role="radio"
+                  aria-checked={distancePreset === p && !legs}
                   className={`pill ${distancePreset === p && !legs ? 'is-active' : ''}`}
                   onClick={() => choosePreset(p)}
                 >
@@ -229,6 +244,8 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
               ))}
               <button
                 type="button"
+                role="radio"
+                aria-checked={!!legs}
                 className={`pill ${legs ? 'is-active' : ''}`}
                 onClick={() => setLegs(displayLegs)}
               >
@@ -264,23 +281,27 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
           <input
             className="slider"
             type="range"
+            aria-label="Race duration"
+            aria-valuetext={formatDuration(duration)}
             min={DURATION.MIN}
-            max={8}
-            step={0.25}
+            max={DURATION.MAX}
+            step={DURATION_SLIDER_STEP}
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
           />
-          <div className="slider-ticks">
-            <span>30m</span><span>2h</span><span>4h</span><span>6h</span><span>8h</span>
+          <div className="slider-ticks" aria-hidden>
+            <span>30m</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span>
           </div>
         </Section>
 
         <Section label="Intensity">
-          <div className="pill-row">
+          <div className="pill-row" role="radiogroup" aria-label="Intensity">
             {(['Easy', 'Moderate', 'Hard'] as IntensityLevel[]).map((lvl) => (
               <button
                 key={lvl}
                 type="button"
+                role="radio"
+                aria-checked={intensity === lvl}
                 className={`pill ${intensity === lvl ? 'is-active' : ''}`}
                 onClick={() => setIntensity(IntensityEnum[lvl])}
               >
@@ -291,11 +312,13 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
         </Section>
 
         <Section label="Temperature">
-          <div className="pill-row">
+          <div className="pill-row" role="radiogroup" aria-label="Temperature">
             {(['Cold', 'Moderate', 'Hot'] as TemperatureCondition[]).map((t) => (
               <button
                 key={t}
                 type="button"
+                role="radio"
+                aria-checked={temperature === t}
                 className={`pill ${temperature === t ? 'is-active' : ''}`}
                 onClick={() => setTemperature(TempEnum[t])}
               >
@@ -317,7 +340,7 @@ export const InputsPanel: React.FC<InputsPanelProps> = ({
           {renderProductsContent()}
         </Section>
 
-        {error && <div className="error">{error}</div>}
+        {error && <div className="error" role="alert">{error}</div>}
 
         <button
           type="button"
@@ -339,19 +362,23 @@ const Section: React.FC<{ label: string; children: React.ReactNode }> = ({ label
   </div>
 );
 
-const LegField: React.FC<{ label: string; value: number; onChange: (v: number) => void }> = ({ label, value, onChange }) => (
-  <div className="field leg-field">
-    <label>{label}</label>
-    <div className="num-stepper">
-      <input
-        type="number"
-        min={0}
-        max={17}
-        step={0.1}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-      <span className="unit">h</span>
+const LegField: React.FC<{ label: string; value: number; onChange: (v: number) => void }> = ({ label, value, onChange }) => {
+  const id = useId();
+  return (
+    <div className="field leg-field">
+      <label htmlFor={id}>{label}</label>
+      <div className="num-stepper">
+        <input
+          id={id}
+          type="number"
+          min={0}
+          max={17}
+          step={0.1}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+        />
+        <span className="unit">h</span>
+      </div>
     </div>
-  </div>
-);
+  );
+};

@@ -8,8 +8,11 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Load .env file if it exists (for local development)
+# (sourced with auto-export so quoted values, spaces and '#' are handled safely)
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # In CI/CD, SONAR_TOKEN comes from GitHub Secrets
@@ -24,9 +27,10 @@ fi
 
 echo -e "${BLUE}=== SonarCloud Issues ===${NC}\n"
 
-# Fetch issues
-RESPONSE=$(curl -s "https://sonarcloud.io/api/issues/search?componentKeys=${PROJECT_KEY}&resolved=false&ps=100" \
-  -H "Authorization: Bearer ${SONAR_TOKEN}")
+# Fetch issues. The auth header is fed to curl on stdin (printf is a shell
+# builtin) so the token never appears on a command line / in the process list.
+RESPONSE=$(printf 'Authorization: Bearer %s\n' "$SONAR_TOKEN" | \
+  curl -s -H @- "https://sonarcloud.io/api/issues/search?componentKeys=${PROJECT_KEY}&resolved=false&ps=100")
 
 # Parse and display
 TOTAL=$(echo "$RESPONSE" | grep -o '"total":[0-9]*' | head -1 | cut -d: -f2)

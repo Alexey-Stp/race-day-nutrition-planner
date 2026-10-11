@@ -1,63 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import type { RaceNutritionPlan, SportType, TemperatureCondition, IntensityLevel } from '../types';
-import { api } from '../api';
-import { formatDuration } from '../utils';
+import React, { useMemo } from 'react';
+import type { RaceNutritionPlan } from '../types';
+import { formatDuration, withEventIds } from '../utils';
 import { MAX_CAFFEINE_MG } from '../constants';
 import { getShoppingSummary } from '../utils/shoppingListExtensions';
-
-interface Targets {
-  carbsGPerHour: number;
-  fluidsMlPerHour: number;
-  sodiumMgPerHour: number;
-  totalCarbsG: number;
-  totalFluidsML: number;
-  totalSodiumMg: number;
-}
 
 interface ResultsPanelProps {
   className?: string;
   plan: RaceNutritionPlan | null;
-  useCaffeine: boolean;
-  athleteWeight: number;
-  sportType: SportType;
-  duration: number;
-  temperature: TemperatureCondition;
-  intensity: IntensityLevel;
+  /** True when form inputs differ from those the current plan was generated with. */
+  inputsChanged: boolean;
   onRaceMode: () => void;
 }
 
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   className = '',
   plan,
-  useCaffeine,
-  athleteWeight,
-  sportType,
-  duration,
-  temperature,
-  intensity,
+  inputsChanged,
   onRaceMode,
 }) => {
-  const [targets, setTargets] = useState<Targets | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    const fetch = plan?.race && plan?.athlete
-      ? api.calculateNutritionTargets(
-          plan.athlete.weightKg,
-          plan.race.sportType,
-          plan.race.durationHours,
-          plan.race.temperature,
-          plan.race.intensity,
-        )
-      : Promise.resolve(null);
-    fetch.then((res) => { if (active) setTargets(res); }).catch(console.error);
-    return () => { active = false; };
-  }, [plan]);
-
-  const schedule = useMemo(() => {
-    if (!plan?.nutritionSchedule) return [];
-    return useCaffeine ? plan.nutritionSchedule : plan.nutritionSchedule.filter((e) => !e.hasCaffeine);
-  }, [plan, useCaffeine]);
+  // Render the plan exactly as generated; caffeine was decided server-side.
+  const schedule = useMemo(() => withEventIds(plan?.nutritionSchedule ?? []), [plan]);
 
   const { totalCarbs, totalCaffeine } = useMemo(() => {
     const c = schedule.reduce((s, e) => s + (e.carbsInEvent ?? 0), 0);
@@ -67,7 +29,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
   const shopping = useMemo(() => getShoppingSummary(plan), [plan]);
 
-  const isTriathlon = sportType === 'Triathlon';
+  const isTriathlon = plan?.race.sportType === 'Triathlon';
 
   // Group the schedule by leg for triathlon; otherwise a single flat list.
   const legGroups = useMemo(() => {
@@ -80,6 +42,7 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
 
   const segmentTargets = plan?.segmentTargets ?? [];
   const warnings = plan?.warnings ?? [];
+  const errors = plan?.errors ?? [];
 
   if (!plan) {
     return (
@@ -95,12 +58,20 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
     );
   }
 
+  const { race, athlete, targets, caffeineEnabled } = plan;
+
   return (
     <section className={`panel-results ${className}`}>
       <div className="panel-results-inner">
+        {inputsChanged && (
+          <output className="warnings">
+            <div className="warning">Inputs changed — regenerate to update the plan</div>
+          </output>
+        )}
+
         <header className="results-head">
           <div>
-            <div className="stamp">{sportType} · {formatDuration(duration)} · {athleteWeight}kg · {intensity} · {temperature}</div>
+            <div className="stamp">{race.sportType} · {formatDuration(race.durationHours)} · {athlete.weightKg}kg · {race.intensity} · {race.temperature}</div>
             <h2>Your race day plan</h2>
           </div>
           <div className="results-head-actions">
@@ -111,16 +82,26 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
         </header>
 
         <div className="targets">
-          <Target label="Carbs/hr" value={targets ? `${targets.carbsGPerHour.toFixed(0)}g` : '—'} />
-          <Target label="Total carbs" value={targets ? `${targets.totalCarbsG.toFixed(0)}g` : '—'} sub={`Plan ${totalCarbs.toFixed(0)}g`} />
-          <Target label="Fluids/hr" value={targets ? `${targets.fluidsMlPerHour.toFixed(0)}ml` : '—'} />
-          <Target label="Sodium/hr" value={targets ? `${targets.sodiumMgPerHour.toFixed(0)}mg` : '—'} />
+          <Target label="Carbs/hr" value={`${targets.carbsGPerHour.toFixed(0)}g`} />
+          <Target label="Total carbs" value={`${targets.totalCarbsG.toFixed(0)}g`} sub={`Plan ${totalCarbs.toFixed(0)}g`} />
+          <Target label="Fluids/hr" value={`${targets.fluidsMlPerHour.toFixed(0)}ml`} />
+          <Target label="Sodium/hr" value={`${targets.sodiumMgPerHour.toFixed(0)}mg`} />
         </div>
 
         <div className="bars">
-          <Bar label="Carbs" value={totalCarbs} max={targets?.totalCarbsG ?? 1} unit="g" />
-          {useCaffeine && <Bar label="Caffeine" value={totalCaffeine} max={MAX_CAFFEINE_MG} unit="mg" />}
+          <Bar label="Carbs" value={totalCarbs} max={targets.totalCarbsG} unit="g" />
+          {caffeineEnabled && (
+            <Bar label="Caffeine" value={totalCaffeine} max={targets.caffeineMg > 0 ? targets.caffeineMg : MAX_CAFFEINE_MG} unit="mg" />
+          )}
         </div>
+
+        {errors.length > 0 && (
+          <div className="warnings" role="alert">
+            {errors.map((err) => (
+              <div key={err} className="error">{err}</div>
+            ))}
+          </div>
+        )}
 
         {warnings.length > 0 && (
           <output className="warnings">
@@ -154,12 +135,12 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
             <div key={group.phase || 'all'} className="feed-group">
               {group.phase && <div className="feed-group-head">{group.phase}</div>}
               <ol>
-                {group.items.map((e, i) => {
+                {group.items.map((e) => {
                   const when = e.timeMin < 0
                     ? `T−${Math.abs(e.timeMin)}m`
                     : `T+${formatDuration(e.timeMin / 60)}`;
                   return (
-                    <li key={`${group.phase}-${i}`} className="feed-item">
+                    <li key={e.id} className="feed-item">
                       <span className="feed-when">{when}</span>
                       <span className="feed-dot" aria-hidden />
                       <div className="feed-body">

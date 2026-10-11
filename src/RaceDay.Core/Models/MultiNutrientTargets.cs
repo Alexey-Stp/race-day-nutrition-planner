@@ -11,7 +11,7 @@ public record MultiNutrientTargets(
     double CarbsPerHour,
     double SodiumPerHour,
     double FluidPerHour,
-    Dictionary<RacePhase, PhaseTargets>? SegmentTargets = null
+    IReadOnlyDictionary<RacePhase, PhaseTargets>? SegmentTargets = null
 );
 
 /// <summary>
