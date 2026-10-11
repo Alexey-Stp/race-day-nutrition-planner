@@ -1,6 +1,11 @@
 # Build stage
-FROM node:20-alpine AS build
+FROM node:22-alpine AS build
 WORKDIR /app
+
+# API base URL baked into the bundle at build time. Empty (default) means the SPA
+# calls same-origin /api, which nginx proxies to the API container.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
 
 # Copy package files
 COPY package*.json ./
@@ -31,6 +36,7 @@ COPY --from=build /app/dist .
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY security-headers.conf /etc/nginx/snippets/security-headers.conf
 
 # Create a non-root user to run nginx
 RUN addgroup -g 1001 -S nginx-group && \

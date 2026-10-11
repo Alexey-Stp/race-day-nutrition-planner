@@ -1,30 +1,30 @@
-using Microsoft.Extensions.Logging;
-using RaceDay.Core.Services;
-using RaceDay.Core.Repositories;
-using RaceDay.Core.Models;
-using RaceDay.Core.Exceptions;
-using RaceDay.Core.Utilities;
+using Microsoft.AspNetCore.Http.HttpResults;
+using RaceDay.API.Contracts;
+using RaceDay.API.Infrastructure;
+using RaceDay.API.Metadata;
 using RaceDay.Core.Constants;
+using RaceDay.Core.Models;
+using RaceDay.Core.Repositories;
+using RaceDay.Core.Services;
+using RaceDay.Core.Utilities;
 
 namespace RaceDay.API;
 
 /// <summary>
-/// Extension methods for mapping API endpoints
+/// Endpoint definitions. Handlers only map contracts to Core calls; validation and domain rules live in Core,
+/// and exceptions are turned into problem responses by <see cref="GlobalExceptionHandler"/>.
 /// </summary>
 public static class ApiEndpointExtensions
 {
-    /// <summary>
-    /// Product types to exclude for running activities (runners typically don't carry bottles)
-    /// </summary>
-    private static readonly string[] RunExcludedProductTypes = { "drink", "recovery" };
-
     /// <summary>
     /// Map product-related API endpoints
     /// </summary>
     public static void MapProductEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/products")
-            .WithTags("Products");
+            .WithTags("Products")
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         group.MapGet("/", GetAllProductsAsync)
             .WithName("GetAllProducts")
@@ -49,7 +49,9 @@ public static class ApiEndpointExtensions
     public static void MapActivityEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/activities")
-            .WithTags("Activities");
+            .WithTags("Activities")
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         group.MapGet("/", GetAllActivitiesAsync)
             .WithName("GetAllActivities")
@@ -69,16 +71,22 @@ public static class ApiEndpointExtensions
     }
 
     /// <summary>
-    /// Map nutrition plan generation API endpoints
+    /// Map nutrition plan generation API endpoints (rate limited per client IP)
     /// </summary>
     public static void MapPlanEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/plan")
-            .WithTags("Nutrition Plan");
+            .WithTags("Nutrition Plan")
+            .RequireRateLimiting(ApiLimits.PlanRateLimitPolicy)
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         group.MapPost("/generate", GeneratePlanAsync)
             .WithName("GeneratePlan")
             .WithDescription("Generate a nutrition plan based on race parameters, athlete profile, and available products. " +
+                           "Supply exactly one of 'temperature' (Cold/Moderate/Hot) or 'temperatureC'. " +
                            "When using a filter with Run sport, drinks and recovery products are automatically excluded.");
     }
 
@@ -88,7 +96,8 @@ public static class ApiEndpointExtensions
     public static void MapMetadataEndpoints(this WebApplication app)
     {
         var group = app.MapGroup("/api/metadata")
-            .WithTags("Metadata");
+            .WithTags("Metadata")
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
 
         group.MapGet("/", GetUIMetadata)
             .WithName("GetUIMetadata")
@@ -112,530 +121,155 @@ public static class ApiEndpointExtensions
 
         group.MapPost("/targets", CalculateNutritionTargets)
             .WithName("CalculateNutritionTargets")
-            .WithDescription("Calculate nutrition targets for a specific athlete and race parameters");
+            .WithDescription("Calculate nutrition targets for a specific athlete and race parameters")
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge);
     }
 
-    // Product Handlers
-    private static async Task<IResult> GetAllProductsAsync(IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var products = await repository.GetAllProductsAsync(cancellationToken);
-            return Results.Ok(products);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllProductsAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
+    // ── Product handlers ─────────────────────────────────────────────────────
 
-    private static async Task<IResult> GetProductByIdAsync(string id, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var product = await repository.GetProductByIdAsync(id, cancellationToken);
-            return product == null ? Results.NotFound() : Results.Ok(product);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductByIdAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
+    private static async Task<Ok<List<ProductResponse>>> GetAllProductsAsync(
+        IProductRepository repository, CancellationToken cancellationToken) =>
+        TypedResults.Ok(ToResponses(await repository.GetAllProductsAsync(cancellationToken)));
 
-    private static async Task<IResult> GetProductsByTypeAsync(string type, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var products = await repository.GetProductsByTypeAsync(type, cancellationToken);
-            return Results.Ok(products);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetProductsByTypeAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
+    private static async Task<Results<Ok<ProductResponse>, NotFound>> GetProductByIdAsync(
+        string id, IProductRepository repository, CancellationToken cancellationToken) =>
+        await repository.GetProductByIdAsync(id, cancellationToken) is { } product
+            ? TypedResults.Ok(product.ToResponse())
+            : TypedResults.NotFound();
 
-    private static async Task<IResult> SearchProductsAsync(string query, IProductRepository repository, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
+    private static async Task<Ok<List<ProductResponse>>> GetProductsByTypeAsync(
+        string type, IProductRepository repository, CancellationToken cancellationToken) =>
+        TypedResults.Ok(ToResponses(await repository.GetProductsByTypeAsync(type, cancellationToken)));
+
+    private static async Task<Results<Ok<List<ProductResponse>>, ValidationProblem>> SearchProductsAsync(
+        string? query, IProductRepository repository, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return Results.BadRequest("Search query is required");
+            return ApiProblems.ValidationResult("query", "Search query is required");
 
-        try
-        {
-            var products = await repository.SearchProductsAsync(query, cancellationToken);
-            return Results.Ok(products);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchProductsAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
+        return TypedResults.Ok(ToResponses(await repository.SearchProductsAsync(query, cancellationToken)));
     }
 
-    // Activity Handlers
-    private static async Task<IResult> GetAllActivitiesAsync(ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
+    // ── Activity handlers ────────────────────────────────────────────────────
+
+    private static async Task<Ok<List<ActivityResponse>>> GetAllActivitiesAsync(
+        IActivityRepository repository, CancellationToken cancellationToken) =>
+        TypedResults.Ok(ToResponses(await repository.GetAllActivitiesAsync(cancellationToken)));
+
+    private static async Task<Results<Ok<ActivityResponse>, NotFound>> GetActivityByIdAsync(
+        string id, IActivityRepository repository, CancellationToken cancellationToken) =>
+        await repository.GetActivityByIdAsync(id, cancellationToken) is { } activity
+            ? TypedResults.Ok(activity.ToResponse())
+            : TypedResults.NotFound();
+
+    private static async Task<Results<Ok<List<ActivityResponse>>, ValidationProblem>> GetActivitiesByTypeAsync(
+        string sportType, IActivityRepository repository, CancellationToken cancellationToken)
     {
-        try
-        {
-            var activities = await ActivityRepository.GetAllActivitiesAsync(cancellationToken);
-            return Results.Ok(activities);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetAllActivitiesAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
+        if (!Enum.TryParse<SportType>(sportType, ignoreCase: true, out var parsed) || !Enum.IsDefined(parsed))
+            return ApiProblems.ValidationResult(nameof(sportType),
+                $"Invalid sport type. Valid values: {string.Join(", ", Enum.GetNames<SportType>())}");
+
+        return TypedResults.Ok(ToResponses(await repository.GetActivitiesBySportTypeAsync(parsed, cancellationToken)));
     }
 
-    private static async Task<IResult> GetActivityByIdAsync(string id, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var activity = await ActivityRepository.GetActivityByIdAsync(id, cancellationToken);
-            return activity == null ? Results.NotFound() : Results.Ok(activity);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivityByIdAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static async Task<IResult> GetActivitiesByTypeAsync(string sportType, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
-    {
-        try
-        {
-            if (!Enum.TryParse<SportType>(sportType, ignoreCase: true, out var parsedSportType))
-                return Results.BadRequest("Invalid sport type. Valid values: Run, Bike, Triathlon");
-
-            var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(parsedSportType, cancellationToken);
-            return Results.Ok(activities);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetActivitiesByTypeAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static async Task<IResult> SearchActivitiesAsync(string query, ILogger<ApiEndpointsLog> logger, CancellationToken cancellationToken)
+    private static async Task<Results<Ok<List<ActivityResponse>>, ValidationProblem>> SearchActivitiesAsync(
+        string? query, IActivityRepository repository, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return Results.BadRequest("Search query is required");
+            return ApiProblems.ValidationResult("query", "Search query is required");
 
-        try
-        {
-            var activities = await ActivityRepository.SearchActivitiesAsync(query, cancellationToken);
-            return Results.Ok(activities);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(SearchActivitiesAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
+        return TypedResults.Ok(ToResponses(await repository.SearchActivitiesAsync(query, cancellationToken)));
     }
 
-    // Plan Generation Handlers
-    private static async Task<IResult> GeneratePlanAsync(
+    // ── Plan handler ─────────────────────────────────────────────────────────
+
+    private static async Task<Results<Ok<AdvancedPlanResponse>, ValidationProblem>> GeneratePlanAsync(
         PlanGenerationRequest request,
         IProductRepository repository,
-        NutritionPlanService planService,
-        ILogger<ApiEndpointsLog> logger,
+        INutritionPlanService planService,
         CancellationToken cancellationToken)
     {
-        try
+        var temperature = TemperatureClassifier.Resolve(request.Temperature, request.TemperatureC);
+
+        TriathlonLegs? legs = null;
+        if (request.Legs is { } legsRequest)
         {
-            var validationError = ValidateRequest(request);
-            if (validationError != null)
-                return validationError;
-
-            var productsResult = await LoadProductsAsync(request, repository, cancellationToken);
-            if (productsResult.Error != null)
-                return productsResult.Error;
-
-            var profiles = CreateProfiles(request);
-            var caffeineEnabled = request.CaffeineEnabled ?? false;
-            var planResult = planService.GeneratePlanWithDiagnostics(
-                profiles.race, profiles.athlete, productsResult.Products!,
-                caffeineEnabled);
-            var targets = NutritionCalculator.CalculateMultiNutrientTargets(
-                profiles.race, profiles.athlete, caffeineEnabled);
-            var response = BuildResponseWithDiagnostics(profiles.athlete, profiles.race, planResult, targets);
-
-            return Results.Ok(response);
-        }
-        catch (ValidationException ex)
-        {
-            return Results.BadRequest(ex.Message);
-        }
-        catch (MissingProductException ex)
-        {
-            return Results.BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GeneratePlanAsync));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    /// <summary>
-    /// Validate the plan generation request
-    /// </summary>
-    private static IResult? ValidateRequest(PlanGenerationRequest request)
-    {
-        if (request == null)
-            return Results.BadRequest("Request body is required");
-
-        if (request.Products == null && request.Filter == null)
-            return Results.BadRequest("Either 'products' or 'filter' must be provided");
-
-        var athleteError = ValidateAthleteAndRace(request.AthleteWeightKg, request.DurationHours);
-        if (athleteError != null) return athleteError;
-
-        if (request.TemperatureC < -20 || request.TemperatureC > 55)
-            return Results.BadRequest("TemperatureC must be between -20 and 55.");
-
-        var legsError = ValidateLegs(request.Legs);
-        if (legsError != null) return legsError;
-
-        return null;
-    }
-
-    /// <summary>
-    /// Validate explicit triathlon leg durations. A sum that diverges from the total
-    /// duration is handled leniently downstream (normalised + warning), so it is not
-    /// rejected here; only structurally invalid legs (negative, or all-zero) fail.
-    /// </summary>
-    private static IResult? ValidateLegs(TriathlonLegsRequest? legs)
-    {
-        if (legs == null)
-            return null;
-
-        if (legs.SwimH < 0 || legs.BikeH < 0 || legs.RunH < 0)
-            return Results.BadRequest("Triathlon leg durations cannot be negative.");
-
-        if (legs.SwimH + legs.BikeH + legs.RunH <= 0)
-            return Results.BadRequest("Triathlon leg durations must sum to more than 0.");
-
-        return null;
-    }
-
-    private static IResult? ValidateTargetsRequest(TargetsRequest request) =>
-        ValidateAthleteAndRace(request.AthleteWeightKg, request.DurationHours);
-
-    private static IResult? ValidateAthleteAndRace(double weightKg, double durationHours)
-    {
-        if (weightKg < 1 || weightKg > 200)
-            return Results.BadRequest("AthleteWeightKg must be between 1 and 200.");
-        if (durationHours < 0.1 || durationHours > 24)
-            return Results.BadRequest("DurationHours must be between 0.1 and 24.");
-        return null;
-    }
-
-    /// <summary>
-    /// Load products either from explicit list or filtered repository
-    /// </summary>
-    private static async Task<ProductLoadResult> LoadProductsAsync(
-        PlanGenerationRequest request,
-        IProductRepository repository,
-        CancellationToken cancellationToken)
-    {
-        if (request.Products != null && request.Products.Count > 0)
-        {
-            var products = request.Products
-                .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
-                .ToList();
-            return new ProductLoadResult(products, null);
+            legs = legsRequest.ToDomain();
+            Validation.ValidateTriathlonLegs(legs);
         }
 
-        if (request.Filter != null)
-        {
-            var filter = ApplySportSpecificFiltering(request.Filter, request.SportType);
-            var productInfos = await repository.GetFilteredProductsAsync(filter, cancellationToken);
+        var (products, problem) = await LoadProductsAsync(request, repository, cancellationToken);
+        if (problem is not null)
+            return problem;
 
-            if (productInfos.Count == 0)
-                return ProductLoadResult.WithError(Results.BadRequest("No products found matching the specified filter"));
-
-            var products = productInfos
-                .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
-                .ToList();
-            return new ProductLoadResult(products, null);
-        }
-
-        return ProductLoadResult.WithError(Results.BadRequest("At least one product is required"));
-    }
-
-    /// <summary>
-    /// Apply sport-specific product filtering rules
-    /// </summary>
-    private static ProductFilter ApplySportSpecificFiltering(ProductFilter filter, SportType sportType)
-    {
-        if (sportType != SportType.Run)
-            return filter;
-
-        var excludeTypes = filter.ExcludeTypes?.ToList() ?? new List<string>();
-
-        var typesToAdd = RunExcludedProductTypes
-            .Where(typeToExclude => !excludeTypes.Any(t => t.Equals(typeToExclude, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-
-        excludeTypes.AddRange(typesToAdd);
-
-        return filter with { ExcludeTypes = excludeTypes };
-    }
-
-    /// <summary>
-    /// Create athlete and race profiles from request
-    /// </summary>
-    private static (AthleteProfile athlete, RaceProfile race) CreateProfiles(PlanGenerationRequest request)
-    {
-        var temperatureCondition = MapTemperature(request.TemperatureC);
         var athlete = new AthleteProfile(request.AthleteWeightKg);
-        var legs = request.Legs == null
-            ? null
-            : new TriathlonLegs(request.Legs.SwimH, request.Legs.BikeH, request.Legs.RunH);
-        var race = new RaceProfile(
-            request.SportType,
-            request.DurationHours,
-            temperatureCondition,
-            request.Intensity,
-            legs,
-            request.DistancePreset
-        );
+        var race = new RaceProfile(request.SportType, request.DurationHours, temperature, request.Intensity, legs, request.DistancePreset);
+        var caffeineEnabled = request.CaffeineEnabled ?? PlanDefaults.CaffeineEnabled;
 
-        return (athlete, race);
+        var plan = planService.GeneratePlanWithDiagnostics(race, athlete, products, caffeineEnabled);
+        var targets = plan.Targets ?? NutritionCalculator.CalculateMultiNutrientTargets(race, athlete, caffeineEnabled);
+
+        return TypedResults.Ok(plan.ToResponse(race, athlete, targets, caffeineEnabled));
     }
 
     /// <summary>
-    /// Map temperature in Celsius to condition enum
+    /// Products come from the explicit list when non-empty, otherwise from the catalogue filter
+    /// (with the sport's mandatory exclusions applied).
     /// </summary>
-    private static TemperatureCondition MapTemperature(double temperatureC) =>
-        temperatureC switch
-        {
-            <= SchedulingConstraints.ColdTemperatureThresholdC => TemperatureCondition.Cold,
-            >= SchedulingConstraints.HotTemperatureThresholdC => TemperatureCondition.Hot,
-            _ => TemperatureCondition.Moderate
-        };
-
-    /// <summary>
-    /// Build the API response with plan, shopping summary, and diagnostics
-    /// </summary>
-    private static AdvancedPlanResponse BuildResponseWithDiagnostics(
-        AthleteProfile athlete,
-        RaceProfile race,
-        PlanResult planResult,
-        MultiNutrientTargets targets)
+    private static async Task<(IReadOnlyList<Product> Products, ValidationProblem? Problem)> LoadProductsAsync(
+        PlanGenerationRequest request, IProductRepository repository, CancellationToken cancellationToken)
     {
-        var shoppingSummary = planResult.Events.CalculateShoppingList();
-        var segmentTargets = MapSegmentTargets(targets.SegmentTargets);
-        return new AdvancedPlanResponse(
-            race, athlete, planResult.Events, shoppingSummary,
-            planResult.Warnings, planResult.Errors, segmentTargets);
+        if (request.Products is { Count: > 0 } explicitProducts)
+        {
+            Validation.ValidateProductCount(explicitProducts.Count);
+            if (explicitProducts.Any(p => p is null))
+                return ([], ApiProblems.ValidationResult("Products", "Product entries cannot be null"));
+
+            return (explicitProducts.Select(p => p.ToDomain()).ToList(), null);
+        }
+
+        if (request.Filter is null)
+            return ([], ApiProblems.ValidationResult("Products",
+                "Either a non-empty 'products' list or a 'filter' must be provided"));
+
+        var filter = SportProductRules.ApplySportExclusions(request.Filter.ToDomain(), request.SportType);
+        var catalogueProducts = await repository.GetFilteredProductsAsync(filter, cancellationToken);
+        if (catalogueProducts.Count == 0)
+            return ([], ApiProblems.ValidationResult("Filter", "No products found matching the specified filter"));
+
+        return (catalogueProducts.Select(p => p.ToPlannerProduct()).ToList(), null);
     }
 
-    /// <summary>
-    /// Flatten per-phase targets into a serialisable, leg-ordered list for the UI.
-    /// </summary>
-    private static List<SegmentTargetResponse>? MapSegmentTargets(
-        Dictionary<RacePhase, PhaseTargets>? segmentTargets)
-    {
-        if (segmentTargets == null)
-            return null;
+    // ── Metadata handlers ────────────────────────────────────────────────────
 
-        var order = new[] { RacePhase.Swim, RacePhase.Bike, RacePhase.Run };
-        return order
-            .Where(segmentTargets.ContainsKey)
-            .Select(phase =>
-            {
-                var t = segmentTargets[phase];
-                return new SegmentTargetResponse(
-                    phase.ToString(), t.CarbsG, t.SodiumMg, t.FluidMl, t.DurationMinutes);
-            })
-            .ToList();
+    private static Ok<UIMetadata> GetUIMetadata(IUIMetadataService metadata) =>
+        TypedResults.Ok(metadata.GetUIMetadata());
+
+    private static Ok<IReadOnlyList<TemperatureMetadata>> GetTemperatureMetadata(IUIMetadataService metadata) =>
+        TypedResults.Ok(metadata.GetTemperatureMetadata());
+
+    private static Ok<IReadOnlyList<IntensityMetadata>> GetIntensityMetadata(IUIMetadataService metadata) =>
+        TypedResults.Ok(metadata.GetIntensityMetadata());
+
+    private static Ok<DefaultsResponse> GetDefaults(IUIMetadataService metadata) =>
+        TypedResults.Ok(new DefaultsResponse(metadata.GetUIMetadata().DefaultActivityId));
+
+    private static Ok<ConfigurationMetadata> GetConfigurationMetadata(IConfigurationMetadataService configuration) =>
+        TypedResults.Ok(configuration.GetConfigurationMetadata());
+
+    private static Results<Ok<NutritionTargetsResponse>, ValidationProblem> CalculateNutritionTargets(TargetsRequest request)
+    {
+        var athlete = new AthleteProfile(request.AthleteWeightKg);
+        var race = new RaceProfile(request.SportType, request.DurationHours, request.Temperature, request.Intensity);
+        Validation.ValidateAthleteProfile(athlete);
+        Validation.ValidateRaceProfile(race);
+
+        return TypedResults.Ok(NutritionCalculator.CalculateMultiNutrientTargets(race, athlete).ToTargetsResponse());
     }
 
-    /// <summary>
-    /// Result object for product loading operations
-    /// </summary>
-    private sealed record ProductLoadResult(List<Product>? Products, IResult? Error)
-    {
-        public static ProductLoadResult WithError(IResult error) => new(null, error);
-    }
+    private static List<ProductResponse> ToResponses(IEnumerable<ProductInfo> products) =>
+        products.Select(p => p.ToResponse()).ToList();
 
-    // Metadata Handlers
-    private static IResult GetUIMetadata(ILogger<ApiEndpointsLog> logger)
-    {
-        try
-        {
-            var metadata = UIMetadataService.GetUIMetadata();
-            return Results.Ok(metadata);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetUIMetadata));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static IResult GetTemperatureMetadata(ILogger<ApiEndpointsLog> logger)
-    {
-        try
-        {
-            var metadata = UIMetadataService.GetTemperatureMetadata();
-            return Results.Ok(metadata);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetTemperatureMetadata));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static IResult GetIntensityMetadata(ILogger<ApiEndpointsLog> logger)
-    {
-        try
-        {
-            var metadata = UIMetadataService.GetIntensityMetadata();
-            return Results.Ok(metadata);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetIntensityMetadata));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static IResult GetDefaults(ILogger<ApiEndpointsLog> logger)
-    {
-        try
-        {
-            var metadata = UIMetadataService.GetUIMetadata();
-            return Results.Ok(new { defaultActivityId = metadata.DefaultActivityId });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetDefaults));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static IResult GetConfigurationMetadata(ILogger<ApiEndpointsLog> logger)
-    {
-        try
-        {
-            var config = ConfigurationMetadataService.GetConfigurationMetadata();
-            return Results.Ok(config);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(GetConfigurationMetadata));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
-    private static IResult CalculateNutritionTargets(TargetsRequest request, ILogger<ApiEndpointsLog> logger)
-    {
-        var validationError = ValidateTargetsRequest(request);
-        if (validationError != null)
-            return validationError;
-
-        try
-        {
-            var athlete = new AthleteProfile(WeightKg: request.AthleteWeightKg);
-            var race = new RaceProfile(
-                SportType: request.SportType,
-                DurationHours: request.DurationHours,
-                Temperature: request.Temperature,
-                Intensity: request.Intensity
-            );
-            
-            var targets = NutritionCalculator.CalculateTargets(race, athlete);
-            
-            return Results.Ok(new
-            {
-                targets.CarbsGPerHour,
-                targets.FluidsMlPerHour,
-                targets.SodiumMgPerHour,
-                TotalCarbsG = targets.CarbsGPerHour * race.DurationHours,
-                TotalFluidsML = targets.FluidsMlPerHour * race.DurationHours,
-                TotalSodiumMg = targets.SodiumMgPerHour * race.DurationHours
-            });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Unhandled exception in {Handler}", nameof(CalculateNutritionTargets));
-            return Results.Problem("An unexpected error occurred. Please try again later.");
-        }
-    }
-
+    private static List<ActivityResponse> ToResponses(IEnumerable<ActivityInfo> activities) =>
+        activities.Select(a => a.ToResponse()).ToList();
 }
-
-internal sealed class ApiEndpointsLog { }
-
-public record TargetsRequest(
-    double AthleteWeightKg,
-    SportType SportType,
-    double DurationHours,
-    TemperatureCondition Temperature,
-    IntensityLevel Intensity
-);
-
-public record PlanGenerationRequest(
-    double AthleteWeightKg,
-    SportType SportType,
-    double DurationHours,
-    double TemperatureC,
-    IntensityLevel Intensity,
-    List<ProductRequest>? Products = null,
-    ProductFilter? Filter = null,
-    int? IntervalMin = null,  // Reserved for future use; currently has no effect
-    bool? CaffeineEnabled = null,
-    TriathlonLegsRequest? Legs = null,
-    DistancePreset? DistancePreset = null
-);
-
-/// <summary>
-/// Explicit swim/bike/run leg durations (hours) for a triathlon request.
-/// </summary>
-public record TriathlonLegsRequest(
-    double SwimH,
-    double BikeH,
-    double RunH
-);
-
-public record ProductRequest(
-    string Name,
-    string ProductType,
-    double CarbsG,
-    double SodiumMg,
-    double VolumeMl,
-    double? CaffeineMg = null
-);
-
-/// <summary>
-/// Response model for advanced nutrition plan generation
-/// </summary>
-public record AdvancedPlanResponse(
-    RaceProfile Race,
-    AthleteProfile Athlete,
-    List<NutritionEvent> NutritionSchedule,
-    ShoppingSummary? ShoppingSummary = null,
-    List<string>? Warnings = null,
-    List<string>? Errors = null,
-    List<SegmentTargetResponse>? SegmentTargets = null
-);
-
-/// <summary>
-/// Per-leg nutrition targets for a triathlon, ordered swim → bike → run.
-/// </summary>
-public record SegmentTargetResponse(
-    string Phase,
-    double CarbsG,
-    double SodiumMg,
-    double FluidMl,
-    double DurationMinutes
-);

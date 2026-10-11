@@ -260,9 +260,9 @@ public class NutritionCalculatorTests
         var targets = NutritionCalculator.CalculateMultiNutrientTargets(race, athlete);
 
         targets.SegmentTargets.ShouldNotBeNull();
-        targets.SegmentTargets!.ShouldContainKey(RacePhase.Swim);
-        targets.SegmentTargets.ShouldContainKey(RacePhase.Bike);
-        targets.SegmentTargets.ShouldContainKey(RacePhase.Run);
+        targets.SegmentTargets!.ContainsKey(RacePhase.Swim).ShouldBeTrue();
+        targets.SegmentTargets.ContainsKey(RacePhase.Bike).ShouldBeTrue();
+        targets.SegmentTargets.ContainsKey(RacePhase.Run).ShouldBeTrue();
     }
 
     [Fact]

@@ -1,15 +1,17 @@
-namespace RaceDay.Core.Tests;
+namespace RaceDay.API.Tests;
 
-using RaceDay.Core.Services;
+using RaceDay.API.Metadata;
 using RaceDay.Core.Models;
 
 public class ConfigurationMetadataServiceTests
 {
+    private readonly ConfigurationMetadataService _service = new();
+
     [Fact]
     public void GetConfigurationMetadata_ReturnsValidConfig()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         config.ShouldNotBeNull();
@@ -24,7 +26,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_ContainsAllPhases()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         config.Phases.ShouldNotBeNull();
@@ -37,7 +39,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_ContainsSwimPhase()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var swimPhase = config.Phases.FirstOrDefault(p => p.Phase == RacePhase.Swim);
 
         // Assert
@@ -50,7 +52,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_ContainsAllSportTypes()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         config.Sports.ShouldNotBeNull();
@@ -61,7 +63,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_RunSportHasValidConfig()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var runSport = config.Sports.FirstOrDefault(s => s.SportType == "Run");
 
         // Assert
@@ -80,7 +82,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_BikeSportHasValidConfig()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var bikeSport = config.Sports.FirstOrDefault(s => s.SportType == "Bike");
 
         // Assert
@@ -95,7 +97,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_TriathlonSportHasValidConfig()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var triSport = config.Sports.FirstOrDefault(s => s.SportType == "Triathlon");
 
         // Assert
@@ -108,7 +110,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_TemperatureAdjustmentsExist()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         config.TemperatureAdjustments.ShouldNotBeNull();
@@ -119,7 +121,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_ColdTemperatureHasAdjustment()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var coldAdj = config.TemperatureAdjustments.FirstOrDefault(a => a.TemperatureCondition == "Cold");
 
         // Assert
@@ -133,7 +135,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_ModerateTemperatureHasAdjustment()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var modAdj = config.TemperatureAdjustments.FirstOrDefault(a => a.TemperatureCondition == "Moderate");
 
         // Assert
@@ -147,7 +149,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_HotTemperatureHasAdjustment()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var hotAdj = config.TemperatureAdjustments.FirstOrDefault(a => a.TemperatureCondition == "Hot");
 
         // Assert
@@ -161,7 +163,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_AthleteWeightThresholdsExist()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         config.AthleteWeightThresholds.ShouldNotBeNull();
@@ -172,7 +174,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_AthleteWeightThresholdsHaveValidValues()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         Assert.All(config.AthleteWeightThresholds, threshold =>
@@ -187,7 +189,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_NutritionTargetsExist()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         config.NutritionTargets.ShouldNotBeNull();
@@ -198,7 +200,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_NutritionTargetsHaveValidRanges()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         Assert.All(config.NutritionTargets, target =>
@@ -214,7 +216,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_RunHasDifferentCaffeineStartThanBike()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var runSport = config.Sports.FirstOrDefault(s => s.SportType == "Run");
         var bikeSport = config.Sports.FirstOrDefault(s => s.SportType == "Bike");
 
@@ -228,7 +230,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_AllSportsCaffeineConfigValid()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         Assert.All(config.Sports, sport =>
@@ -244,7 +246,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_AllPhasesHaveValidDescriptions()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
 
         // Assert
         Assert.All(config.Phases, phase =>
@@ -258,8 +260,8 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_MultipleCallsReturnConsistentResults()
     {
         // Act
-        var config1 = ConfigurationMetadataService.GetConfigurationMetadata();
-        var config2 = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config1 = _service.GetConfigurationMetadata();
+        var config2 = _service.GetConfigurationMetadata();
 
         // Assert
         config2.Phases.Count.ShouldBe(config1.Phases.Count);
@@ -271,7 +273,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_BikeCarbsPerKgHigherThanRun()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var runSport = config.Sports.FirstOrDefault(s => s.SportType == "Run");
         var bikeSport = config.Sports.FirstOrDefault(s => s.SportType == "Bike");
 
@@ -286,7 +288,7 @@ public class ConfigurationMetadataServiceTests
     public void GetConfigurationMetadata_TemperatureBonusesAreLogical()
     {
         // Act
-        var config = ConfigurationMetadataService.GetConfigurationMetadata();
+        var config = _service.GetConfigurationMetadata();
         var coldAdj = config.TemperatureAdjustments.FirstOrDefault(a => a.TemperatureCondition == "Cold");
         var modAdj = config.TemperatureAdjustments.FirstOrDefault(a => a.TemperatureCondition == "Moderate");
         var hotAdj = config.TemperatureAdjustments.FirstOrDefault(a => a.TemperatureCondition == "Hot");

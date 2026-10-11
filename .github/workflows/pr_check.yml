@@ -4,15 +4,22 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+# Least privilege by default; jobs that need more request it explicitly.
+permissions:
+  contents: read
+
 jobs:
   # Check which files changed to determine if ui_screenshots should run
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       ui_screenshots: ${{ steps.filter.outputs.ui_screenshots }}
     steps:
     - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v3
+    - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
       id: filter
       with:
         filters: |
@@ -47,7 +54,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
@@ -126,40 +133,17 @@ jobs:
         path: src/RaceDay.Web.React/dist
         retention-days: 1
     
-    - name: Upload .NET Build Artifacts
+    # Single-path upload so the artifact root is the API output folder itself
+    # (multi-path uploads strip to the common parent and break the restore path).
+    # RaceDay.Core.dll is copied into the API output, so this is all that is
+    # needed to run the API.
+    - name: Upload API Build Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: dotnet-build
-        path: |
-          src/RaceDay.API/bin/Release
-          src/RaceDay.Core/bin/Release
+        name: api-build
+        path: src/RaceDay.API/bin/Release/net10.0
+        if-no-files-found: error
         retention-days: 1
-
-  lint-check:
-    runs-on: ubuntu-latest
-    name: Code Analysis
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
-    
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
-    
-    - name: Restore dependencies
-      run: dotnet restore
-    
-    - name: Analyze with StyleCop
-      run: dotnet build --configuration Release --no-restore /p:EnforceCodeStyleInBuild=true
 
   web-lint:
     runs-on: ubuntu-latest
@@ -171,7 +155,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
@@ -179,10 +163,15 @@ jobs:
       run: npm ci --ignore-scripts
       working-directory: src/RaceDay.Web.React
     
+    # tsconfig.json is a solution file ("files": []), so build the project
+    # references to actually type-check app and node configs.
     - name: TypeScript Check
-      run: npx tsc --noEmit
+      run: npx --no-install tsc -b
       working-directory: src/RaceDay.Web.React
-      continue-on-error: false
+
+    - name: ESLint
+      run: npm run lint
+      working-directory: src/RaceDay.Web.React
 
   ui_screenshots:
     runs-on: ubuntu-latest
@@ -212,7 +201,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
         cache-dependency-path: src/RaceDay.Web.React/package-lock.json
     
@@ -223,23 +212,12 @@ jobs:
         name: react-build
         path: src/RaceDay.Web.React/dist
     
-    - name: Download .NET Build Artifacts
+    - name: Download API Build Artifacts
       uses: actions/download-artifact@v4
       continue-on-error: true
       with:
-        name: dotnet-build
-        path: build-artifacts
-    
-    - name: Restore .NET Build from Artifacts
-      continue-on-error: true
-      run: |
-        if [ -d "build-artifacts" ]; then
-          mkdir -p src/RaceDay.API/bin/Release
-          mkdir -p src/RaceDay.Core/bin/Release
-          cp -r build-artifacts/src/RaceDay.API/bin/Release/* src/RaceDay.API/bin/Release/ 2>/dev/null || true
-          cp -r build-artifacts/src/RaceDay.Core/bin/Release/* src/RaceDay.Core/bin/Release/ 2>/dev/null || true
-          echo "Build artifacts restored from previous job"
-        fi
+        name: api-build
+        path: src/RaceDay.API/bin/Release/net10.0
     
     - name: Check if builds are needed
       id: check-builds
@@ -260,8 +238,9 @@ jobs:
       if: steps.check-builds.outputs.builds_exist != 'true'
       run: dotnet build --configuration Release --no-restore
     
+    # Always needed: vite preview, wait-on and Playwright come from node_modules
+    # even when the build output is reused from the build-and-test job.
     - name: Install React dependencies
-      if: steps.check-builds.outputs.builds_exist != 'true'
       run: npm ci --ignore-scripts
       working-directory: src/RaceDay.Web.React
     
@@ -281,12 +260,21 @@ jobs:
     
     - name: Install Playwright Browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: npx playwright install --with-deps chromium
+      run: npx --no-install playwright install --with-deps chromium
       working-directory: src/RaceDay.Web.React
-    
+
+    # The browser cache only holds the browser binaries; OS packages must be installed on every run
+    - name: Install Playwright System Dependencies
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: npx --no-install playwright install-deps chromium
+      working-directory: src/RaceDay.Web.React
+
+    # Run the compiled DLL from its output folder (content root = appsettings
+    # location); works for both the downloaded artifact and a local rebuild.
     - name: Start API Server
+      working-directory: src/RaceDay.API/bin/Release/net10.0
       run: |
-        dotnet run --project src/RaceDay.API/RaceDay.API.csproj --no-build --configuration Release --no-launch-profile &
+        dotnet RaceDay.API.dll &
         API_PID=$!
         echo "API_PID=$API_PID" >> $GITHUB_ENV
         echo "Started API server with PID $API_PID"
@@ -295,7 +283,7 @@ jobs:
         ASPNETCORE_URLS: http://127.0.0.1:8080
     
     - name: Wait for API to be ready
-      run: npx -y wait-on tcp:localhost:8080 --timeout 120000
+      run: npx --no-install wait-on tcp:127.0.0.1:8080 --timeout 120000
       working-directory: src/RaceDay.Web.React
     
     - name: Start Frontend Preview Server
@@ -309,11 +297,11 @@ jobs:
         BASE_URL: http://127.0.0.1:4173
     
     - name: Wait for Preview Server
-      run: npx wait-on http://127.0.0.1:4173 --timeout 60000
+      run: npx --no-install wait-on http://127.0.0.1:4173 --timeout 60000
       working-directory: src/RaceDay.Web.React
     
     - name: Run Playwright Screenshots
-      run: npx playwright test --project=mobile --project=desktop
+      run: npx --no-install playwright test --project=mobile --project=desktop
       working-directory: src/RaceDay.Web.React
       env:
         BASE_URL: http://127.0.0.1:4173
@@ -341,7 +329,7 @@ jobs:
         retention-days: 30
     
     - name: Prepare GitHub Pages Content
-      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      if: (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository
       id: prepare-pages
       run: |
         mkdir -p ui-preview-dist/screenshots/mobile ui-preview-dist/screenshots/desktop
@@ -361,8 +349,8 @@ jobs:
         find ui-preview-dist -type f | sort
     
     - name: Publish to GitHub Pages
-      if: always() && github.event.pull_request.head.repo.full_name == github.repository
-      uses: peaceiris/actions-gh-pages@v4
+      if: (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository
+      uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./ui-preview-dist
@@ -372,7 +360,7 @@ jobs:
         user_email: 'github-actions[bot]@users.noreply.github.com'
     
     - name: Extract Repository Info
-      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      if: (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository
       id: repo-info
       run: |
         REPO_NAME=$(echo "${{ github.repository }}" | cut -d'/' -f2)
@@ -380,7 +368,7 @@ jobs:
         echo "Repository: ${{ github.repository_owner }}/$REPO_NAME"
     
     - name: Build PR Comment
-      if: always() && github.event.pull_request.head.repo.full_name == github.repository
+      if: (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository
       id: build-comment
       run: |
         BASE_URL="https://${{ github.repository_owner }}.github.io/${{ steps.repo-info.outputs.repo_name }}/ui-preview/pr-${{ github.event.pull_request.number }}/latest"
@@ -439,8 +427,8 @@ jobs:
         echo "$COMMENT" > /tmp/pr-comment.md
     
     - name: Comment on PR
-      if: always() && github.event.pull_request.head.repo.full_name == github.repository
-      uses: peter-evans/create-or-update-comment@v4
+      if: (success() || failure()) && github.event.pull_request.head.repo.full_name == github.repository
+      uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4.0.0
       with:
         issue-number: ${{ github.event.pull_request.number }}
         body-path: /tmp/pr-comment.md

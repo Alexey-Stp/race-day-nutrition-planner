@@ -49,7 +49,7 @@ public static class NutritionCalculator
                 IntensityLevel.Hard => SchedulingConstraints.CaffeineCeilingHardMgPerKg,
                 _ => SchedulingConstraints.CaffeineCeilingHardMgPerKg
             };
-            totalCaffeine = Math.Min(athlete.WeightKg * mgPerKg, 300);
+            totalCaffeine = Math.Min(athlete.WeightKg * mgPerKg, SchedulingConstraints.CaffeineCeilingAbsoluteMaxMg);
         }
         
         // Calculate segment-specific targets for triathlon
