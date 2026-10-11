@@ -348,7 +348,7 @@ public class PlanGeneratorTests
         
         // Get the transition time from bike to run (assuming it's when run phase starts)
         var runEvents = plan.Where(e => e.Phase == RacePhase.Run && e.TimeMin > 0).ToList();
-        if (runEvents.Any())
+        if (runEvents.Count > 0)
         {
             var bikeToRunTransitionTime = runEvents.Min(e => e.TimeMin);
             
@@ -826,7 +826,7 @@ public class PlanGeneratorTests
         var drinkProductNames = planDrinks.Select(e => e.ProductName).Distinct().ToList();
         
         // Each should use products from their respective type
-        (barProductNames.Any() && gelProductNames.Any() && drinkProductNames.Any()).ShouldBeTrue();
+        (barProductNames.Count > 0 && gelProductNames.Count > 0 && drinkProductNames.Count > 0).ShouldBeTrue();
     }
 
     [Fact]
@@ -1269,7 +1269,7 @@ public class PlanGeneratorTests
         // Cycling allows for more diverse products - validate product distribution
         var gelEvents = plan.Where(e => e.ProductName.Contains("Gel")).ToList();
         var drinkEvents = plan.Where(e => e.ProductName.Contains("Drink")).ToList();
-        (gelEvents.Any() || drinkEvents.Any()).ShouldBeTrue("Should have nutrition products");
+        (gelEvents.Count > 0 || drinkEvents.Count > 0).ShouldBeTrue("Should have nutrition products");
 
         // Validate comprehensive requirements
         ValidateEventIntegrity(plan);
@@ -1359,7 +1359,7 @@ public class PlanGeneratorTests
 
     #region Helper Validation Methods
 
-    private void ValidateEventIntegrity(List<NutritionEvent> plan)
+    private static void ValidateEventIntegrity(List<NutritionEvent> plan)
     {
         Assert.All(plan, @event =>
         {
@@ -1373,7 +1373,7 @@ public class PlanGeneratorTests
         });
     }
 
-    private void ValidateMonotonicCarbs(List<NutritionEvent> plan)
+    private static void ValidateMonotonicCarbs(List<NutritionEvent> plan)
     {
         var sortedPlan = plan.OrderBy(e => e.TimeMin).ToList();
         for (int i = 1; i < sortedPlan.Count; i++)
@@ -1382,7 +1382,7 @@ public class PlanGeneratorTests
         }
     }
 
-    private void ValidateTimingProgression(List<NutritionEvent> plan)
+    private static void ValidateTimingProgression(List<NutritionEvent> plan)
     {
         var sortedPlan = plan.OrderBy(e => e.TimeMin).ToList();
         for (int i = 1; i < sortedPlan.Count; i++)
@@ -1391,7 +1391,7 @@ public class PlanGeneratorTests
         }
     }
 
-    private void ValidateReasonableIntervals(List<NutritionEvent> plan)
+    private static void ValidateReasonableIntervals(List<NutritionEvent> plan)
     {
         var duringRaceEvents = plan.Where(e => e.TimeMin >= 0).OrderBy(e => e.TimeMin).ToList();
         
@@ -1406,7 +1406,7 @@ public class PlanGeneratorTests
         }
     }
 
-    private void ValidateTriathlonPhases(List<NutritionEvent> plan)
+    private static void ValidateTriathlonPhases(List<NutritionEvent> plan)
     {
         // For triathlon, we should have events spanning all three phases
         var swimPhaseEvents = plan.Where(e => e.Phase == RacePhase.Swim).ToList();
@@ -1432,7 +1432,7 @@ public class PlanGeneratorTests
 
     #region Test Helpers
 
-    private List<ProductEnhanced> CreateTestProducts()
+    private static List<ProductEnhanced> CreateTestProducts()
     {
         return new List<ProductEnhanced>
         {
@@ -1444,7 +1444,7 @@ public class PlanGeneratorTests
         };
     }
 
-    private List<ProductEnhanced> CreateTriathlonProducts()
+    private static List<ProductEnhanced> CreateTriathlonProducts()
     {
         return new List<ProductEnhanced>
         {
