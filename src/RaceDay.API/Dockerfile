@@ -19,14 +19,11 @@ WORKDIR /app
 
 # curl is used by the docker-compose healthcheck (GET /health); create non-root user
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* && \
-    useradd -m -u 1001 -s /bin/bash appuser && \
-    chown -R appuser:appuser /app
+    useradd -m -u 1001 -s /bin/bash appuser
 
-# Copy published files with correct ownership
-COPY --chown=appuser:appuser --from=build /app/publish .
-
-# Remove write permissions to prevent tampering (logs go to the console only)
-RUN chmod -R a-w /app
+# Published files stay owned by root and are read-only for appuser, so the app cannot be tampered with at
+# runtime (logs go to the console only).
+COPY --from=build /app/publish .
 
 USER appuser
 
