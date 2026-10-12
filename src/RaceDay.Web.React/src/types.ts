@@ -24,78 +24,36 @@ export const TemperatureCondition = {
 
 export type TemperatureCondition = typeof TemperatureCondition[keyof typeof TemperatureCondition];
 
-// Metadata types from backend API
-export interface TemperatureMetadata {
-  condition: TemperatureCondition;
-  range: string;
-  effects: string[];
+export const DistancePreset = {
+  Sprint: "Sprint",
+  Olympic: "Olympic",
+  HalfIron: "HalfIron",
+  Ironman: "Ironman"
+} as const;
+
+export type DistancePreset = typeof DistancePreset[keyof typeof DistancePreset];
+
+/** Explicit swim/bike/run leg durations in hours (triathlon only). */
+export interface TriathlonLegs {
+  swimH: number;
+  bikeH: number;
+  runH: number;
 }
 
-export interface IntensityMetadata {
-  level: IntensityLevel;
-  icon: string;
-  carbRange: string;
-  heartRateZone: string;
-  effects: string[];
+/** Default swim/bike/run leg fractions for a distance preset. */
+export interface LegFractions {
+  swim: number;
+  bike: number;
+  run: number;
 }
 
-export interface UIMetadata {
-  temperatures: TemperatureMetadata[];
-  intensities: IntensityMetadata[];
-  defaultActivityId: string;
-}
-
-// Configuration metadata types
-export interface PhaseInfo {
+/** Per-leg nutrition targets returned by the API (triathlon only). */
+export interface SegmentTarget {
   phase: string;
-  name: string;
-  description: string;
-}
-
-export interface NutritionTargetConfig {
-  name: string;
-  unit: string;
-  description: string;
-  minValue: number;
-  maxValue: number;
-  baseValue: number;
-}
-
-export interface SportConfig {
-  sportType: string;
-  name: string;
-  description: string;
-  carbsPerKgPerHour: number;
-  maxCarbsPerHour: number;
-  slotIntervalMinutes: number;
-  caffeineStartHour: number;
-  caffeineIntervalHours: number;
-  maxCaffeineMgPerKg: number;
-}
-
-export interface TemperatureAdjustment {
-  temperatureCondition: string;
-  range: string;
-  fluidBonus: number;
-  sodiumBonus: number;
-  description: string;
-}
-
-export interface AthleteWeightConfig {
-  thresholdKg: number;
-  category: string;
-  fluidBonus: number;
-  sodiumBonus: number;
-  description: string;
-}
-
-export interface ConfigurationMetadata {
-  phases: PhaseInfo[];
-  nutritionTargets: NutritionTargetConfig[];
-  sports: SportConfig[];
-  temperatureAdjustments: TemperatureAdjustment[];
-  athleteWeightThresholds: AthleteWeightConfig[];
-  descriptions: Record<string, string>;
+  carbsG: number;
+  sodiumMg: number;
+  fluidMl: number;
+  durationMinutes: number;
 }
 
 export interface ProductInfo {
@@ -119,6 +77,8 @@ export interface ActivityInfo {
   maxDurationHours: number;
   bestTimeHours: number;
   bestTimeFormatted: string;
+  preset?: DistancePreset | null;
+  legFractions?: LegFractions | null;
 }
 
 export interface ProductEditor {
@@ -138,24 +98,22 @@ export interface RaceProfile {
   durationHours: number;
   temperature: TemperatureCondition;
   intensity: IntensityLevel;
+  legs?: TriathlonLegs | null;
+  preset?: DistancePreset | null;
 }
 
-export interface NutritionTargets {
+/** Whole-race nutrition targets calculated by the API for the generated plan. */
+export interface PlanTargets {
   carbsGPerHour: number;
   fluidsMlPerHour: number;
   sodiumMgPerHour: number;
+  totalCarbsG: number;
+  totalFluidsMl: number;
+  totalSodiumMg: number;
+  caffeineMg: number;
 }
 
-export interface ScheduleItem {
-  timeMin: number;
-  productName: string;
-  amountPortions: number;
-}
-
-export interface ProductSummary {
-  productName: string;
-  totalPortions: number;
-}
+export type NutritionEventKind = 'PreRace' | 'Sip' | 'Intake';
 
 export interface NutritionEvent {
   timeMin: number;
@@ -167,6 +125,10 @@ export interface NutritionEvent {
   totalCarbsSoFar: number;
   hasCaffeine: boolean;
   caffeineMg?: number;
+  totalCaffeineSoFar?: number;
+  carbsInEvent?: number;
+  sipMl?: number;
+  kind?: NutritionEventKind;
 }
 
 export interface AdvancedPlanResponse {
@@ -174,6 +136,11 @@ export interface AdvancedPlanResponse {
   athlete: AthleteProfile;
   nutritionSchedule: NutritionEvent[];
   shoppingSummary?: ShoppingSummary;
+  warnings?: string[];
+  errors?: string[];
+  segmentTargets?: SegmentTarget[];
+  targets: PlanTargets;
+  caffeineEnabled: boolean;
 }
 
 export interface ShoppingSummary {
@@ -188,16 +155,4 @@ export interface ShoppingItem {
   totalCarbs: number;
 }
 
-export interface RaceNutritionPlan extends AdvancedPlanResponse {
-  // For backward compatibility - new response is advanced plan
-}
-
-export interface ScheduleDisplayItem {
-  timeMin: number;
-  productName: string;
-  brand: string;
-  type: string;
-  caloriesKcal: number;
-  carbsG: number;
-  sodiumMg: number;
-}
+export type RaceNutritionPlan = AdvancedPlanResponse;

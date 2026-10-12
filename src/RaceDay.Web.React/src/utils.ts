@@ -1,29 +1,28 @@
 // Utility functions
 
-// Format duration helper
+// Format duration as compact "Xh Ym" (e.g., "4h 05m", "2h 30m", "45m")
 export function formatDuration(hours: number): string {
   const wholeHours = Math.floor(hours);
   const minutes = Math.round((hours - wholeHours) * 60);
 
   if (wholeHours === 0) {
-    return `${minutes} minutes`;
+    return `${minutes}m`;
   } else if (minutes === 0) {
-    return `${wholeHours} hour${wholeHours > 1 ? 's' : ''}`;
+    return `${wholeHours}h`;
   } else {
-    return `${wholeHours} hour${wholeHours > 1 ? 's' : ''} ${minutes} minutes`;
+    return `${wholeHours}h ${minutes.toString().padStart(2, '0')}m`;
   }
 }
 
-// Format race phase (0=Swim, 1=Bike, 2=Run)
-export function formatPhase(phase: string | number): string {
-  const phaseMap: Record<string | number, string> = {
-    '0': 'Swim',
-    '1': 'Bike',
-    '2': 'Run',
-    'Swim': 'Swim',
-    'Bike': 'Bike',
-    'Run': 'Run'
-  };
-  
-  return phaseMap[phase] || String(phase);
+// Stable per-event identifier: `${timeMin}-${productName}-${occurrence}` where
+// occurrence disambiguates repeated product/time pairs. Survives re-renders and
+// re-filtering, unlike an array index.
+export function withEventIds<T extends { timeMin: number; productName: string }>(events: readonly T[]): (T & { id: string })[] {
+  const seen = new Map<string, number>();
+  return events.map((e) => {
+    const base = `${e.timeMin}-${e.productName}`;
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    return { ...e, id: `${base}-${n}` };
+  });
 }

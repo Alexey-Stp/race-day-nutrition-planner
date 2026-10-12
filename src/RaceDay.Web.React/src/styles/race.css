@@ -1,0 +1,63 @@
+.race-pane { padding: 18px; background: var(--paper-2); }
+.race {
+  max-width: 640px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.race-head {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 12px;
+}
+.race-kicker {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em;
+  color: var(--ink-3); text-transform: uppercase;
+}
+.race-clock {
+  font-family: var(--font-mono); font-size: 36px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.race-head-actions { display: flex; gap: 8px; }
+.btn-ghost {
+  border: 1px solid var(--line-2); background: var(--paper);
+  padding: 8px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+}
+
+.race-next {
+  padding: 20px; border-radius: var(--radius);
+  background: var(--ink); color: var(--paper);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.race-next-empty { background: var(--paper); color: var(--ink-3); border: 1px dashed var(--line-2); text-align: center; }
+.race-next-when { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em; opacity: 0.75; }
+.race-next-when strong { font-weight: 600; font-size: 18px; opacity: 1; }
+.race-next-title { font-size: 22px; font-weight: 600; }
+.race-next-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; opacity: 0.8; }
+.race-next .btn-generate { background: var(--accent); color: var(--paper); }
+.race-next .btn-generate:hover:not(:disabled) { background: var(--accent-ink); }
+
+.race-totals {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.race-totals > div {
+  background: var(--paper); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  display: flex; flex-direction: column;
+}
+.race-totals span { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.race-totals strong { font-variant-numeric: tabular-nums; font-size: 18px; font-weight: 600; }
+
+.race-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.race-row label {
+  display: grid;
+  grid-template-columns: 22px 60px 1fr auto;
+  align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.race-row input { accent-color: var(--ink); }
+.race-row-time { font-family: var(--font-mono); font-size: 12px; color: var(--ink-2); }
+.race-row-title { font-size: 13px; font-weight: 600; }
+.race-row-meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.race-row.is-passed label { background: var(--paper-2); }
+.race-row.is-done label { opacity: 0.55; text-decoration: line-through; }

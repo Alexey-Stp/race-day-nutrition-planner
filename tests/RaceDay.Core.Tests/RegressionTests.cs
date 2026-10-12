@@ -1,0 +1,315 @@
+namespace RaceDay.Core.Tests;
+
+using Xunit;
+using RaceDay.Core.Services;
+using RaceDay.Core.Models;
+using RaceDay.Core.Repositories;
+using RaceDay.Core.Constants;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Linq;
+
+/// <summary>
+/// Regression tests for specific reported bugs
+/// </summary>
+public class RegressionTests
+{
+
+    [Fact]
+    public void Bug_CaffeineAlwaysZero_WhenCaffeinatedProductsUsed()
+    {
+        // REGRESSION: Caffeine shows as 0mg even when caffeinated products are in schedule
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(
+            SportType.Run,
+            DurationHours: 3,
+            Temperature: TemperatureCondition.Moderate,
+            Intensity: IntensityLevel.Hard
+        );
+
+        var products = new List<ProductEnhanced>
+        {
+            new("Energy Bar", 40, ProductTexture.Bake, false, 0, 0, "", 100),
+            new("Regular Gel", 25, ProductTexture.Gel, false, 0, 0, "", 50),
+            new("Caffeine Gel", 30, ProductTexture.Gel, true, 75, 0, "", 60),  // Has 75mg caffeine
+            new("Caffeine Gel 2", 28, ProductTexture.Gel, true, 100, 0, "", 55)  // Has 100mg caffeine
+        };
+
+        // Act
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+
+        // Assert
+        var caffeineEvents = plan.Where(e => e.HasCaffeine && e.CaffeineMg.HasValue && e.CaffeineMg > 0).ToList();
+
+        // Should have at least one caffeine event
+        caffeineEvents.ShouldNotBeEmpty();
+
+        // Total caffeine from all events should be > 0
+        var totalCaffeine = plan.Sum(e => e.CaffeineMg ?? 0);
+        (totalCaffeine > 0).ShouldBeTrue(
+            $"Expected total caffeine > 0 when caffeinated products are used, got {totalCaffeine}mg");
+
+        // TotalCaffeineSoFar should be correctly accumulated
+        var lastEvent = plan.Last();
+        (lastEvent.TotalCaffeineSoFar > 0).ShouldBeTrue(
+            $"Expected cumulative caffeine > 0 at end of plan, got {lastEvent.TotalCaffeineSoFar}mg");
+
+        // The sum should match the last cumulative value
+        lastEvent.TotalCaffeineSoFar.ShouldBe(totalCaffeine, 1.0);
+    }
+
+    [Fact]
+    public void Bug_RunPlan4Hours_EndsEarlyAt2h30()
+    {
+        // REGRESSION: Run plan ~4h duration ends at ~2h30 instead of spanning full duration
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(
+            SportType.Run,
+            DurationHours: 4.0,  // 4 hours = 240 minutes
+            Temperature: TemperatureCondition.Moderate,
+            Intensity: IntensityLevel.Hard
+        );
+
+        var products = new List<ProductEnhanced>
+        {
+            new("Energy Bar", 40, ProductTexture.Bake, false, 0, 0, "", 100),
+            new("Gel A", 30, ProductTexture.Gel, false, 0, 0, "", 60),
+            new("Gel B", 25, ProductTexture.Gel, false, 0, 0, "", 50),
+            new("Light Gel", 22, ProductTexture.LightGel, false, 0, 0, "", 45),
+            new("Sports Drink", 35, ProductTexture.Drink, false, 0, 500, "Energy", 200)
+        };
+
+        // Act
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
+
+        // Assert
+        plan.ShouldNotBeEmpty();
+
+        var lastEventTime = plan.Max(e => e.TimeMin);
+        var raceDuration = race.DurationHours * 60;  // 240 minutes
+
+        // Last event should be in the final 25% of the race (after 180 min / 3h)
+        var minExpectedTime = raceDuration * 0.75;  // 180 minutes
+        (lastEventTime >= minExpectedTime).ShouldBeTrue(
+            $"Expected last event after {minExpectedTime}min (75% of {raceDuration}min race), " +
+            $"but last event was at {lastEventTime}min");
+
+        // Should have events distributed throughout the race, not just front-loaded
+        var eventsInFirstHalf = plan.Count(e => e.TimeMin < raceDuration / 2);
+        var eventsInSecondHalf = plan.Count(e => e.TimeMin >= raceDuration / 2);
+
+        (eventsInSecondHalf > 0).ShouldBeTrue(
+            "Expected some nutrition events in second half of race");
+
+        // Should not be extremely front-loaded (>80% in first half would be bad)
+        var firstHalfPercent = (double)eventsInFirstHalf / plan.Count;
+        (firstHalfPercent < 0.85).ShouldBeTrue(
+            $"Plan is too front-loaded: {firstHalfPercent:P0} of events in first half");
+    }
+
+    [Fact]
+    public void Bug_TriathlonPlan_MissingRunSegmentEvents()
+    {
+        // REGRESSION: Triathlon plan contains only Bike items, Run segment "drops out"
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(
+            SportType.Triathlon,
+            DurationHours: 4.5,  // Half Ironman duration
+            Temperature: TemperatureCondition.Moderate,
+            Intensity: IntensityLevel.Hard
+        );
+
+        var products = new List<ProductEnhanced>
+        {
+            new("Energy Bar", 40, ProductTexture.Bake, false, 0, 0, "", 100),
+            new("Gel", 30, ProductTexture.Gel, false, 0, 0, "", 60),
+            new("Isotonic Gel", 22, ProductTexture.Gel, false, 0, 0, "Isotonic", 60),
+            new("Sports Drink", 35, ProductTexture.Drink, false, 0, 500, "Energy", 200),
+            new("High Carb Drink", 45, ProductTexture.Drink, false, 0, 500, "Energy", 300)
+        };
+
+        // Act
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products);
+
+        // Assert
+        var swimEvents = plan.Where(e => e.Phase == RacePhase.Swim).ToList();
+        var bikeEvents = plan.Where(e => e.Phase == RacePhase.Bike).ToList();
+        var runEvents = plan.Where(e => e.Phase == RacePhase.Run).ToList();
+
+        // Must have events in Run segment
+        runEvents.ShouldNotBeEmpty();
+        (runEvents.Count > 0).ShouldBeTrue(
+            $"Expected Run phase events in triathlon, but found 0. " +
+            $"Swim: {swimEvents.Count}, Bike: {bikeEvents.Count}, Run: {runEvents.Count}");
+
+        // Run events should be in the correct time window
+        // For 4.5h triathlon: Swim=0-0.9h (0-54min), Bike=0.9-3.15h (54-189min), Run=3.15-4.5h (189-270min)
+        var expectedRunStartMin = 4.5 * 60 * 0.70;  // Run starts at 70% of race
+        foreach (var runEvent in runEvents)
+        {
+            (runEvent.TimeMin >= expectedRunStartMin - 10).ShouldBeTrue(
+                $"Run event at {runEvent.TimeMin}min is before run segment starts at ~{expectedRunStartMin}min");
+        }
+    }
+
+    [Fact]
+    public void Bug_CaffeineDisabled_StillSchedulesCaffeinatedProducts()
+    {
+        // REGRESSION: When caffeine is disabled, caffeinated products still appear in schedule
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(
+            SportType.Run,
+            DurationHours: 2,
+            Temperature: TemperatureCondition.Moderate,
+            Intensity: IntensityLevel.Hard
+        );
+
+        var products = new List<ProductEnhanced>
+        {
+            new("Regular Gel", 25, ProductTexture.Gel, false, 0, 0, "", 50),
+            new("Caffeine Gel", 30, ProductTexture.Gel, true, 75, 0, "", 60),
+            new("Sports Drink", 35, ProductTexture.Drink, false, 0, 500, "Energy", 200)
+        };
+
+        // Act
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: false);
+
+        // Assert
+        var caffeineEvents = plan.Where(e => e.HasCaffeine).ToList();
+        var totalCaffeine = plan.Sum(e => e.CaffeineMg ?? 0);
+
+        caffeineEvents.ShouldBeEmpty();
+        totalCaffeine.ShouldBe(0);
+    }
+
+    [Fact]
+    public void Bug_PlanTotals_DontMatchScheduleSum()
+    {
+        // REGRESSION: Printed totals (carbs, caffeine) don't match sum over schedule
+        // Arrange
+        var athlete = new AthleteProfile(WeightKg: 75);
+        var race = new RaceProfile(
+            SportType.Run,
+            DurationHours: 3,
+            Temperature: TemperatureCondition.Moderate,
+            Intensity: IntensityLevel.Hard
+        );
+
+        var products = new List<ProductEnhanced>
+        {
+            new("Gel", 25, ProductTexture.Gel, false, 0, 0, "", 50),
+            new("Caffeine Gel", 30, ProductTexture.Gel, true, 75, 0, "", 60),
+            new("Sports Drink", 35, ProductTexture.Drink, false, 0, 500, "Energy", 200)
+        };
+
+        // Act
+        var plan = PlanGenerator.GeneratePlan(race, athlete, products, caffeineEnabled: true);
+
+        // Assert
+        var sumCarbs = plan.Sum(e => e.CarbsInEvent);
+        var sumCaffeine = plan.Sum(e => e.CaffeineMg ?? 0);
+
+        var lastEvent = plan.Last();
+
+        // Cumulative totals at end should equal sum of individual events
+        lastEvent.TotalCarbsSoFar.ShouldBe(sumCarbs, 1.0);
+        lastEvent.TotalCaffeineSoFar.ShouldBe(sumCaffeine, 1.0);
+    }
+
+    // ── Hard-rule regression matrix ──────────────────────────────────────────
+    // sports × durations × intensities × caffeine × product sets. Every generated plan must
+    // satisfy every hard scheduling rule (see PlanInvariants for the independent oracle).
+
+    public enum ProductSet { GelsOnly, DrinksAndGels, ChewsOnly, Catalogue }
+
+    public static TheoryData<SportType, double, IntensityLevel, bool, ProductSet> MatrixCases()
+    {
+        var cases = new TheoryData<SportType, double, IntensityLevel, bool, ProductSet>();
+        foreach (var sport in new[] { SportType.Run, SportType.Bike, SportType.Triathlon })
+        foreach (var hours in new[] { 1.0, 3.0, 6.0, 12.0 })
+        foreach (var intensity in new[] { IntensityLevel.Easy, IntensityLevel.Moderate, IntensityLevel.Hard })
+        foreach (var caffeine in new[] { false, true })
+        foreach (var set in Enum.GetValues<ProductSet>())
+            cases.Add(sport, hours, intensity, caffeine, set);
+        return cases;
+    }
+
+    [Theory]
+    [MemberData(nameof(MatrixCases))]
+    public void GeneratePlan_Matrix_SatisfiesAllHardRules(
+        SportType sport, double hours, IntensityLevel intensity, bool caffeine, ProductSet set)
+    {
+        var athlete = new AthleteProfile(WeightKg: 72);
+        var race = new RaceProfile(sport, hours, TemperatureCondition.Moderate, intensity);
+
+        var (result, products) = GenerateForSet(race, athlete, caffeine, set);
+
+        int duration = PlanInvariants.ToMinutes(hours);
+        PlanInvariants.AssertAllHardRules(result, products, duration, caffeine);
+
+        // Late-race fuelling must survive reconciliation (A9) whenever anything was planned.
+        if (result.Events.Count > 0 && hours >= 3)
+        {
+            int finalThird = duration * 2 / 3;
+            result.Events.ShouldContain(e => e.TimeMin >= finalThird, "No intake in the final third of the race");
+        }
+    }
+
+    private static (PlanResult Result, IReadOnlyList<ProductEnhanced> Products) GenerateForSet(
+        RaceProfile race, AthleteProfile athlete, bool caffeine, ProductSet set)
+    {
+        if (set == ProductSet.Catalogue)
+        {
+            var catalogue = new ProductRepository().GetAllProductsAsync().GetAwaiter().GetResult();
+            var products = catalogue
+                .Select(p => new Product(p.Name, p.ProductType, p.CarbsG, p.SodiumMg, p.VolumeMl, p.CaffeineMg))
+                .ToList();
+            var service = new NutritionPlanService(NullLogger<NutritionPlanService>.Instance);
+            var result = service.GeneratePlanWithDiagnostics(race, athlete, products, caffeine);
+            var enhanced = catalogue
+                .Where(p => !p.ProductType.Equals("recovery", StringComparison.OrdinalIgnoreCase))
+                .Select(p => new ProductEnhanced(
+                    p.Name, p.CarbsG, OracleTexture(p.ProductType, p.CarbsG),
+                    p.CaffeineMg is > 0, p.CaffeineMg ?? 0, p.VolumeMl, p.ProductType, p.SodiumMg))
+                .ToList();
+            return (result, enhanced);
+        }
+
+        var set_products = set switch
+        {
+            ProductSet.GelsOnly => new List<ProductEnhanced>
+            {
+                new("Gel 25", 25, ProductTexture.Gel, false, 0, 40, "gel", 50),
+                new("Gel 40", 40, ProductTexture.Gel, false, 0, 65, "gel", 80),
+                new("Caf Gel", 25, ProductTexture.Gel, true, 75, 40, "gel", 50)
+            },
+            ProductSet.DrinksAndGels => new List<ProductEnhanced>
+            {
+                new("Drink Mix", 40, ProductTexture.Drink, false, 0, 500, "drink", 300),
+                new("Gel 25", 25, ProductTexture.Gel, false, 0, 40, "gel", 50),
+                new("Light Gel", 20, ProductTexture.LightGel, false, 0, 40, "gel", 40),
+                new("Caf Gel", 25, ProductTexture.Gel, true, 100, 40, "gel", 50)
+            },
+            _ => new List<ProductEnhanced>
+            {
+                new("Energy Chews", 24, ProductTexture.Chew, false, 0, 0, "chew", 80),
+                new("Caf Chews", 24, ProductTexture.Chew, true, 50, 0, "chew", 80)
+            }
+        };
+
+        return (PlanGenerator.GeneratePlanWithDiagnostics(race, athlete, set_products, caffeine), set_products);
+    }
+
+    private static ProductTexture OracleTexture(string productType, double carbsG) =>
+        productType.ToLowerInvariant() switch
+        {
+            "gel" when carbsG <= ProductEffectivenessProfiles.LightGelMaxCarbsG => ProductTexture.LightGel,
+            "gel" => ProductTexture.Gel,
+            "drink" => ProductTexture.Drink,
+            "bar" => ProductTexture.Bake,
+            _ => throw new InvalidOperationException($"Unexpected catalogue type {productType}")
+        };
+}

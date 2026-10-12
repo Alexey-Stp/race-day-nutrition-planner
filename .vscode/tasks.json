@@ -1,299 +1,81 @@
 {
   "version": "2.0.0",
   "tasks": [
-    {
-      "label": "Start React Web",
-      "type": "shell",
-      "command": "npm",
-      "args": [
-        "run",
-        "dev"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/src/RaceDay.Web.React"
-      },
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "isBackground": true
-    },
-    {
-      "label": "Open React Browser",
-      "type": "shell",
-      "windows": {
-        "command": "powershell",
-        "args": [
-          "-Command",
-          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5173'"
-        ]
-      },
-      "osx": {
-        "command": "sh",
-        "args": [
-          "-c",
-          "sleep 3 && open http://localhost:5173"
-        ]
-      },
-      "linux": {
-        "command": "sh",
-        "args": [
-          "-c",
-          "sleep 3 && xdg-open http://localhost:5173"
-        ]
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
-    },
+    // ── Helpers (no group – used by compound tasks above) ────────────────────
     {
       "label": "Start API",
       "type": "shell",
       "command": "dotnet",
-      "args": [
-        "run",
-        "--project",
-        "src/RaceDay.API/RaceDay.API.csproj"
-      ],
+      "args": ["run", "--project", "src/RaceDay.API/RaceDay.API.csproj"],
+      "isBackground": true,
       "problemMatcher": "$msCompile",
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "isBackground": true
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
     },
     {
-      "label": "React + API + Open Browser",
-      "dependsOn": [
-        "Start API",
-        "Start React Web",
-        "Open React Browser"
-      ],
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
-    },
-    {
-      "label": "Open Swagger Browser",
-      "type": "shell",
-      "windows": {
-        "command": "powershell",
-        "args": [
-          "-Command",
-          "Start-Sleep -Seconds 3; Start-Process 'http://localhost:5208/swagger/ui'"
-        ]
-      },
-      "osx": {
-        "command": "sh",
-        "args": [
-          "-c",
-          "sleep 3 && open http://localhost:5208/swagger/ui"
-        ]
-      },
-      "linux": {
-        "command": "sh",
-        "args": [
-          "-c",
-          "sleep 3 && xdg-open http://localhost:5208/swagger/ui"
-        ]
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "API + Swagger Browser",
-      "dependsOn": [
-        "Start API",
-        "Open Swagger Browser"
-      ],
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
-    },
-    {
-      "label": "Build React",
+      "label": "Start Web",
       "type": "shell",
       "command": "npm",
-      "args": [
-        "run",
-        "build"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}/src/RaceDay.Web.React"
-      },
+      "args": ["run", "dev"],
+      "options": { "cwd": "${workspaceFolder}/src/RaceDay.Web.React" },
+      "isBackground": true,
       "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      }
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+
+    // ── User-facing tasks ────────────────────────────────────────────────────
+    {
+      // Runs the API; Swagger UI available at http://localhost:5208/swagger
+      "label": "API + Swagger",
+      "dependsOn": ["Start API"],
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": false }
     },
     {
-      "label": "Docker: Build & Start",
+      // Starts both the API and the React dev server (http://localhost:5173)
+      "label": "API + Web",
+      "dependsOn": ["Start API", "Start Web"],
+      "dependsOrder": "parallel",
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      // Builds and starts all containers detached (Web: :8080, API: :5208/swagger)
+      "label": "Docker: Start",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "up",
-        "--build",
-        "-d"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
+      "args": ["compose", "up", "--build", "-d"],
+      "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
     },
     {
       "label": "Docker: Stop",
       "type": "shell",
       "command": "docker",
-      "args": [
-        "compose",
-        "down"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
+      "args": ["compose", "down"],
+      "options": { "cwd": "${workspaceFolder}" },
       "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "reveal": "always", "panel": "shared" }
     },
     {
-      "label": "Docker: View Logs",
+      "label": "Test",
       "type": "shell",
-      "command": "docker",
-      "args": [
-        "compose",
-        "logs",
-        "-f"
-      ],
-      "options": {
-        "cwd": "${workspaceFolder}"
-      },
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "isBackground": true
+      "command": "dotnet",
+      "args": ["test", "--logger", "console;verbosity=normal"],
+      "problemMatcher": "$msCompile",
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
     },
     {
-      "label": "Docker: Open Browser",
+      "label": "Build",
       "type": "shell",
-      "windows": {
-        "command": "powershell",
-        "args": [
-          "-Command",
-          "Start-Sleep -Seconds 5; Start-Process 'http://localhost:8080'"
-        ]
-      },
-      "osx": {
-        "command": "sh",
-        "args": [
-          "-c",
-          "sleep 5 && open http://localhost:8080"
-        ]
-      },
-      "linux": {
-        "command": "sh",
-        "args": [
-          "-c",
-          "sleep 5 && xdg-open http://localhost:8080"
-        ]
-      },
-      "presentation": {
-        "reveal": "silent"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Docker: Build, Start & Open Browser",
-      "dependsOn": [
-        "Docker: Build & Start",
-        "Docker: Open Browser"
-      ],
-      "problemMatcher": [],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      }
+      "command": "dotnet",
+      "args": ["build"],
+      "problemMatcher": "$msCompile",
+      "group": { "kind": "build", "isDefault": false },
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
     }
   ]
 }

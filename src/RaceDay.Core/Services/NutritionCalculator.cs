@@ -22,6 +22,98 @@ public static class NutritionCalculator
         return new NutritionTargets(carbs, fluids, sodium);
     }
 
+    /// <summary>
+    /// Calculates comprehensive multi-nutrient targets with segment distribution
+    /// </summary>
+    public static MultiNutrientTargets CalculateMultiNutrientTargets(
+        RaceProfile race,
+        AthleteProfile athlete,
+        bool caffeineEnabled = false,
+        ResolvedLegModel? legModel = null)
+    {
+        var baseTargets = CalculateTargets(race, athlete);
+        
+        // Calculate totals
+        double totalCarbs = baseTargets.CarbsGPerHour * race.DurationHours;
+        double totalSodium = baseTargets.SodiumMgPerHour * race.DurationHours;
+        double totalFluid = baseTargets.FluidsMlPerHour * race.DurationHours;
+        
+        // Calculate caffeine target (if enabled) - intensity-based ceiling
+        double totalCaffeine = 0;
+        if (caffeineEnabled)
+        {
+            double mgPerKg = race.Intensity switch
+            {
+                IntensityLevel.Easy => SchedulingConstraints.CaffeineCeilingEasyMgPerKg,
+                IntensityLevel.Moderate => SchedulingConstraints.CaffeineCeilingModerateMgPerKg,
+                IntensityLevel.Hard => SchedulingConstraints.CaffeineCeilingHardMgPerKg,
+                _ => SchedulingConstraints.CaffeineCeilingHardMgPerKg
+            };
+            totalCaffeine = Math.Min(athlete.WeightKg * mgPerKg, SchedulingConstraints.CaffeineCeilingAbsoluteMaxMg);
+        }
+        
+        // Calculate segment-specific targets for triathlon
+        Dictionary<RacePhase, PhaseTargets>? segmentTargets = null;
+        if (race.SportType == SportType.Triathlon)
+        {
+            // Single source of leg boundaries/ratios: reuse the model resolved by the
+            // caller (PlanGenerator) when supplied, else resolve here (lenient) so this
+            // method remains correct when called standalone.
+            var legs = legModel ?? TriathlonLegModel.Resolve(
+                race.DurationHours, race.Legs, race.Preset, strict: false, out _);
+
+            segmentTargets = CalculateTriathlonSegmentTargets(
+                legs,
+                totalCarbs,
+                totalSodium,
+                totalFluid
+            );
+        }
+        
+        return new MultiNutrientTargets(
+            CarbsG: totalCarbs,
+            SodiumMg: totalSodium,
+            FluidMl: totalFluid,
+            CaffeineMg: totalCaffeine,
+            CarbsPerHour: baseTargets.CarbsGPerHour,
+            SodiumPerHour: baseTargets.SodiumMgPerHour,
+            FluidPerHour: baseTargets.FluidsMlPerHour,
+            SegmentTargets: segmentTargets
+        );
+    }
+    
+    private static Dictionary<RacePhase, PhaseTargets> CalculateTriathlonSegmentTargets(
+        ResolvedLegModel legs,
+        double totalCarbs,
+        double totalSodium,
+        double totalFluid)
+    {
+        // Leg durations come solely from the resolved model (single source of truth).
+        double totalHours = legs.RunEndH;
+        double swimDuration = legs.SwimH * 60; // minutes
+        double bikeDuration = legs.BikeH * 60;
+        double runDuration = legs.RunH * 60;
+
+        // Distribute carbs per the resolved ratios (swim has minimal nutrition).
+        double bikeCarbs = totalCarbs * legs.BikeCarbRatio;
+        double runCarbs = totalCarbs * legs.RunCarbRatio;
+
+        // Distribute sodium and fluid proportionally to each leg's share of duration.
+        double bikeShare = totalHours > 0 ? legs.BikeH / totalHours : 0;
+        double runShare = totalHours > 0 ? legs.RunH / totalHours : 0;
+        double bikeSodium = totalSodium * bikeShare;
+        double runSodium = totalSodium * runShare;
+        double bikeFluid = totalFluid * bikeShare;
+        double runFluid = totalFluid * runShare;
+
+        return new Dictionary<RacePhase, PhaseTargets>
+        {
+            [RacePhase.Swim] = new PhaseTargets(0, 0, 0, swimDuration),
+            [RacePhase.Bike] = new PhaseTargets(bikeCarbs, bikeSodium, bikeFluid, bikeDuration),
+            [RacePhase.Run] = new PhaseTargets(runCarbs, runSodium, runFluid, runDuration)
+        };
+    }
+
     private static double CalculateCarbohydrates(RaceProfile race)
     {
         double carbs = race.Intensity switch

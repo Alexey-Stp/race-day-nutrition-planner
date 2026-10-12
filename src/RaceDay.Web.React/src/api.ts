@@ -1,183 +1,105 @@
-import type { ProductInfo, ActivityInfo, RaceNutritionPlan, AthleteProfile, RaceProfile, ProductEditor, UIMetadata, TemperatureMetadata, IntensityMetadata, ConfigurationMetadata } from './types';
+import type { ProductInfo, ActivityInfo, RaceNutritionPlan, AthleteProfile, RaceProfile, ProductEditor } from './types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5208';
+// Empty by default: requests go to same-origin `/api`, which the Vite dev/preview
+// proxy and the nginx container proxy forward to the backend.
+const API_BASE_URL: string = import.meta.env.VITE_API_URL ?? '';
+
+/** RFC 7807 problem details as returned by the API for every error response. */
+interface ProblemDetails {
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  errors?: Record<string, string[]>;
+}
+
+const isProblemDetails = (value: unknown): value is ProblemDetails =>
+  typeof value === 'object' && value !== null && ('title' in value || 'detail' in value || 'errors' in value);
+
+const problemToMessage = (problem: ProblemDetails): string => {
+  const parts: string[] = [];
+  const headline = problem.detail ?? problem.title;
+  if (headline) parts.push(headline);
+  if (problem.errors) {
+    for (const messages of Object.values(problem.errors)) {
+      parts.push(...messages);
+    }
+  }
+  return parts.join(' ');
+};
+
+async function errorFromResponse(response: Response): Promise<Error> {
+  const statusSuffix = response.statusText ? ' ' + response.statusText : '';
+  const fallback = `Request failed (${response.status}${statusSuffix})`;
+  let text = '';
+  try {
+    text = await response.text();
+  } catch {
+    return new Error(fallback);
+  }
+  if (!text) return new Error(fallback);
+
+  try {
+    const body: unknown = JSON.parse(text);
+    if (typeof body === 'string') return new Error(body || fallback);
+    if (isProblemDetails(body)) return new Error(problemToMessage(body) || fallback);
+  } catch {
+    // Not JSON: fall through to plain text.
+  }
+  return new Error(text);
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, init);
+  if (!response.ok) {
+    throw await errorFromResponse(response);
+  }
+  return response.json() as Promise<T>;
+}
 
 export const api = {
-  // Products
-  async getProducts(): Promise<ProductInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/products`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch products');
-    }
-    return response.json();
+  getProducts(signal?: AbortSignal): Promise<ProductInfo[]> {
+    return request<ProductInfo[]>('/api/products', { signal });
   },
 
-  async getProductsByType(type: string): Promise<ProductInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/products/type/${type}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch products by type');
-    }
-    return response.json();
+  getActivities(signal?: AbortSignal): Promise<ActivityInfo[]> {
+    return request<ActivityInfo[]>('/api/activities', { signal });
   },
 
-  async searchProducts(query: string): Promise<ProductInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/products/search?query=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      throw new Error('Failed to search products');
-    }
-    return response.json();
-  },
-
-  async getBrands(): Promise<string[]> {
-    const products = await this.getProducts();
-    const brands = Array.from(new Set(products.map(p => p.brand))).sort((a, b) => a.localeCompare(b));
-    return brands;
-  },
-
-  // Activities
-  async getActivities(): Promise<ActivityInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/activities`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch activities');
-    }
-    return response.json();
-  },
-
-  async getActivitiesByType(sportType: string): Promise<ActivityInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/activities/type/${sportType}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch activities by type');
-    }
-    return response.json();
-  },
-
-  async searchActivities(query: string): Promise<ActivityInfo[]> {
-    const response = await fetch(`${API_BASE_URL}/api/activities/search?query=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      throw new Error('Failed to search activities');
-    }
-    return response.json();
-  },
-
-  // Plan Generation
-  async generatePlan(
+  generatePlan(
     athlete: AthleteProfile,
     race: RaceProfile,
-    products: (ProductEditor & { productType: string })[]
+    products: (ProductEditor & { productType: string; caffeineMg?: number })[],
+    caffeineEnabled: boolean = false,
+    signal?: AbortSignal,
   ): Promise<RaceNutritionPlan> {
-    // Map enums to integers for API
-    const sportTypeMap: Record<string, number> = { Run: 0, Bike: 1, Triathlon: 2 };
-    const intensityMap: Record<string, number> = { Easy: 0, Moderate: 1, Hard: 2 };
-    
-    // Convert TemperatureCondition enum to representative temperature in Celsius
-    const temperatureCMap: Record<string, number> = {
-      Cold: 0,      // ≤ 5°C
-      Moderate: 15, // 5-25°C
-      Hot: 30       // ≥ 25°C
-    };
-    
-    const request = {
+    const body = {
       athleteWeightKg: athlete.weightKg,
-      sportType: sportTypeMap[race.sportType],
+      sportType: race.sportType,
       durationHours: race.durationHours,
-      temperatureC: temperatureCMap[race.temperature],
-      intensity: intensityMap[race.intensity],
+      // Enums bind by name (JsonStringEnumConverter on the API; integers are rejected).
+      temperature: race.temperature,
+      intensity: race.intensity,
+      caffeineEnabled,
+      // Triathlon leg inputs (omitted when absent). DistancePreset binds by name;
+      // legs pass through as hours.
+      legs: race.legs ?? undefined,
+      distancePreset: race.preset ?? undefined,
       products: products.map(p => ({
         name: p.name,
         productType: p.productType,
         carbsG: p.carbsG,
         sodiumMg: p.sodiumMg,
-        volumeMl: p.volumeMl || 0
+        volumeMl: p.volumeMl ?? 0,
+        caffeineMg: p.caffeineMg ?? null
       }))
     };
 
-    const response = await fetch(`${API_BASE_URL}/api/plan/generate`, {
+    return request<RaceNutritionPlan>('/api/plan/generate', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(request),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal,
     });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || 'Failed to generate nutrition plan');
-    }
-
-    return response.json();
-  },
-
-  // Metadata
-  async getUIMetadata(): Promise<UIMetadata> {
-    const response = await fetch(`${API_BASE_URL}/api/metadata`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch UI metadata');
-    }
-    return response.json();
-  },
-
-  async getTemperatureMetadata(): Promise<TemperatureMetadata[]> {
-    const response = await fetch(`${API_BASE_URL}/api/metadata/temperatures`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch temperature metadata');
-    }
-    return response.json();
-  },
-
-  async getIntensityMetadata(): Promise<IntensityMetadata[]> {
-    const response = await fetch(`${API_BASE_URL}/api/metadata/intensities`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch intensity metadata');
-    }
-    return response.json();
-  },
-
-  async getDefaults(): Promise<{ defaultActivityId: string }> {
-    const response = await fetch(`${API_BASE_URL}/api/metadata/defaults`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch defaults');
-    }
-    return response.json();
-  },
-
-  async getConfigurationMetadata(): Promise<ConfigurationMetadata> {
-    const response = await fetch(`${API_BASE_URL}/api/metadata/configuration`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch configuration metadata');
-    }
-    return response.json();
-  },
-
-  async calculateNutritionTargets(
-    athleteWeightKg: number,
-    sportType: string,
-    durationHours: number,
-    temperature: string,
-    intensity: string
-  ): Promise<{
-    carbsGPerHour: number;
-    fluidsMlPerHour: number;
-    sodiumMgPerHour: number;
-    totalCarbsG: number;
-    totalFluidsML: number;
-    totalSodiumMg: number;
-  }> {
-    const response = await fetch(`${API_BASE_URL}/api/metadata/targets`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        athleteWeightKg,
-        sportType,
-        durationHours,
-        temperature,
-        intensity,
-      }),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to calculate nutrition targets');
-    }
-    return response.json();
   },
 };

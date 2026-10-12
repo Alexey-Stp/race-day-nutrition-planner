@@ -1,5 +1,8 @@
-using System.Reflection;
+using System.Collections.ObjectModel;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+using RaceDay.Core.Exceptions;
 using RaceDay.Core.Models;
 
 namespace RaceDay.Core.Repositories;
@@ -9,119 +12,127 @@ namespace RaceDay.Core.Repositories;
 /// </summary>
 public class ProductRepository : IProductRepository
 {
-    private static List<ProductInfo>? _products;
-    private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+    private const string CatalogueName = "product";
+    private const string ResourcePrefix = "RaceDay.Core.Data.";
+    private const string ResourceSuffix = "-products.json";
 
-    public async Task<List<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    // PublicationOnly: a failed load is not cached, so a later call can retry.
+    private readonly Lazy<IReadOnlyList<ProductInfo>> _productsLazy;
+    private readonly ILogger<ProductRepository> _logger;
+
+    public ProductRepository(ILogger<ProductRepository>? logger = null)
+        : this(LoadProductsFromEmbeddedResources, logger)
     {
-        if (_products != null)
-            return _products;
-
-        await _semaphore.WaitAsync(cancellationToken);
-        try
-        {
-            if (_products != null)
-                return _products;
-
-            _products = await Task.Run(() => LoadProductsFromJsonFiles(), cancellationToken);
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-
-        return _products;
     }
 
-    public async Task<List<ProductInfo>> GetProductsByTypeAsync(string productType, CancellationToken cancellationToken = default)
+    /// <summary>Test seam: supply the raw catalogue loader.</summary>
+    internal ProductRepository(Func<IEnumerable<ProductInfo>> loader, ILogger<ProductRepository>? logger = null)
     {
+        _logger = logger ?? NullLogger<ProductRepository>.Instance;
+        _productsLazy = new Lazy<IReadOnlyList<ProductInfo>>(
+            () => LoadCatalogue(loader, _logger),
+            LazyThreadSafetyMode.PublicationOnly);
+    }
+
+    public Task<IReadOnlyList<ProductInfo>> GetAllProductsAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(_productsLazy.Value);
+    }
+
+    public async Task<IReadOnlyList<ProductInfo>> GetProductsByTypeAsync(string productType, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(productType))
+            return Array.Empty<ProductInfo>();
+
         var all = await GetAllProductsAsync(cancellationToken);
-        return all.Where(p => p.ProductType.Equals(productType, StringComparison.OrdinalIgnoreCase))
-                  .ToList();
+        return all.Where(p => p.ProductType.Equals(productType.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
     }
 
     public async Task<ProductInfo?> GetProductByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(id))
+            return null;
+
         var all = await GetAllProductsAsync(cancellationToken);
-        return all.FirstOrDefault(p => p.Id == id);
+        return all.FirstOrDefault(p => p.Id.Equals(id.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task<List<ProductInfo>> SearchProductsAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ProductInfo>> SearchProductsAsync(string query, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(query))
+            return Array.Empty<ProductInfo>();
+
+        var term = query.Trim();
         var all = await GetAllProductsAsync(cancellationToken);
-        var lowerQuery = query.ToLower();
-        
-        return all.Where(p => 
-            p.Name.ToLower().Contains(lowerQuery) ||
-            p.Brand.ToLower().Contains(lowerQuery) ||
-            p.Id.ToLower().Contains(lowerQuery))
+        return all.Where(p =>
+                p.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                p.Brand.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                p.Id.Contains(term, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
 
-    public async Task<List<ProductInfo>> GetFilteredProductsAsync(ProductFilter? filter, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ProductInfo>> GetFilteredProductsAsync(ProductFilter? filter, CancellationToken cancellationToken = default)
     {
         var all = await GetAllProductsAsync(cancellationToken);
-
         if (filter == null)
             return all;
 
-        var filtered = all;
+        IEnumerable<ProductInfo> filtered = all;
 
-        // Filter by brand if specified
         if (!string.IsNullOrWhiteSpace(filter.Brand))
+            filtered = filtered.Where(p => p.Brand.Equals(filter.Brand.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (filter.ExcludeTypes is { Count: > 0 })
         {
-            filtered = filtered.Where(p => p.Brand.Equals(filter.Brand, StringComparison.OrdinalIgnoreCase))
-                               .ToList();
+            var excluded = new HashSet<string>(
+                filter.ExcludeTypes.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            filtered = filtered.Where(p => !excluded.Contains(p.ProductType));
         }
 
-        // Exclude types if specified
-        if (filter.ExcludeTypes != null && filter.ExcludeTypes.Count > 0)
-        {
-            var excludeTypesLower = filter.ExcludeTypes.Select(t => t.ToLower()).ToList();
-            filtered = filtered.Where(p => !excludeTypesLower.Contains(p.ProductType.ToLower()))
-                               .ToList();
-        }
-
-        return filtered;
+        return filtered.ToList();
     }
 
-    private static List<ProductInfo> LoadProductsFromJsonFiles()
+    private static ReadOnlyCollection<ProductInfo> LoadCatalogue(Func<IEnumerable<ProductInfo>> loader, ILogger logger)
     {
         try
         {
-            var assembly = typeof(ProductRepository).Assembly;
-            var products = new List<ProductInfo>();
-            
-            // Get all embedded resource names that match the pattern
-            var resourceNames = assembly.GetManifestResourceNames()
-                .Where(name => name.StartsWith("RaceDay.Core.Data.") && name.EndsWith("-products.json"))
-                .OrderBy(name => name)
-                .ToList();
-
-            foreach (var resourceName in resourceNames)
+            var products = loader().ToList();
+            if (products.Count == 0)
             {
-                using (var stream = assembly.GetManifestResourceStream(resourceName))
-                {
-                    if (stream == null)
-                        continue;
-
-                    using (var reader = new StreamReader(stream))
-                    {
-                        var json = reader.ReadToEnd();
-                        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                        var brandProducts = JsonSerializer.Deserialize<List<ProductInfo>>(json, options);
-                        
-                        if (brandProducts != null)
-                            products.AddRange(brandProducts);
-                    }
-                }
+                logger.LogError("Product catalogue is empty");
+                throw new CatalogueLoadException(CatalogueName, "no products were found in the embedded resources");
             }
-
-            return products;
+            return products.AsReadOnly();
         }
-        catch
+        catch (Exception ex) when (ex is JsonException or IOException or InvalidOperationException or NotSupportedException)
         {
-            return new List<ProductInfo>();
+            logger.LogError(ex, "Failed to load products from embedded resources");
+            throw new CatalogueLoadException(CatalogueName, ex.Message, ex);
         }
+    }
+
+    private static IEnumerable<ProductInfo> LoadProductsFromEmbeddedResources()
+    {
+        var assembly = typeof(ProductRepository).Assembly;
+        var resourceNames = assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith(ResourcePrefix, StringComparison.Ordinal)
+                           && name.EndsWith(ResourceSuffix, StringComparison.Ordinal))
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        var products = new List<ProductInfo>();
+        foreach (var resourceName in resourceNames)
+        {
+            using var stream = assembly.GetManifestResourceStream(resourceName)
+                ?? throw new CatalogueLoadException(CatalogueName, $"embedded resource '{resourceName}' could not be opened");
+            var brandProducts = JsonSerializer.Deserialize<List<ProductInfo>>(stream, JsonOptions)
+                ?? throw new CatalogueLoadException(CatalogueName, $"embedded resource '{resourceName}' is empty");
+            products.AddRange(brandProducts);
+        }
+        return products;
     }
 }

@@ -16,13 +16,22 @@ The application generates a time-based schedule showing when and how much of eac
 - **Interactive Web UI**: User-friendly React web interface for creating nutrition plans
 - **Activity Presets**: 3 core endurance activities (Run, Bike, Triathlon) with customizable durations
 - **Personalized Calculations**: Adjusts nutrition targets based on athlete weight, race intensity, duration, and temperature
-- **Flexible Product Support**: Works with various nutrition products (gels, drinks, bars) from multiple brands
+- **Individual Product Selection**:
+  - Choose specific products via checkboxes, not just entire brands
+  - Products grouped by type (Drinks, Gels, Bars, Chews, Recovery)
+  - Global search to filter products
+  - "Select All / Clear" controls per group
+  - Collapsible interface for compact layout
+- **Brand Filtering**: Filter products by brand for quick selection (e.g., "SiS", "Maurten")
+  - Automatic product type exclusions based on sport (e.g., runners don't carry bottles)
 - **Time-Based Schedule**: Generates a minute-by-minute nutrition intake plan with 20-minute intervals
-- **Smart Recommendations**: 
+- **Smart Recommendations**:
   - Increases carb intake for harder efforts and longer durations (5+ hours)
   - Adjusts fluid needs based on temperature and athlete weight
   - Optimizes sodium intake for hot conditions and heavier athletes
-  - Tracks caffeine intake and displays caffeine content from selected products
+  - **Tracks caffeine intake** and displays caffeine content from selected products
+  - Enable/disable caffeine products via checkbox
+- **Comprehensive Testing**: 212 unit tests covering all core functionality with regression test suite
 - **REST API**: Full programmatic access via REST endpoints with Swagger documentation
 
 ## Architecture
@@ -63,7 +72,7 @@ RaceDayNutritionPlanner/
 │           ├── /api/activities    # Activity presets endpoints
 │           └── /api/plan/generate # Nutrition plan generation (POST)
 ├── tests/
-│   └── RaceDay.Core.Tests/        # Unit tests (59 tests, 100% coverage)
+│   └── RaceDay.Core.Tests/        # Unit tests (212 tests)
 │       ├── NutritionCalculatorTests.cs
 │       ├── PlanGeneratorTests.cs
 │       ├── ValidationTests.cs
@@ -108,7 +117,7 @@ Validates input data to ensure:
 - Docker Compose
 
 ### For Local Development
-- .NET 9.0 SDK or later
+- .NET 10.0 SDK or later
 - Node.js 20.x or later (for React web application)
 - npm 10.x or later (for React web application)
 
@@ -152,7 +161,7 @@ docker compose up --build -d
 The application will be available at:
 - **Web Application**: http://localhost:8080
 - **API**: http://localhost:5208
-- **Swagger Documentation** (Development only): http://localhost:5208/swagger/ui
+- **Swagger Documentation** (Development only): http://localhost:5208/swagger
 
 To stop the containers:
 
@@ -289,11 +298,13 @@ npm run preview
 #### Web Features:
 - Interactive form for athlete profile (body weight)
 - Race configuration (sport type, duration, temperature, intensity)
-- Dynamic product management (add/remove gels and drinks)
+- **Individual product selection** with checkboxes grouped by type
+- **Brand filtering** to quickly select products from favorite brands
+- **Caffeine control** - enable/disable caffeinated products
 - Server-side nutrition plan calculation via API
-- Visual display of targets and intake schedule
-- Product browser with filtering capabilities
-- Responsive design with modern UI
+- Visual display of targets, caffeine totals, and intake schedule
+- Product browser with search and filtering capabilities
+- Responsive design with modern, compact UI
 
 ### REST API (Swagger/OpenAPI)
 
@@ -308,7 +319,7 @@ The API will be available at `https://localhost:5001` (or another port shown in 
 
 #### Access Swagger UI
 
-Navigate to `https://localhost:[port]/swagger/ui` to access the interactive Swagger documentation where you can:
+Navigate to `https://localhost:[port]/swagger` to access the interactive Swagger documentation where you can:
 - View all available endpoints
 - See request/response schemas
 - Test endpoints directly from the browser
@@ -332,6 +343,15 @@ Navigate to `https://localhost:[port]/swagger/ui` to access the interactive Swag
 - **POST /api/plan/generate** - Generate a personalized nutrition plan with shopping list
   - Returns nutrition targets, time-based schedule, totals, and aggregated product summaries
   - Shopping list shows total quantities needed per product for easy race day preparation
+  - Supports optional brand filtering via `filter` parameter
+
+**Metadata** (UI Support)
+- **GET /api/metadata** - Get all UI metadata (temperatures, intensities, defaults)
+- **GET /api/metadata/temperatures** - Get temperature condition metadata with ranges and effects
+- **GET /api/metadata/intensities** - Get intensity level metadata with icons, carb ranges, and effects
+- **GET /api/metadata/defaults** - Get default values for the application
+- **GET /api/metadata/configuration** - Get all nutrition configuration including sport-specific parameters and thresholds
+- **POST /api/metadata/targets** - Calculate nutrition targets for specific athlete and race parameters
 
 #### Example API Calls
 
@@ -368,6 +388,35 @@ curl -X POST https://localhost:7001/api/plan/generate \
       {"name": "Sports Drink", "productType": "drink", "carbsG": 30, "sodiumMg": 300, "volumeMl": 500}
     ]
   }'
+
+# Generate plan with brand filter (automatically excludes drinks for running)
+curl -X POST https://localhost:7001/api/plan/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "athleteWeightKg": 75,
+    "sportType": "Run",
+    "durationHours": 3,
+    "temperatureC": 20,
+    "intensity": "Moderate",
+    "filter": {
+      "brand": "SiS"
+    }
+  }'
+
+# Generate plan with brand filter and explicit type exclusions
+curl -X POST https://localhost:7001/api/plan/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "athleteWeightKg": 75,
+    "sportType": "Bike",
+    "durationHours": 3,
+    "temperatureC": 20,
+    "intensity": "Moderate",
+    "filter": {
+      "brand": "SiS",
+      "excludeTypes": ["bar"]
+    }
+  }'
 ```
 
 The response includes a `productSummaries` array with the shopping list:
@@ -378,6 +427,70 @@ The response includes a `productSummaries` array with the shopping list:
     {"productName": "Sports Drink", "totalPortions": 6}
   ]
 }
+```
+
+### Brand Filtering
+
+The API supports filtering products by brand without needing to specify individual products. This is useful when you want to use only products from a specific brand (e.g., "SiS", "Maurten").
+
+#### Sport-Specific Automatic Exclusions
+
+When using brand filtering, certain product types are automatically excluded based on the sport:
+
+- **Run**: Automatically excludes `drink` and `recovery` types (runners typically don't carry bottles)
+- **Bike**: No automatic exclusions (cyclists can easily carry bottles)
+- **Triathlon**: No automatic exclusions (bike portion allows for carrying bottles)
+
+#### Using Brand Filters
+
+The `filter` parameter accepts:
+- `brand`: String - Filter by brand name (e.g., "SiS", "Maurten") - case insensitive
+- `excludeTypes`: Array of strings - Explicitly exclude product types (e.g., ["bar", "gel"])
+
+**Example - Running with SiS brand:**
+```json
+{
+  "athleteWeightKg": 75,
+  "sportType": "Run",
+  "durationHours": 3,
+  "filter": {
+    "brand": "SiS"
+  }
+}
+```
+This will use only SiS gels and bars (drinks automatically excluded for running).
+
+**Example - Cycling with explicit exclusions:**
+```json
+{
+  "athleteWeightKg": 75,
+  "sportType": "Bike",
+  "durationHours": 4,
+  "filter": {
+    "brand": "Maurten",
+    "excludeTypes": ["bar"]
+  }
+}
+```
+This will use only Maurten gels and drinks (bars explicitly excluded).
+
+For detailed examples, see [Brand Filter Usage Examples](example-outputs/brand-filter-usage.md).
+
+## Quick API Testing
+
+For easy API testing with predefined scenarios (half/full triathlon, marathons, bike rides), see **[TESTING.md](TESTING.md)** which includes:
+
+- **Quick test script**: `./test-nutrition-plan.sh [scenario]`
+- **HTTP test file**: `src/RaceDay.API/RaceDay.API.http` (use with VS Code REST Client)
+- **Comprehensive documentation** for testing and validation workflow
+
+Example:
+```bash
+# Start the API
+dotnet run --project src/RaceDay.API/RaceDay.API.csproj
+
+# Run a test scenario
+./test-nutrition-plan.sh half-triathlon
 ```
 
 ## Usage
@@ -494,18 +607,14 @@ dotnet test tests/RaceDay.Core.Tests/RaceDay.Core.Tests.csproj
 ```
 
 Current test coverage includes:
-- **NutritionCalculator**: 100% coverage (14 tests)
-  - Nutrition calculations for all intensity levels
-  - Temperature and weight adjustments
-  - Long race bonuses
-- **PlanGenerator**: Full coverage (6 tests)
-  - Schedule generation with custom intervals
-  - Product validation and exception handling
-- **Validation**: Full coverage (22 tests)
-  - Race profile, athlete profile, product, and interval validation
-  - Boundary conditions and error messages
+- **NutritionCalculatorTests**: Target calculation for all intensity levels, temperature and weight adjustments
+- **PlanGeneratorTests**: Core schedule generation, product validation, exception handling
+- **ValidationTests**: Race profile, athlete profile, product, and interval validation; boundary conditions
+- **ActivityRepositoryTests**: Activity catalogue access
+- **AlgorithmImprovementTests**: Algorithm v2 regression tests
+- **AdvancedPlanGeneratorTests**: Advanced scheduling scenarios (caffeine, coverage, front-load)
 
-**Total: 42 tests, all passing**
+**Total: 212 tests, all passing**
 
 ## Architecture Details
 
@@ -532,7 +641,7 @@ The application follows a **separation of concerns** pattern:
    - Nutrition plan generation endpoint (POST /api/plan/generate)
    - CORS support for frontend integration
    - Located at: `src/RaceDay.API`
-   - Access Swagger UI at: `/swagger/ui`
+   - Access Swagger UI at: `/swagger`
 
 3. **RaceDay.Core** (Business Logic Layer)
    - Pure business logic and calculations
@@ -602,3 +711,36 @@ Please ensure:
 - Code follows existing patterns
 - New features include unit tests
 - Public APIs have XML documentation
+
+### UI Screenshot Testing
+
+Pull requests automatically generate UI screenshots for both mobile (390×844) and desktop (1440×900) viewports using Playwright.
+
+**Viewing Screenshots:**
+- Screenshots are automatically posted in PR comments with inline previews
+- Full Playwright HTML reports are published to GitHub Pages
+- Links appear within minutes of opening/updating a PR
+
+**Adding New Routes to Screenshot Tests:**
+1. Edit `src/RaceDay.Web.React/tests/screenshots.spec.ts`
+2. Add a new test case following the existing pattern
+3. Use `testInfo.project.name` to separate mobile/desktop paths
+4. Wait for `networkidle` and key UI elements before capturing
+
+**Running Locally:**
+```bash
+cd src/RaceDay.Web.React
+npm install
+npm run build
+npm run preview &  # Start preview server
+npx playwright test  # Run tests for both viewports
+npx playwright show-report  # View HTML report
+```
+
+**How It Works:**
+- The `ui_screenshots` job in `.github/workflows/pr_check.yml` runs on every PR
+- Both mobile and desktop screenshots are captured using Playwright projects
+- Results are published to `gh-pages` branch under `ui-preview/pr-<number>/latest/`
+- A PR comment is created/updated with direct links and inline images
+- For fork PRs, screenshots are generated but not published (artifacts only)
+

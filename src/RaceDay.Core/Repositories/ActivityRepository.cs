@@ -1,93 +1,100 @@
 namespace RaceDay.Core.Repositories;
 
-using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using RaceDay.Core.Exceptions;
 using RaceDay.Core.Models;
 
 /// <summary>
-/// Repository for managing supported activities and their characteristics
-/// Loads activities from embedded JSON resource
+/// Repository for managing supported activities and their characteristics.
+/// Loads activities from an embedded JSON resource once per process (thread-safe) and hands out a read-only view.
 /// </summary>
-public class ActivityRepository
+public sealed class ActivityRepository : IActivityRepository
 {
-    private static List<ActivityInfo>? _activities;
+    private const string CatalogueName = "activity";
+    private const string ResourceName = "RaceDay.Core.Data.activities.json";
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
+    };
+
+    // PublicationOnly: a failed load is not cached, so a later call can retry.
+    private static readonly Lazy<IReadOnlyList<ActivityInfo>> Activities =
+        new(LoadEmbeddedActivities, LazyThreadSafetyMode.PublicationOnly);
 
     /// <summary>
-    /// Get all supported activities
+    /// Get all supported activities. The same read-only instance is returned on every call.
     /// </summary>
-    public static async Task<List<ActivityInfo>> GetAllActivitiesAsync(CancellationToken cancellationToken = default)
+    /// <exception cref="CatalogueLoadException">The embedded catalogue could not be loaded.</exception>
+    public Task<IReadOnlyList<ActivityInfo>> GetAllActivitiesAsync(CancellationToken cancellationToken = default)
     {
-        if (_activities != null)
-            return _activities;
-
-        _activities = await LoadActivitiesFromJsonAsync(cancellationToken);
-        return _activities;
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(Activities.Value);
     }
 
     /// <summary>
-    /// Load activities from embedded JSON resource
+    /// Get activity by ID (case-insensitive)
     /// </summary>
-    private static async Task<List<ActivityInfo>> LoadActivitiesFromJsonAsync(CancellationToken cancellationToken = default)
+    public async Task<ActivityInfo?> GetActivityByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var assembly = typeof(ActivityRepository).Assembly;
-            var resourceName = "RaceDay.Core.Data.activities.json";
+        if (string.IsNullOrWhiteSpace(id))
+            return null;
 
-            using var stream = assembly.GetManifestResourceStream(resourceName);
-            if (stream == null)
-                throw new FileNotFoundException($"Embedded resource '{resourceName}' not found");
-
-            using var reader = new StreamReader(stream);
-            var json = await reader.ReadToEndAsync(cancellationToken);
-
-            var options = new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true,
-                Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
-            };
-            var activities = JsonSerializer.Deserialize<List<ActivityInfo>>(json, options);
-
-            return activities ?? new List<ActivityInfo>();
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Failed to load activities from JSON resource", ex);
-        }
-    }
-
-    /// <summary>
-    /// Get activity by ID
-    /// </summary>
-    public static async Task<ActivityInfo?> GetActivityByIdAsync(string id, CancellationToken cancellationToken = default)
-    {
         var activities = await GetAllActivitiesAsync(cancellationToken);
-        return activities.FirstOrDefault(a => a.Id == id);
+        return activities.FirstOrDefault(a => a.Id.Equals(id.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
     /// Get activities by sport type
     /// </summary>
-    public static async Task<List<ActivityInfo>> GetActivitiesBySportTypeAsync(SportType sportType, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ActivityInfo>> GetActivitiesBySportTypeAsync(SportType sportType, CancellationToken cancellationToken = default)
     {
         var activities = await GetAllActivitiesAsync(cancellationToken);
         return activities.Where(a => a.SportType == sportType).ToList();
     }
 
     /// <summary>
-    /// Search activities by name or description
+    /// Search activities by name or description (case-insensitive, culture-independent)
     /// </summary>
-    public static async Task<List<ActivityInfo>> SearchActivitiesAsync(string query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ActivityInfo>> SearchActivitiesAsync(string query, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query))
-            return new List<ActivityInfo>();
+            return Array.Empty<ActivityInfo>();
 
+        var term = query.Trim();
         var activities = await GetAllActivitiesAsync(cancellationToken);
-        var lowerQuery = query.ToLower();
-
         return activities.Where(a =>
-            a.Name.ToLower().Contains(lowerQuery) ||
-            a.Description.ToLower().Contains(lowerQuery)
-        ).ToList();
+                a.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                a.Description.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Parses an activity catalogue. Exposed internally so malformed input can be tested.
+    /// </summary>
+    /// <exception cref="CatalogueLoadException">The JSON is malformed or contains no activities.</exception>
+    internal static IReadOnlyList<ActivityInfo> ParseActivities(string json)
+    {
+        try
+        {
+            var activities = JsonSerializer.Deserialize<List<ActivityInfo>>(json, JsonOptions);
+            if (activities is not { Count: > 0 })
+                throw new CatalogueLoadException(CatalogueName, "the catalogue contains no activities");
+            return activities.AsReadOnly();
+        }
+        catch (JsonException ex)
+        {
+            throw new CatalogueLoadException(CatalogueName, ex.Message, ex);
+        }
+    }
+
+    private static IReadOnlyList<ActivityInfo> LoadEmbeddedActivities()
+    {
+        using var stream = typeof(ActivityRepository).Assembly.GetManifestResourceStream(ResourceName)
+            ?? throw new CatalogueLoadException(CatalogueName, $"embedded resource '{ResourceName}' not found");
+        using var reader = new StreamReader(stream);
+        return ParseActivities(reader.ReadToEnd());
     }
 }

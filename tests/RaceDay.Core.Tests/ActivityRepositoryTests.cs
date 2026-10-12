@@ -1,20 +1,23 @@
 namespace RaceDay.Core.Tests;
 using RaceDay.Core.Models;
 using RaceDay.Core.Repositories;
+using RaceDay.Core.Exceptions;
 
 public class ActivityRepositoryTests
 {
+    private readonly ActivityRepository _repository = new();
+
     #region GetAllActivitiesAsync Tests
 
     [Fact]
     public async Task GetAllActivitiesAsync_ReturnsListOfActivities()
     {
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        var activities = await _repository.GetAllActivitiesAsync();
 
         // Assert
-        Assert.NotNull(activities);
-        Assert.NotEmpty(activities);
+        activities.ShouldNotBeNull();
+        activities.ShouldNotBeEmpty();
     }
 
     [Fact]
@@ -24,28 +27,28 @@ public class ActivityRepositoryTests
         using var cts = new CancellationTokenSource();
 
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync(cts.Token);
+        var activities = await _repository.GetAllActivitiesAsync(cts.Token);
 
         // Assert
-        Assert.NotNull(activities);
-        Assert.NotEmpty(activities);
+        activities.ShouldNotBeNull();
+        activities.ShouldNotBeEmpty();
     }
 
     [Fact]
     public async Task GetAllActivitiesAsync_ReturnsActivitiesWithValidData()
     {
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        var activities = await _repository.GetAllActivitiesAsync();
 
         // Assert
         foreach (var activity in activities)
         {
-            Assert.False(string.IsNullOrWhiteSpace(activity.Id));
-            Assert.False(string.IsNullOrWhiteSpace(activity.Name));
-            Assert.False(string.IsNullOrWhiteSpace(activity.Description));
-            Assert.NotEqual(0, activity.MinDurationHours);
-            Assert.NotEqual(0, activity.MaxDurationHours);
-            Assert.True(activity.MinDurationHours <= activity.MaxDurationHours, 
+            (string.IsNullOrWhiteSpace(activity.Id)).ShouldBeFalse();
+            (string.IsNullOrWhiteSpace(activity.Name)).ShouldBeFalse();
+            (string.IsNullOrWhiteSpace(activity.Description)).ShouldBeFalse();
+            activity.MinDurationHours.ShouldNotBe(0);
+            activity.MaxDurationHours.ShouldNotBe(0);
+            (activity.MinDurationHours <= activity.MaxDurationHours).ShouldBeTrue(
                 "MinDuration should be <= MaxDuration");
         }
     }
@@ -54,49 +57,49 @@ public class ActivityRepositoryTests
     public async Task GetAllActivitiesAsync_ReturnsCachedResult()
     {
         // Act
-        var first = await ActivityRepository.GetAllActivitiesAsync();
-        var second = await ActivityRepository.GetAllActivitiesAsync();
+        var first = await _repository.GetAllActivitiesAsync();
+        var second = await _repository.GetAllActivitiesAsync();
 
         // Assert - should return the same cached instance
-        Assert.Same(first, second);
+        first.ShouldBeSameAs(second);
     }
 
     [Fact]
     public async Task GetAllActivitiesAsync_ContainsKnownActivities()
     {
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        var activities = await _repository.GetAllActivitiesAsync();
         var activityIds = activities.Select(a => a.Id).ToList();
 
         // Assert - verify some known activities exist
-        Assert.Contains("run", activityIds);
-        Assert.Contains("bike", activityIds);
-        Assert.Contains("triathlon", activityIds);
+        activityIds.ShouldContain("run");
+        activityIds.ShouldContain("bike");
+        activityIds.ShouldContain("triathlon");
     }
 
     [Fact]
     public async Task GetAllActivitiesAsync_AllActivitiesHaveUniqueIds()
     {
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        var activities = await _repository.GetAllActivitiesAsync();
 
         // Assert
         var ids = activities.Select(a => a.Id).ToList();
         var uniqueIds = ids.Distinct().ToList();
-        Assert.Equal(ids.Count, uniqueIds.Count);
+        uniqueIds.Count.ShouldBe(ids.Count);
     }
 
     [Fact]
     public async Task GetAllActivitiesAsync_AllActivitiesHaveSportType()
     {
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        var activities = await _repository.GetAllActivitiesAsync();
 
         // Assert
         foreach (var activity in activities)
         {
-            var isValidSportType = Enum.IsDefined(typeof(SportType), activity.SportType);
-            Assert.True(isValidSportType, $"Invalid SportType: {activity.SportType}");
+            var isValidSportType = Enum.IsDefined(activity.SportType);
+            (isValidSportType).ShouldBeTrue($"Invalid SportType: {activity.SportType}");
         }
     }
 
@@ -104,11 +107,11 @@ public class ActivityRepositoryTests
     public async Task GetAllActivitiesAsync_ContainsMultipleSportTypes()
     {
         // Act
-        var activities = await ActivityRepository.GetAllActivitiesAsync();
+        var activities = await _repository.GetAllActivitiesAsync();
         var sportTypes = activities.Select(a => a.SportType).Distinct().ToList();
 
         // Assert - should have at least 2 different sport types
-        Assert.True(sportTypes.Count >= 2, 
+        (sportTypes.Count >= 2).ShouldBeTrue(
             $"Expected at least 2 sport types, but found {sportTypes.Count}");
     }
 
@@ -120,33 +123,34 @@ public class ActivityRepositoryTests
     public async Task GetActivityByIdAsync_WithValidId_ReturnsActivity()
     {
         // Act
-        var activity = await ActivityRepository.GetActivityByIdAsync("run");
+        var activity = await _repository.GetActivityByIdAsync("run");
 
         // Assert
-        Assert.NotNull(activity);
-        Assert.Equal("run", activity.Id);
+        activity.ShouldNotBeNull();
+        activity.Id.ShouldBe("run");
     }
 
     [Fact]
     public async Task GetActivityByIdAsync_WithInvalidId_ReturnsNull()
     {
         // Act
-        var activity = await ActivityRepository.GetActivityByIdAsync("nonexistent-activity");
+        var activity = await _repository.GetActivityByIdAsync("nonexistent-activity");
 
         // Assert
-        Assert.Null(activity);
+        activity.ShouldBeNull();
     }
 
     [Fact]
-    public async Task GetActivityByIdAsync_IsCase_Sensitive()
+    public async Task GetActivityByIdAsync_DifferentCase_ReturnsSameActivity()
     {
+        // ID lookups are case-insensitive (OrdinalIgnoreCase), matching the product repository.
         // Act
-        var lowerCase = await ActivityRepository.GetActivityByIdAsync("run");
-        var upperCase = await ActivityRepository.GetActivityByIdAsync("RUN");
+        var lowerCase = await _repository.GetActivityByIdAsync("run");
+        var upperCase = await _repository.GetActivityByIdAsync("RUN");
 
         // Assert
-        Assert.NotNull(lowerCase);
-        Assert.Null(upperCase);
+        lowerCase.ShouldNotBeNull();
+        upperCase.ShouldBeSameAs(lowerCase);
     }
 
     #endregion
@@ -157,11 +161,11 @@ public class ActivityRepositoryTests
     public async Task GetActivitiesBySportTypeAsync_WithValidType_ReturnsActivities()
     {
         // Act
-        var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(SportType.Run);
+        var activities = await _repository.GetActivitiesBySportTypeAsync(SportType.Run);
 
         // Assert
-        Assert.NotNull(activities);
-        Assert.NotEmpty(activities);
+        activities.ShouldNotBeNull();
+        activities.ShouldNotBeEmpty();
         Assert.All(activities, a => Assert.Equal(SportType.Run, a.SportType));
     }
 
@@ -169,18 +173,18 @@ public class ActivityRepositoryTests
     public async Task GetActivitiesBySportTypeAsync_WithInvalidType_ReturnsEmpty()
     {
         // Act
-        var activities = await ActivityRepository.GetActivitiesBySportTypeAsync(
+        var activities = await _repository.GetActivitiesBySportTypeAsync(
             (SportType)999); // Invalid sport type
 
         // Assert
-        Assert.Empty(activities);
+        activities.ShouldBeEmpty();
     }
 
     [Fact]
     public async Task GetActivitiesBySportTypeAsync_ContainsOnlyRequestedType()
     {
         // Act
-        var triActivities = await ActivityRepository.GetActivitiesBySportTypeAsync(SportType.Triathlon);
+        var triActivities = await _repository.GetActivitiesBySportTypeAsync(SportType.Triathlon);
 
         // Assert
         Assert.All(triActivities, a => Assert.Equal(SportType.Triathlon, a.SportType));
@@ -194,36 +198,101 @@ public class ActivityRepositoryTests
     public async Task SearchActivitiesAsync_WithValidQuery_ReturnsMatchingActivities()
     {
         // Act
-        var results = await ActivityRepository.SearchActivitiesAsync("run");
+        var results = await _repository.SearchActivitiesAsync("run");
 
         // Assert
-        Assert.NotNull(results);
-        Assert.NotEmpty(results);
+        results.ShouldNotBeNull();
+        results.ShouldNotBeEmpty();
     }
 
     [Fact]
     public async Task SearchActivitiesAsync_WithInvalidQuery_ReturnsEmpty()
     {
         // Act
-        var results = await ActivityRepository.SearchActivitiesAsync("nonexistentactivity123");
+        var results = await _repository.SearchActivitiesAsync("nonexistentactivity123");
 
         // Assert
-        Assert.Empty(results);
+        results.ShouldBeEmpty();
     }
 
     [Fact]
     public async Task SearchActivitiesAsync_IsCase_Insensitive()
     {
         // Act
-        var lowerCase = await ActivityRepository.SearchActivitiesAsync("run");
-        var upperCase = await ActivityRepository.SearchActivitiesAsync("RUN");
-        var mixedCase = await ActivityRepository.SearchActivitiesAsync("RuN");
+        var lowerCase = await _repository.SearchActivitiesAsync("run");
+        var upperCase = await _repository.SearchActivitiesAsync("RUN");
+        var mixedCase = await _repository.SearchActivitiesAsync("RuN");
 
         // Assert
-        Assert.Equal(lowerCase.Count, upperCase.Count);
-        Assert.Equal(lowerCase.Count, mixedCase.Count);
-        Assert.All(new[] { lowerCase, upperCase, mixedCase }, 
-            results => Assert.NotEmpty(results));
+        upperCase.Count.ShouldBe(lowerCase.Count);
+        mixedCase.Count.ShouldBe(lowerCase.Count);
+        Assert.All(new[] { lowerCase, upperCase, mixedCase },
+            results => results.ShouldNotBeEmpty());
+    }
+
+    #endregion
+
+    #region Review findings: culture, immutability, load failure
+
+    [Fact]
+    public async Task SearchActivitiesAsync_TurkishCulture_MatchesDottedI()
+    {
+        var original = Thread.CurrentThread.CurrentCulture;
+        try
+        {
+            // Under tr-TR "TRIATHLON".ToLower() is "trıathlon" (dotless ı), which used to match nothing.
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("tr-TR");
+
+            var results = await _repository.SearchActivitiesAsync("TRIATHLON");
+
+            results.ShouldNotBeEmpty();
+        }
+        finally
+        {
+            Thread.CurrentThread.CurrentCulture = original;
+        }
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task GetActivityByIdAsync_NullOrEmptyId_ReturnsNull(string? id)
+    {
+        (await _repository.GetActivityByIdAsync(id!)).ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task GetAllActivitiesAsync_ReturnedList_CannotCorruptCache()
+    {
+        var activities = await _repository.GetAllActivitiesAsync();
+        int count = activities.Count;
+
+        if (activities is IList<ActivityInfo> list)
+        {
+            Should.Throw<NotSupportedException>(() => list.Clear());
+            Should.Throw<NotSupportedException>(() => list.Add(list[0]));
+        }
+
+        (await _repository.GetAllActivitiesAsync()).Count.ShouldBe(count);
+    }
+
+    [Fact]
+    public async Task GetActivitiesBySportTypeAsync_ReturnedList_IsIndependentOfCache()
+    {
+        var all = await _repository.GetAllActivitiesAsync();
+        var runs = await _repository.GetActivitiesBySportTypeAsync(SportType.Run);
+
+        runs.ShouldNotBeSameAs(all);
+        (await _repository.GetAllActivitiesAsync()).Count.ShouldBe(all.Count);
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("[]")]
+    [InlineData("null")]
+    public void ParseActivities_InvalidCatalogue_ThrowsCatalogueLoadException(string json)
+    {
+        Should.Throw<CatalogueLoadException>(() => ActivityRepository.ParseActivities(json));
     }
 
     #endregion
