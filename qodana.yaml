@@ -10,5 +10,11 @@ profile:
   name: qodana.recommended
 exclude:
   - name: NotAccessedPositionalProperty.Global
+  - name: ClassNeverInstantiated.Global
+  - name: MemberCanBePrivate.Global
+  - name: AutoPropertyCanBeMadeGetOnly.Global
+  - name: PropertyCanBeMadeInitOnly.Global
+  - name: RedundantNameQualifier
+  - name: ArrangeObjectCreationWhenTypeEvident
 include:
   - name: CheckDependencyLicenses
