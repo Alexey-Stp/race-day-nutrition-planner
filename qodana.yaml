@@ -8,5 +8,7 @@ dotnet:
   project: src/RaceDay.API/RaceDay.API.csproj
 profile:
   name: qodana.recommended
+exclude:
+  - name: NotAccessedPositionalProperty.Global
 include:
   - name: CheckDependencyLicenses
