@@ -18,7 +18,7 @@ jobs:
     outputs:
       ui_screenshots: ${{ steps.filter.outputs.ui_screenshots }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
       id: filter
       with:
@@ -35,10 +35,10 @@ jobs:
       npm-build-cache-key: ${{ steps.npm-cache.outputs.cache-hit }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
     
@@ -52,7 +52,7 @@ jobs:
           ${{ runner.os }}-nuget-
     
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: '22'
         cache: 'npm'
@@ -150,10 +150,10 @@ jobs:
     name: TypeScript & React Lint
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: '22'
         cache: 'npm'
@@ -183,10 +183,10 @@ jobs:
       pull-requests: write
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
     
@@ -199,7 +199,7 @@ jobs:
           ${{ runner.os }}-nuget-
     
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
         node-version: '22'
         cache: 'npm'
