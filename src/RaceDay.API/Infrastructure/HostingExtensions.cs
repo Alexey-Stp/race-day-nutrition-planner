@@ -134,7 +134,7 @@ public static class HostingExtensions
                 });
             });
 
-            options.OnRejected = async (context, cancellationToken) =>
+            options.OnRejected = async (context, _) =>
             {
                 var httpContext = context.HttpContext;
                 if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
