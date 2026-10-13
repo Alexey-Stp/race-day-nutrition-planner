@@ -5,8 +5,7 @@
 version: "1.0"
 linter: qodana-cdnet
 dotnet:
-  solution: RaceDayNutritionPlanner.Qodana.slnf
-bootstrap: mkdir -p /var/lib/apt/lists/partial && apt-get update && apt-get install -y nodejs npm
+  project: src/RaceDay.API/RaceDay.API.csproj
 profile:
   name: qodana.recommended
 include:
