@@ -5,7 +5,7 @@
 version: "1.0"
 linter: qodana-cdnet
 dotnet:
-  solution: RaceDayNutritionPlanner.sln
+  solution: RaceDayNutritionPlanner.Qodana.slnf
 profile:
   name: qodana.recommended
 include:
