@@ -3,13 +3,11 @@
 ####################################################################################################################
 
 version: "1.0"
-# Keep this in step with the JetBrains/qodana-action version in .github/workflows/qodana_code_quality.yml.
-# The image ships .NET SDK 8.0, 9.0 and 10.0, so net10.0 builds without a bootstrap step.
-linter: jetbrains/qodana-dotnet:2026.2
+# Qodana Community for .NET: runs on the free Community license (qodana-dotnet needs Ultimate).
+# Keep the version in step with the JetBrains/qodana-action version in .github/workflows/qodana_code_quality.yml.
+image: jetbrains/qodana-cdnet:2026.2
 profile:
   name: qodana.recommended
-include:
-  - name: CheckDependencyLicenses
 dotnet:
   solution: RaceDayNutritionPlanner.sln
 exclude:

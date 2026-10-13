@@ -24,11 +24,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}  # check out the PR commit, not the merge commit
-          fetch-depth: 0  # PR mode needs the full history to diff against the base branch
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@3e8d76ff0e0241618abd808682f426afe84bab3f # v2026.2.2
         with:
-          pr-mode: ${{ github.event_name == 'pull_request' }}
+          pr-mode: false  # changed-code analysis is not available for Qodana Community for .NET
           use-caches: true
         env:
           QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1817300493 }}
