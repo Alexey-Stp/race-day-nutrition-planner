@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   qodana:
-    # Fork PRs get no secrets, so the scan could not authenticate with Qodana Cloud.
+    # Fork PRs get a read-only GITHUB_TOKEN, so the PR comment and check annotations would fail.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
@@ -29,6 +29,7 @@ jobs:
         with:
           pr-mode: false  # changed-code analysis is not available for Qodana Community for .NET
           use-caches: true
-        env:
-          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN_1817300493 }}
-          QODANA_ENDPOINT: 'https://qodana.cloud'
+          upload-result: true  # the report is kept as the qodana-report workflow artifact
+        # No QODANA_TOKEN: the Community linter runs without Qodana Cloud. The current Cloud token
+        # (secrets.QODANA_TOKEN_1817300493) is refused by the license server, which fails the scan.
+        # Add it back as env QODANA_TOKEN once the Qodana Cloud organization has an active plan.
