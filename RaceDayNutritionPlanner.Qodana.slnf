@@ -1,0 +1,11 @@
+{
+  "solution": {
+    "path": "RaceDayNutritionPlanner.sln",
+    "projects": [
+      "src\\RaceDay.API\\RaceDay.API.csproj",
+      "src\\RaceDay.Core\\RaceDay.Core.csproj",
+      "tests\\RaceDay.API.Tests\\RaceDay.API.Tests.csproj",
+      "tests\\RaceDay.Core.Tests\\RaceDay.Core.Tests.csproj"
+    ]
+  }
+}
